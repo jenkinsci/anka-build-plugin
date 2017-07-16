@@ -1,2 +1,6 @@
 *.iml
 *.idea
+work*
+lib*
+target*
+
