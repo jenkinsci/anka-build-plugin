@@ -10,7 +10,7 @@
     <relativePath/>
   </parent>
   <groupId>com.veertu</groupId>
-  <artifactId>anka-ci</artifactId>
+  <artifactId>anka-build</artifactId>
   <version>1.0-SNAPSHOT</version>
   <packaging>hpi</packaging>
 
