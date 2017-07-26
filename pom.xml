@@ -49,13 +49,11 @@
 
   </developers>
 
-  <!-- Assuming you want to host on @jenkinsci:
   <scm>
-    <connection>scm:git:git://github.com/jenkinsci/${project.artifactId}-plugin.git</connection>
-    <developerConnection>scm:git:git@github.com:jenkinsci/${project.artifactId}-plugin.git</developerConnection>
-    <url>http://github.com/jenkinsci/${project.artifactId}-plugin</url>
+    <connection>scm:git:git@github.com:jenkinsci/anka-build-plugin.git</connection>
+    <developerConnection>scm:git:git@github.com:jenkinsci/anka-build-plugin.git</developerConnection>
+    <url>git@github.com:jenkinsci/anka-build-plugin.git</url>
   </scm>
-   -->
   <repositories>
     <repository>
       <id>repo.jenkins-ci.org</id>
@@ -161,7 +159,5 @@
   </build>
 
 
-  <scm>
-    <tag>anka-build-1.0</tag>
-  </scm>
+
 </project>
