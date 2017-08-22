@@ -1,5 +1,6 @@
 package com.veertu.ankaMgmtSdk;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
@@ -23,8 +24,10 @@ public class AnkaVmInfo {
         this.hostIp = jsonObject.getString("host_ip");
         this.portForwardingRules = new ArrayList<PortForwardingRule>();
         if (!jsonObject.isNull("port_forwarding")) {
-            JSONObject portForwardJson = jsonObject.getJSONObject("port_forwarding");
-            this.portForwardingRules.add(new PortForwardingRule(portForwardJson));
+            JSONArray portForwardRulesJson = jsonObject.getJSONArray("port_forwarding");
+            for (int i=0; i < portForwardRulesJson.length(); i++) {
+                this.portForwardingRules.add(new PortForwardingRule(portForwardRulesJson.getJSONObject(i)));
+            }
         }
 
     }
