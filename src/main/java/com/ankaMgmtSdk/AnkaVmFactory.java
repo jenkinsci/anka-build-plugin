@@ -2,7 +2,9 @@ package com.veertu.ankaMgmtSdk;
 
 import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by asafgur on 18/05/2017.
@@ -10,20 +12,24 @@ import java.util.List;
 public class AnkaVmFactory {
 
     private static AnkaVmFactory ourInstance = new AnkaVmFactory();
-    private AnkaMgmtCommunicator communicator;
+    private Map<String, AnkaMgmtCommunicator> communicators;
 
     public static AnkaVmFactory getInstance() {
         return ourInstance;
     }
     private java.util.logging.Logger logger =  java.util.logging.Logger.getLogger("AnkaVmFactory");
     private AnkaVmFactory() {
+        this.communicators = new HashMap<String, AnkaMgmtCommunicator>();
     }
 
     private AnkaMgmtCommunicator getCommunicator(String mgmtHost, String mgmtPort) throws AnkaMgmtException {
-        if (this.communicator == null) {
-            this.communicator = new AnkaMgmtCommunicator(mgmtHost, mgmtPort);
+        String communicatorKey = mgmtHost + ":" + mgmtPort;
+        AnkaMgmtCommunicator communicator = this.communicators.get(communicatorKey);
+        if (communicator == null) {
+            communicator = new AnkaMgmtCommunicator(mgmtHost, mgmtPort);
+            this.communicators.put(communicatorKey, communicator);
         }
-        return this.communicator;
+        return communicator;
     }
 
     public AnkaMgmtVm makeAnkaVm(String mgmtHost, String mgmtPort, String templateId, String tag, int sshPort) throws AnkaMgmtException {
