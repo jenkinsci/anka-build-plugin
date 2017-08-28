@@ -26,6 +26,7 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
 
     private boolean hadProblemsInBuild = false;
     private String description;
+    private boolean acceptingTasks = true;
 
     protected AnkaOnDemandSlave(String name, String nodeDescription, String remoteFS, int numExecutors,
                                 Mode mode, String labelString, ComputerLauncher launcher,
@@ -76,6 +77,18 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
         this.description = String.format("prefix: %s, master image: %s, job name and build number: %s, vm info: (%s)",
                 template.getCapsuleNamePrefix(), template.getMasterVmId(), jobAndNumber, this.vm.getInfo());
 
+    }
+
+    public boolean isAcceptingTasks() {
+        return this.acceptingTasks;
+    }
+
+    public void taskAccepted(){
+        this.setAcceptingTasks(false);
+    }
+
+    public void setAcceptingTasks(boolean isAccepting){
+        this.acceptingTasks = isAccepting;
     }
 
     public String getNodeDescription(){

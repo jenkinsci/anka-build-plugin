@@ -73,6 +73,8 @@ public abstract class AbstractAnkaSlave extends AbstractCloudSlave {
 
     }
 
+    public void taskAccepted(){
+    }
 
     @Override
     protected void _terminate(TaskListener listener) throws IOException, InterruptedException {
