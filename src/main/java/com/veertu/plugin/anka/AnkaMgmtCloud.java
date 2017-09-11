@@ -1,14 +1,9 @@
-package com.veertuci.plugins;
+package com.veertu.plugin.anka;
 
 import com.veertu.ankaMgmtSdk.AnkaMgmtVm;
 import com.veertu.ankaMgmtSdk.AnkaVmFactory;
 import com.veertu.ankaMgmtSdk.AnkaVmTemplate;
 import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
-import com.veertuci.plugins.anka.exceptions.AnkaHostException;
-import com.veertuci.plugins.anka.AnkaCloudSlaveTemplate;
-import com.veertuci.plugins.anka.exceptions.AnkaException;
-import com.veertuci.plugins.anka.exceptions.AnkaHostConfigurationException;
-import com.veertuci.plugins.anka.exceptions.AnkaNoHostsAvailableException;
 import hudson.Extension;
 import hudson.model.*;
 import hudson.slaves.Cloud;
@@ -16,7 +11,6 @@ import hudson.slaves.NodeProvisioner;
 import hudson.slaves.SlaveComputer;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;

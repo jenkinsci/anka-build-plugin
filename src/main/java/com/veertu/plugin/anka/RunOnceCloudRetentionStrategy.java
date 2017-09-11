@@ -1,5 +1,4 @@
-package com.veertuci.plugins.anka;
-import com.veertuci.plugins.AnkaMgmtCloud;
+package com.veertu.plugin.anka;
 import hudson.model.*;
 import hudson.slaves.AbstractCloudComputer;
 import hudson.slaves.AbstractCloudSlave;

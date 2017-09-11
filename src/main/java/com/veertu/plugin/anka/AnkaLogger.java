@@ -1,4 +1,4 @@
-package com.veertuci.plugins.anka;
+package com.veertu.plugin.anka;
 
 /**
  * Created by avia on 09/07/2016.

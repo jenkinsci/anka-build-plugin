@@ -1,6 +1,5 @@
-package com.veertuci.plugins.anka;
+package com.veertu.plugin.anka;
 
-import com.veertuci.plugins.AnkaMgmtCloud;
 import hudson.model.Executor;
 import hudson.model.Queue;
 import hudson.model.ResultTrend;

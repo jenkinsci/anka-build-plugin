@@ -1,6 +1,6 @@
-package com.veertuci.plugins.anka.parameters;
+package com.veertu.plugin.anka.parameters;
 
-import com.veertuci.plugins.AnkaMgmtCloud;
+import com.veertu.plugin.anka.AnkaMgmtCloud;
 import hudson.model.ParameterValue;
 import hudson.Extension;
 import hudson.model.SimpleParameterDefinition;

@@ -1,4 +1,4 @@
-package com.veertuci.plugins.anka.exceptions;
+package com.veertu.plugin.anka.exceptions;
 
 /**
  * Created by asafgur on 15/01/2017.

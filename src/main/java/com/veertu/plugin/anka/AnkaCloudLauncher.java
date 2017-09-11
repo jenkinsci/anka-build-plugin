@@ -1,4 +1,4 @@
-package com.veertuci.plugins.anka;
+package com.veertu.plugin.anka;
 
 import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
 import hudson.model.Descriptor;

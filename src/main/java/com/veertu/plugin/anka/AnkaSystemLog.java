@@ -1,4 +1,4 @@
-package com.veertuci.plugins.anka;
+package com.veertu.plugin.anka;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;

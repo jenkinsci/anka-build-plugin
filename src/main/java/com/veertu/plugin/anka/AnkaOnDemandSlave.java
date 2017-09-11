@@ -1,8 +1,7 @@
-package com.veertuci.plugins.anka;
+package com.veertu.plugin.anka;
 
 import com.veertu.ankaMgmtSdk.AnkaMgmtVm;
 import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
-import com.veertuci.plugins.AnkaMgmtCloud;
 import hudson.Extension;
 import hudson.model.Computer;
 import hudson.model.Descriptor;
@@ -12,9 +11,7 @@ import hudson.plugins.sshslaves.SSHLauncher;
 import hudson.slaves.ComputerLauncher;
 import hudson.slaves.ComputerListener;
 import hudson.slaves.NodeProperty;
-import hudson.slaves.RetentionStrategy;
 import org.apache.commons.lang.RandomStringUtils;
-import com.google.common.base.Throwables;
 
 import java.io.IOException;
 import java.util.ArrayList;

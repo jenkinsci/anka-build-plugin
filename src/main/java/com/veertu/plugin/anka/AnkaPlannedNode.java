@@ -1,9 +1,7 @@
-package com.veertuci.plugins;
+package com.veertu.plugin.anka;
 
 import com.veertu.ankaMgmtSdk.AnkaMgmtVm;
-import com.veertuci.plugins.anka.AnkaOnDemandSlave;
-import com.veertuci.plugins.anka.AnkaCloudSlaveTemplate;
-import com.veertuci.plugins.anka.exceptions.AnkaHostException;
+import com.veertu.plugin.anka.exceptions.AnkaHostException;
 import hudson.model.Computer;
 import hudson.model.Label;
 import hudson.model.Node;

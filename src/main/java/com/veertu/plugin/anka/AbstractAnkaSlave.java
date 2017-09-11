@@ -1,7 +1,6 @@
-package com.veertuci.plugins.anka;
+package com.veertu.plugin.anka;
 
 import com.veertu.ankaMgmtSdk.AnkaMgmtVm;
-import com.veertuci.plugins.AnkaMgmtCloud;
 import hudson.Extension;
 import hudson.model.Computer;
 import hudson.model.Descriptor;

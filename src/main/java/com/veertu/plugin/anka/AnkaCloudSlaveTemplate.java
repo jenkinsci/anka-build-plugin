@@ -1,11 +1,10 @@
-package com.veertuci.plugins.anka;
+package com.veertu.plugin.anka;
 
 import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernameListBoxModel;
 import com.cloudbees.plugins.credentials.domains.SchemeRequirement;
 import com.veertu.ankaMgmtSdk.AnkaVmTemplate;
-import com.veertuci.plugins.AnkaMgmtCloud;
-import com.veertuci.plugins.anka.exceptions.AnkaHostException;
+import com.veertu.plugin.anka.exceptions.AnkaHostException;
 import hudson.Extension;
 import hudson.model.*;
 import hudson.model.Node.Mode;

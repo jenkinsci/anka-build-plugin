@@ -1,4 +1,4 @@
-package com.veertuci.plugins.anka.exceptions;
+package com.veertu.plugin.anka.exceptions;
 
 /**
  * Created by avia on 04/07/2016.

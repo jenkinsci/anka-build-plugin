@@ -24,23 +24,12 @@
  */
 
 
-package com.veertuci.plugins.anka;
+package com.veertu.plugin.anka;
 
-import com.veertu.ankaMgmtSdk.AnkaMgmtVm;
-import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
-import com.veertuci.plugins.AnkaMgmtCloud;
-import hudson.plugins.sshslaves.SSHLauncher;
-import hudson.slaves.ComputerLauncher;
-import hudson.slaves.SlaveComputer;
-import hudson.model.Computer;
-import hudson.model.Descriptor;
-import hudson.model.TaskListener;
 import hudson.model.LoadStatistics.LoadStatisticsSnapshot;
 import hudson.slaves.NodeProvisioner;
 import hudson.slaves.NodeProvisioner.PlannedNode;
-import hudson.slaves.RetentionStrategy;
 import hudson.Extension;
-import hudson.ExtensionList;
 import jenkins.model.Jenkins;
 import hudson.slaves.Cloud;
 import hudson.model.Label;
@@ -48,9 +37,6 @@ import hudson.model.Label;
 import java.util.List;
 import java.util.Collection;
 import java.util.ArrayList;
-import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.annotation.Nonnull;
 
 @Extension
