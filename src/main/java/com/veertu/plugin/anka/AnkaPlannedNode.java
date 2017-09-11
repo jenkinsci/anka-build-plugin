@@ -65,18 +65,22 @@ public class AnkaPlannedNode extends NodeProvisioner.PlannedNode{
                 AnkaMgmtCloud.Log("got a slave adding it to jenkins");
                 Jenkins.getInstance().addNode(slave);
                 long startTime = System.currentTimeMillis(); // fetch starting time
-                while ((System.currentTimeMillis() - startTime) < slave.launchTimeout * 1000) {
+                while (true) {
                     try {
                         AnkaMgmtCloud.Log("trying to init slave %s on vm", slave.getDisplayName());
                         tryToCallSlave(slave);
                         break;
                     }
-                    catch (ExecutionException e)
-                    {
-                        AnkaMgmtCloud.Log("caught ExecutionException when trying to start %s " +
-                                "sleeping for 5 seconds to retry", slave.getNodeName());
-                        Thread.sleep(5000);
-                        continue;
+                    catch (ExecutionException e) {
+                        if ((System.currentTimeMillis() - startTime) < slave.launchTimeout * 1000){
+                            AnkaMgmtCloud.Log("caught ExecutionException when trying to start %s " +
+                                    "sleeping for 5 seconds to retry", slave.getNodeName());
+                            Thread.sleep(5000);
+                            continue;
+                        }
+                        AnkaMgmtCloud.Log("Failed to connect to slave %s", slave.getNodeName());
+                        slave.terminate();
+                        throw e;
                     }
                     catch (Exception e) {
                         AnkaMgmtCloud.Log("vm quit unexpectedly for slave %s", slave.getNodeName());
