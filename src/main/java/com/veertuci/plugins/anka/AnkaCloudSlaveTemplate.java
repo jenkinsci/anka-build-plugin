@@ -15,10 +15,12 @@ import hudson.security.AccessControlled;
 import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
+import hudson.slaves.RetentionStrategy;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.DataBoundSetter;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -55,6 +57,7 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
     private final boolean keepAliveOnError;
     private final int SSHPort;
     private final String cloudName;
+    private RetentionStrategy retentionStrategy = new RunOnceCloudRetentionStrategy(1);
 
     @DataBoundConstructor
     public AnkaCloudSlaveTemplate(final String capsuleNamePrefix, final String remoteFS, final String masterVmId,
@@ -63,7 +66,7 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
                                   final int numberOfExecutors, final int launchDelay, final String credentialsId,
                                   boolean keepAliveOnError,
                                   int SSHPort, String cloudName) {
-         this.capsuleNamePrefix = capsuleNamePrefix;
+        this.capsuleNamePrefix = capsuleNamePrefix;
         this.remoteFS = remoteFS;
         this.labelString = labelString;
         this.templateDescription = templateDescription;
@@ -169,6 +172,12 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
         return cloudName;
     }
 
+    public RetentionStrategy getRetentionStrategy() { return retentionStrategy; }
+
+    @DataBoundSetter
+    public void setRetentionStrategy(RetentionStrategy retentionStrategy) {
+        this.retentionStrategy = retentionStrategy;
+    }
 
     /**
      *  ui stuff

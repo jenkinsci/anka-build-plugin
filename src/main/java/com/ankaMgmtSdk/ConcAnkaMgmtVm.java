@@ -13,7 +13,7 @@ public class ConcAnkaMgmtVm implements AnkaMgmtVm {
     private final String sessionId;
     private final int waitUnit = 4000;
     private final int maxRunningTimeout = waitUnit * 20;
-    private final int maxIpTimeout = waitUnit * 100;
+    private final int maxIpTimeout = waitUnit * 20;
     private final int sshConnectionPort;
     private AnkaVmSession cachedVmSession;
     private final int cacheTime = 60 * 5 * 1000; // 5 minutes
@@ -79,33 +79,34 @@ public class ConcAnkaMgmtVm implements AnkaMgmtVm {
         logger.info(String.format("waiting for vm %s to boot", this.sessionId));
         int timeWaited = 0;
 
-
-        while (!this.getStatus().equals("Started") && this.getSessionInfoCache() == null) { // wait for the vm to spin up TODO: put this in const
+        while (!getStatus().equals("Started") || getSessionInfoCache() == null) {
+            // wait for the vm to spin up TODO: put this in const
             Thread.sleep(waitUnit);
             timeWaited += waitUnit;
             logger.info(String.format("waiting for vm %s %d to boot", this.sessionId, timeWaited));
             if (timeWaited > maxRunningTimeout) {
-                throw new IOException("could not get vm");
+                this.terminate();
+                throw new IOException("could not start vm");
 
             }
         }
+
         String ip;
         timeWaited = 0;
         logger.info(String.format("waiting for vm %s to get an ip ", this.sessionId));
         while (true) { // wait to get machine ip
 
             ip = this.getIp();
-            if (ip != null) {
+            if (ip != null)
                 break;
-            }
+
             Thread.sleep(waitUnit);
             timeWaited += waitUnit;
             logger.info(String.format("waiting for vm %s %d to get ip ", this.sessionId, timeWaited));
             if (timeWaited > maxIpTimeout) {
                 this.terminate();
-                throw new IOException("could not get vm ip");
+                throw new IOException("VM started but couldn't acquire ip");
             }
-
         }
         // now that we have a running vm we should be able to create a launcher
         return ip;
@@ -122,9 +123,9 @@ public class ConcAnkaMgmtVm implements AnkaMgmtVm {
 
     public String getConnectionIp() {
         AnkaVmSession session = this.getSessionInfoCache();
-        if (session == null) {
+        if (session == null || session.getVmInfo() == null)
             return null;
-        }
+
         return session.getVmInfo().getHostIp();
     }
 

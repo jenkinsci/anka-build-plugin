@@ -4,6 +4,7 @@ import com.veertu.ankaMgmtSdk.AnkaMgmtVm;
 import com.veertu.ankaMgmtSdk.AnkaVmFactory;
 import com.veertu.ankaMgmtSdk.AnkaVmTemplate;
 import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
+import com.veertuci.plugins.anka.exceptions.AnkaHostException;
 import com.veertuci.plugins.anka.AnkaCloudSlaveTemplate;
 import com.veertuci.plugins.anka.exceptions.AnkaException;
 import com.veertuci.plugins.anka.exceptions.AnkaHostConfigurationException;
@@ -92,42 +93,34 @@ public class AnkaMgmtCloud extends Cloud {
     public Collection<NodeProvisioner.PlannedNode> provision(Label label, int excessWorkload) {
         List<NodeProvisioner.PlannedNode> plannedNodes = new ArrayList<>();
 
-        try {
-            final AnkaCloudSlaveTemplate t = getTemplate(label);
-            Log("Attempting to provision slave from template " + t + " needed by excess workload of " + excessWorkload + " units of label '" + label + "'");
-            if (label == null) {
-                Log("can't start an on demand instance without a label");
-                return Collections.emptyList();
-            }
-
-            while (excessWorkload > 0) {
-                // check that mgmt server has this template
-                if (!this.hasMasterVm(t.getMasterVmId())) {
-                    throw new AnkaNoHostsAvailableException(String.format("no such template %s", t.getMasterVmId()));
-                }
-                try {
-                    AnkaMgmtVm vm = AnkaVmFactory.getInstance().makeAnkaVm(this.ankaMgmtUrl, this.ankaMgmtPort,
-                                                                    t.getMasterVmId(), t.getTag(), t.getSSHPort());
-                    NodeProvisioner.PlannedNode newNode = AnkaPlannedNode.createInstance(t, label, vm);
-                    plannedNodes.add(newNode);
-                    excessWorkload -= t.getNumberOfExecutors();
-                } catch (AnkaHostConfigurationException e){
-                    e.printStackTrace();
-//                    Log("Configuration problem detected please check host" + host.getHost());
-                    throw e;
-                } catch (AnkaMgmtException e) {
-                    e.printStackTrace();
-                    throw new AnkaHostConfigurationException(e);
-                }
-            }
-            return plannedNodes;
-        } catch (IOException e) {
-            Log("Exception during provisioning", e);
-            return plannedNodes;
-//            return Collections.emptyList();
-        } catch (AnkaException e){
-            return plannedNodes;
+        final AnkaCloudSlaveTemplate t = getTemplate(label);
+        Log("Attempting to provision slave from template " + t + " needed by excess workload of " + excessWorkload + " units of label '" + label + "'");
+        if (label == null) {
+            Log("can't start an on demand instance without a label");
+            return Collections.emptyList();
         }
+
+        while (excessWorkload > 0) {
+            AnkaMgmtVm vm = null;
+
+            // check that mgmt server has this template
+            if (!this.hasMasterVm(t.getMasterVmId())) {
+                Log("no such template %s", t.getMasterVmId());
+                break;
+            }
+            try {
+                vm = AnkaVmFactory.getInstance().makeAnkaVm(this.ankaMgmtUrl, this.ankaMgmtPort,
+                        t.getMasterVmId(), t.getTag(), t.getSSHPort());
+                NodeProvisioner.PlannedNode newNode = AnkaPlannedNode.createInstance(t, label, vm);
+                plannedNodes.add(newNode);
+                excessWorkload -= t.getNumberOfExecutors();
+            }
+            catch (Exception e) {
+                e.printStackTrace();
+                break;
+            }
+        }
+        return plannedNodes;
     }
 
     public AnkaCloudSlaveTemplate getTemplate(final Label label) {

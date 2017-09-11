@@ -14,6 +14,7 @@ import hudson.slaves.ComputerListener;
 import hudson.slaves.NodeProperty;
 import hudson.slaves.RetentionStrategy;
 import org.apache.commons.lang.RandomStringUtils;
+import com.google.common.base.Throwables;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -30,10 +31,10 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
 
     protected AnkaOnDemandSlave(String name, String nodeDescription, String remoteFS, int numExecutors,
                                 Mode mode, String labelString, ComputerLauncher launcher,
-                                RetentionStrategy retentionStrategy, List<? extends NodeProperty<?>> nodeProperties,
+                                List<? extends NodeProperty<?>> nodeProperties,
                                 AnkaCloudSlaveTemplate template, AnkaMgmtVm vm) throws Descriptor.FormException, IOException {
         super(name, nodeDescription, remoteFS, numExecutors, mode, labelString,
-                launcher, retentionStrategy, nodeProperties, template, vm);
+                launcher, template.getRetentionStrategy(), nodeProperties, template, vm);
     }
 
 
@@ -42,53 +43,32 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
         return template.getCapsuleNamePrefix() + template.getMasterVmId() + randomString;
     }
 
-    public static AnkaOnDemandSlave createProvisionedSlave(AnkaCloudSlaveTemplate template, Label label,
-                                                           AnkaMgmtVm vm, String name) throws IOException, Descriptor.FormException, InterruptedException {
+    public static AnkaOnDemandSlave createProvisionedSlave(AnkaCloudSlaveTemplate template, Label label, AnkaMgmtVm vm, String name)
+            throws IOException, AnkaMgmtException, Descriptor.FormException, InterruptedException {
 
-        try {
-            vm.waitForBoot();
-        } catch (AnkaMgmtException e) {
-            e.printStackTrace();
-            throw new IOException(e);
+        AnkaMgmtCloud.Log("vm %s is booting...", vm.getId());
+        vm.waitForBoot();
+        AnkaMgmtCloud.Log("vm %s %s is booted, creating ssh launcher", vm.getId(), vm.getName());
+        SSHLauncher launcher = new SSHLauncher(vm.getConnectionIp(), vm.getConnectionPort(),
+                template.getCredentialsId(),
+                null, null, null, null, launchTimeoutSeconds, maxNumRetries, retryWaitTime);
 
-        }
-        AnkaMgmtCloud.Log("vm %s %s is ready, creating ssh launcher", vm.getId(), vm.getName());
-        ComputerLauncher delegateLauncher = createLauncher(vm, template);
+        AnkaLauncher delegateLauncher = new AnkaLauncher(vm, launcher);
+
         AnkaMgmtCloud.Log("launcher created for vm %s %s", vm.getId(), vm.getName());
         return new AnkaOnDemandSlave(name, template.getTemplateDescription(), template.getRemoteFS(),
                 template.getNumberOfExecutors(),
                 template.getMode(),
                 label.toString(),
-                new AnkaCloudLauncher(delegateLauncher),
-                new RunOnceCloudRetentionStrategy(1),
+                launcher,
                 new ArrayList<NodeProperty<?>>(), template, vm);
     }
 
-
-    public static ComputerLauncher createLauncher(AnkaMgmtVm vm, AnkaCloudSlaveTemplate template) {
-        SSHLauncher launcher = new SSHLauncher(vm.getConnectionIp(), vm.getConnectionPort(),
-                template.getCredentialsId(),
-                null, null, null, null, launchTimeoutSeconds, maxNumRetries, retryWaitTime);
-
-        return launcher;
-    }
 
     public void setDescription(String jobAndNumber) {
         this.description = String.format("prefix: %s, master image: %s, job name and build number: %s, vm info: (%s)",
                 template.getCapsuleNamePrefix(), template.getMasterVmId(), jobAndNumber, this.vm.getInfo());
 
-    }
-
-    public boolean isAcceptingTasks() {
-        return this.acceptingTasks;
-    }
-
-    public void taskAccepted(){
-        this.setAcceptingTasks(false);
-    }
-
-    public void setAcceptingTasks(boolean isAccepting){
-        this.acceptingTasks = isAccepting;
     }
 
     public String getNodeDescription(){

@@ -39,7 +39,6 @@ public class AnkaCloudComputer extends AbstractCloudComputer {
         super.taskAccepted(executor, task);
         String jobAndNumber = executor.getCurrentWorkUnit().getExecutable().toString();
         this.slave.setDescription(jobAndNumber);
-        this.slave.taskAccepted();
     }
 
 

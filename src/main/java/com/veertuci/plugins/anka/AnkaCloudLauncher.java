@@ -1,5 +1,6 @@
 package com.veertuci.plugins.anka;
 
+import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
 import hudson.model.Descriptor;
 import hudson.model.TaskListener;
 import hudson.slaves.ComputerLauncher;
@@ -29,6 +30,8 @@ public class AnkaCloudLauncher extends DelegatingComputerLauncher {
         super.launch(slaveComputer, listener); // this is delegated to another computer launcher
 
     }
+
+    public void waitForBoot() throws InterruptedException, IOException, AnkaMgmtException {}
 
     @Override
     public Descriptor<ComputerLauncher> getDescriptor() {

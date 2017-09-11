@@ -57,7 +57,7 @@ public abstract class AbstractAnkaSlave extends AbstractCloudSlave {
     }
 
     public AnkaMgmtVm getVM() {
-        return this.vm;
+        return vm;
     }
 
 
@@ -69,11 +69,8 @@ public abstract class AbstractAnkaSlave extends AbstractCloudSlave {
 
     public void terminate() throws IOException, InterruptedException {
         super.terminate();
-        this.vm.terminate();
+        vm.terminate();
 
-    }
-
-    public void taskAccepted(){
     }
 
     @Override
