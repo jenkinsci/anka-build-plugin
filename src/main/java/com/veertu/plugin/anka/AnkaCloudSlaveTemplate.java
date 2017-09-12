@@ -220,7 +220,7 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
         }
 
         public List<String> getTemplateTags(AnkaMgmtCloud cloud, String masterVmId) throws AnkaHostException {
-            if (cloud != null) {
+            if (cloud != null && masterVmId != null && masterVmId.length() != 0) {
                 return cloud.getTemplateTags(masterVmId);
             }
             return new ArrayList<>();
@@ -242,7 +242,7 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
             AnkaMgmtCloud cloud = (AnkaMgmtCloud) Jenkins.getInstance().getCloud(cloudName);
             ListBoxModel models = new ListBoxModel();
             models.add("Choose a Tag or leave empty for latest", null);
-            if (cloud != null) {
+            if (cloud != null && masterVmId != null && masterVmId.length() != 0) {
                 for (String tagName: cloud.getTemplateTags(masterVmId)){
                     models.add(tagName, tagName);
                 }

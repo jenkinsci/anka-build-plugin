@@ -1,6 +1,7 @@
 package com.veertu.ankaMgmtSdk;
 
 import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
+import com.veertu.plugin.anka.AnkaMgmtCloud;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
@@ -86,8 +87,12 @@ public class AnkaMgmtCommunicator {
                     tags.add(tag);
                 }
             }
-        } catch (IOException e) {
-            return tags;
+        }
+        catch (IOException e) {
+            AnkaMgmtCloud.Log("Exception trying to access: '%s'", url);
+        }
+        catch (org.json.JSONException e) {
+            AnkaMgmtCloud.Log("Exception trying to parse response: '%s'", url);
         }
         return tags;
     }
