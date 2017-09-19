@@ -7,12 +7,11 @@ import hudson.model.Label;
 import hudson.model.Node;
 import hudson.slaves.Cloud;
 import hudson.slaves.NodeProvisioner;
-import jenkins.model.Jenkins;
-
 import java.io.IOException;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.Callable;
+import jenkins.model.Jenkins;
 
 /**
  * Created by asafgur on 16/11/2016.

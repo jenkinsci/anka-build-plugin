@@ -69,6 +69,8 @@ public class AnkaProvisioningStrategy extends NodeProvisioner.Strategy {
 
         for (AnkaMgmtCloud ankaCloud : getAnkaClouds()) {
             AnkaCloudSlaveTemplate template = ankaCloud.getTemplate(label);
+            if (template == null)
+                continue;
 
             int availableCapacity = snapshot.getAvailableExecutors() +
                         snapshot.getConnectingExecutors() +

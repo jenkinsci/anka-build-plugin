@@ -89,7 +89,7 @@ public class AnkaMgmtCloud extends Cloud {
 
         final AnkaCloudSlaveTemplate t = getTemplate(label);
         Log("Attempting to provision slave from template " + t + " needed by excess workload of " + excessWorkload + " units of label '" + label + "'");
-        if (label == null) {
+        if (label == null || t == null) {
             Log("can't start an on demand instance without a label");
             return Collections.emptyList();
         }
@@ -98,7 +98,7 @@ public class AnkaMgmtCloud extends Cloud {
             AnkaMgmtVm vm = null;
 
             // check that mgmt server has this template
-            if (!this.hasMasterVm(t.getMasterVmId())) {
+            if (!hasMasterVm(t.getMasterVmId())) {
                 Log("no such template %s", t.getMasterVmId());
                 break;
             }
