@@ -50,14 +50,14 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
                 template.getCredentialsId(),
                 null, null, null, null, launchTimeoutSeconds, maxNumRetries, retryWaitTime);
 
-        AnkaLauncher delegateLauncher = new AnkaLauncher(vm, launcher);
+        AnkaCloudLauncher delegateLauncher = new AnkaLauncher(vm, launcher);
 
         AnkaMgmtCloud.Log("launcher created for vm %s %s", vm.getId(), vm.getName());
         return new AnkaOnDemandSlave(name, template.getTemplateDescription(), template.getRemoteFS(),
                 template.getNumberOfExecutors(),
                 template.getMode(),
                 label.toString(),
-                launcher,
+                /*delegateLauncher*/launcher,
                 new ArrayList<NodeProperty<?>>(), template, vm);
     }
 

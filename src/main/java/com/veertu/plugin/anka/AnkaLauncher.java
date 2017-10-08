@@ -11,7 +11,7 @@ import java.io.IOException;
 
 public class AnkaLauncher extends AnkaCloudLauncher {
 
-    private DelegatingComputerLauncher launcher;
+    //private DelegatingComputerLauncher launcher;
     private AnkaMgmtVm vm;
 
     public AnkaLauncher(AnkaMgmtVm vm, ComputerLauncher launcher) {
@@ -26,7 +26,7 @@ public class AnkaLauncher extends AnkaCloudLauncher {
     @Override
     public void launch(SlaveComputer _computer, TaskListener listener) {
         try {
-            launcher.launch(_computer, listener);
+            super.launch(_computer, listener);
         } catch (Exception e) {
             throw Throwables.propagate(e);
         }
