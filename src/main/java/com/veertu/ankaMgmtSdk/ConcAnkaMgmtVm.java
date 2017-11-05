@@ -78,6 +78,19 @@ public class ConcAnkaMgmtVm implements AnkaMgmtVm {
     public String waitForBoot() throws InterruptedException, IOException, AnkaMgmtException {
         logger.info(String.format("waiting for vm %s to boot", this.sessionId));
         int timeWaited = 0;
+        String status;
+
+        while (getStatus().equals("Scheduling")) {
+            Thread.sleep(waitUnit);
+            logger.info(String.format("waiting for vm %s %d to start", this.sessionId, timeWaited));
+        }
+
+        status = getStatus();
+        if (!status.equals("Starting") && !status.equals("Started") && !status.equals("Scheduled")) {
+            logger.info(String.format("vm %s in unexpected state %s, terminating", this.sessionId, status));
+            this.terminate();
+            throw new IOException("could not start vm");
+        }
 
         while (!getStatus().equals("Started") || getSessionInfoCache() == null) {
             // wait for the vm to spin up TODO: put this in const
