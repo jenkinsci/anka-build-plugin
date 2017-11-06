@@ -20,11 +20,13 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.DataBoundSetter;
+import javax.annotation.Nullable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials;
@@ -56,15 +58,15 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
     private final boolean keepAliveOnError;
     private final int SSHPort;
     private final String cloudName;
+    private List<EnvironmentEntry> environments;
     private RetentionStrategy retentionStrategy = new RunOnceCloudRetentionStrategy(1);
 
     @DataBoundConstructor
-    public AnkaCloudSlaveTemplate(final String capsuleNamePrefix, final String remoteFS, final String masterVmId,
-                                  final String tag,
-                                  final String labelString, final String templateDescription,
-                                  final int numberOfExecutors, final int launchDelay, final String credentialsId,
-                                  boolean keepAliveOnError,
-                                  int SSHPort, String cloudName) {
+    public AnkaCloudSlaveTemplate(
+            final String cloudName, final String capsuleNamePrefix, final String remoteFS, final String masterVmId,
+            final String tag, final String labelString, final String templateDescription,
+            final int numberOfExecutors, final int launchDelay, final String credentialsId,
+            boolean keepAliveOnError, int SSHPort, @Nullable List<EnvironmentEntry> environments) {
         this.capsuleNamePrefix = capsuleNamePrefix;
         this.remoteFS = remoteFS;
         this.labelString = labelString;
@@ -79,6 +81,7 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
         this.keepAliveOnError = keepAliveOnError;
         this.SSHPort = SSHPort;
         this.cloudName = cloudName;
+        this.environments = environments;
         readResolve();
     }
 
@@ -173,6 +176,30 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
 
     public RetentionStrategy getRetentionStrategy() { return retentionStrategy; }
 
+    public List<EnvironmentEntry> getEnvironments()
+    {
+        if (environments != null)
+            return environments;
+        return new ArrayList<EnvironmentEntry>();
+    }
+
+    /*Collection<KeyValuePair> getEnvironmentKeyValuePairs() {
+        if (null == environments || environments.isEmpty()) {
+            return null;
+        }
+        Collection<KeyValuePair> items = new ArrayList<KeyValuePair>();
+        for (EnvironmentEntry environment : environments) {
+            String name = environment.name;
+            String value = environment.value;
+            if (StringUtils.isEmpty(name) || StringUtils.isEmpty(value)) {
+                continue;
+            }
+            items.add(new KeyValuePair().withName(name).withValue(value));
+        }
+        return items;
+    }*/
+
+
     @DataBoundSetter
     public void setRetentionStrategy(RetentionStrategy retentionStrategy) {
         this.retentionStrategy = retentionStrategy;
@@ -181,6 +208,29 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
     /**
      *  ui stuff
      */
+
+    public static class EnvironmentEntry extends AbstractDescribableImpl<EnvironmentEntry> {
+        public String name, value;
+
+        @DataBoundConstructor
+        public EnvironmentEntry(String name, String value) {
+            this.name = name;
+            this.value = value;
+        }
+
+        @Override
+        public String toString() {
+            return "EnvironmentEntry{" + name + ": " + value + "}";
+        }
+
+        @Extension
+        public static class DescriptorImpl extends Descriptor<EnvironmentEntry> {
+            @Override
+            public String getDisplayName() {
+                return "EnvironmentEntry";
+            }
+        }
+    }
 
     @Extension
     public static final class DescriptorImpl extends Descriptor<AnkaCloudSlaveTemplate> {

@@ -11,6 +11,7 @@ import hudson.plugins.sshslaves.SSHLauncher;
 import hudson.slaves.ComputerLauncher;
 import hudson.slaves.ComputerListener;
 import hudson.slaves.NodeProperty;
+import hudson.slaves.EnvironmentVariablesNodeProperty;
 import org.apache.commons.lang.RandomStringUtils;
 
 import java.io.IOException;
@@ -52,13 +53,22 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
 
         AnkaCloudLauncher delegateLauncher = new AnkaLauncher(vm, launcher);
 
+        ArrayList<EnvironmentVariablesNodeProperty.Entry> a = new ArrayList<EnvironmentVariablesNodeProperty.Entry>();
+        for (AnkaCloudSlaveTemplate.EnvironmentEntry e :template.getEnvironments()) {
+            a.add(new EnvironmentVariablesNodeProperty.Entry(e.name, e.value));
+        }
+
+        EnvironmentVariablesNodeProperty env = new EnvironmentVariablesNodeProperty(a);
+        ArrayList<NodeProperty<?>> props = new ArrayList<>();
+        props.add(env);
+
         AnkaMgmtCloud.Log("launcher created for vm %s %s", vm.getId(), vm.getName());
         return new AnkaOnDemandSlave(name, template.getTemplateDescription(), template.getRemoteFS(),
                 template.getNumberOfExecutors(),
                 template.getMode(),
                 label.toString(),
                 /*delegateLauncher*/launcher,
-                new ArrayList<NodeProperty<?>>(), template, vm);
+                props, template, vm);
     }
 
 
