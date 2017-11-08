@@ -54,7 +54,7 @@ public class AnkaPlannedNode extends NodeProvisioner.PlannedNode{
             public Node call() throws Exception {
                 AnkaOnDemandSlave slave = null;
                 try {
-                    slave = AnkaOnDemandSlave.createProvisionedSlave(template, label, vm, name);
+                    slave = AnkaOnDemandSlave.createProvisionedSlave(template, label, vm);
                 }
                 catch  (Exception e) {
                     AnkaMgmtCloud.Log("createProvisionedSlave() caught exception %s", e.getMessage());

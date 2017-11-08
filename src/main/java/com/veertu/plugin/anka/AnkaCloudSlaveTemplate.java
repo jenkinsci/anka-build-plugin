@@ -60,13 +60,14 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
     private final String cloudName;
     private List<EnvironmentEntry> environments;
     private RetentionStrategy retentionStrategy = new RunOnceCloudRetentionStrategy(1);
+    private final String nameTemplate;
 
     @DataBoundConstructor
     public AnkaCloudSlaveTemplate(
             final String cloudName, final String capsuleNamePrefix, final String remoteFS, final String masterVmId,
             final String tag, final String labelString, final String templateDescription,
             final int numberOfExecutors, final int launchDelay, final String credentialsId,
-            boolean keepAliveOnError, int SSHPort, @Nullable List<EnvironmentEntry> environments) {
+            boolean keepAliveOnError, int SSHPort, String nameTemplate, @Nullable List<EnvironmentEntry> environments) {
         this.capsuleNamePrefix = capsuleNamePrefix;
         this.remoteFS = remoteFS;
         this.labelString = labelString;
@@ -82,6 +83,7 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
         this.SSHPort = SSHPort;
         this.cloudName = cloudName;
         this.environments = environments;
+        this.nameTemplate = nameTemplate;
         readResolve();
     }
 
@@ -113,6 +115,9 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
         return masterVmId;
     }
 
+    public String getNameTemplate() {
+        return nameTemplate;
+    }
 
     public String getTag() {
         return tag;

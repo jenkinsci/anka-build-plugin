@@ -104,7 +104,7 @@ public class AnkaMgmtCloud extends Cloud {
             }
             try {
                 vm = AnkaVmFactory.getInstance().makeAnkaVm(this.ankaMgmtUrl, this.ankaMgmtPort,
-                        t.getMasterVmId(), t.getTag(), t.getSSHPort());
+                        t.getMasterVmId(), t.getTag(), t.getNameTemplate(), t.getSSHPort());
                 NodeProvisioner.PlannedNode newNode = AnkaPlannedNode.createInstance(t, label, vm);
                 plannedNodes.add(newNode);
                 excessWorkload -= t.getNumberOfExecutors();

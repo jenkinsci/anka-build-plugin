@@ -41,7 +41,7 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
         return template.getCapsuleNamePrefix() + template.getMasterVmId() + randomString;
     }
 
-    public static AnkaOnDemandSlave createProvisionedSlave(AnkaCloudSlaveTemplate template, Label label, AnkaMgmtVm vm, String name)
+    public static AnkaOnDemandSlave createProvisionedSlave(AnkaCloudSlaveTemplate template, Label label, AnkaMgmtVm vm)
             throws IOException, AnkaMgmtException, Descriptor.FormException, InterruptedException {
 
         AnkaMgmtCloud.Log("vm %s is booting...", vm.getId());
@@ -63,6 +63,7 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
         props.add(env);
 
         AnkaMgmtCloud.Log("launcher created for vm %s %s", vm.getId(), vm.getName());
+        String name = vm.getName();
         return new AnkaOnDemandSlave(name, template.getTemplateDescription(), template.getRemoteFS(),
                 template.getNumberOfExecutors(),
                 template.getMode(),

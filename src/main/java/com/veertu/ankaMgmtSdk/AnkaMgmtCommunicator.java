@@ -97,13 +97,14 @@ public class AnkaMgmtCommunicator {
         return tags;
     }
 
-    public String startVm(String templateId, String tag) throws AnkaMgmtException {
+    public String startVm(String templateId, String tag, String nameTemplate) throws AnkaMgmtException {
         String url = String.format("%s://%s:%s/api/v1/vm", this.scheme, this.host, this.port);
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("vmid", templateId);
-        if (tag != null) {
+        if (tag != null)
             jsonObject.put("tag", tag);
-        }
+        if (nameTemplate != null)
+            jsonObject.put("name_template", nameTemplate);
         JSONObject jsonResponse = null;
         try {
             jsonResponse = this.doRequest(RequestMethod.POST, url, jsonObject);

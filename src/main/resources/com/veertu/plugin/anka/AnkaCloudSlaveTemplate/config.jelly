@@ -45,6 +45,10 @@
             <f:textbox default="22" clazz="required number" />
         </f:entry>
 
+        <f:entry title="${%Slave name template}" field="nameTemplate" description="Name template for a created slave">
+            <f:textbox default="" />
+        </f:entry>
+
         <f:block>
             <table>
                 <f:entry title="${%Environment variables}">

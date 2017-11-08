@@ -32,11 +32,16 @@ public class AnkaVmFactory {
         return communicator;
     }
 
-    public AnkaMgmtVm makeAnkaVm(String mgmtHost, String mgmtPort, String templateId, String tag, int sshPort) throws AnkaMgmtException {
+    public AnkaMgmtVm makeAnkaVm(String mgmtHost, String mgmtPort, String templateId,
+                                 String tag, String nameTemplate, int sshPort) throws AnkaMgmtException {
+
         logger.info(String.format("making anka vm, host: %s, port: %s, " +
                 "templateId: %s, sshPort: %d", mgmtHost, mgmtPort, templateId, sshPort));
+        if (nameTemplate == null || nameTemplate.isEmpty())
+            nameTemplate = "$template_name-$node_name-$ts";
+
         AnkaMgmtCommunicator communicator = getCommunicator(mgmtHost, mgmtPort);
-        String sessionId = communicator.startVm(templateId, tag);
+        String sessionId = communicator.startVm(templateId, tag, nameTemplate);
         AnkaMgmtVm vm = new ConcAnkaMgmtVm(sessionId, communicator, sshPort);
         return vm;
 
