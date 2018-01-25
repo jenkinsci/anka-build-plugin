@@ -13,6 +13,7 @@ public class AnkaVmFactory {
 
     private static AnkaVmFactory ourInstance = new AnkaVmFactory();
     private Map<String, AnkaMgmtCommunicator> communicators;
+    private static int vmCounter = 1;
 
     public static AnkaVmFactory getInstance() {
         return ourInstance;
@@ -39,6 +40,8 @@ public class AnkaVmFactory {
                 "templateId: %s, sshPort: %d", mgmtHost, mgmtPort, templateId, sshPort));
         if (nameTemplate == null || nameTemplate.isEmpty())
             nameTemplate = "$template_name-$node_name-$ts";
+        else if (!nameTemplate.contains("$ts"))
+            nameTemplate = String.format("%s-%d", nameTemplate, vmCounter++);
 
         AnkaMgmtCommunicator communicator = getCommunicator(mgmtHost, mgmtPort);
         String sessionId = communicator.startVm(templateId, tag, nameTemplate);
