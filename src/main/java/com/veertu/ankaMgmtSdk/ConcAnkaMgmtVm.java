@@ -11,7 +11,7 @@ public class ConcAnkaMgmtVm implements AnkaMgmtVm {
 
     private final AnkaMgmtCommunicator communicator;
     private final String sessionId;
-    private final int waitUnit = 4000;
+    private final int waitUnit = 1000;
     private final int maxRunningTimeout = waitUnit * 20;
     private final int maxIpTimeout = waitUnit * 20;
     private final int sshConnectionPort;
