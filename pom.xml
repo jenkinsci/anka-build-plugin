@@ -52,7 +52,7 @@
     <connection>scm:git:git@github.com:jenkinsci/anka-build-plugin.git</connection>
     <developerConnection>scm:git:git@github.com:jenkinsci/anka-build-plugin.git</developerConnection>
     <url>https://github.com/jenkinsci/anka-build-plugin</url>
-    <tag>minor bug fixes</tag>
+    <tag>anka-build-1.9</tag>
   </scm>
   <repositories>
     <repository>
