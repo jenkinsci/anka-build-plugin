@@ -2,10 +2,6 @@
              xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:c="/lib/credentials">
 
     <table wdith="100%">
-        <f:entry title="${%Slave VM Instance Name Prefix}" field="capsuleNamePrefix">
-            <f:textbox clazz="required" />
-        </f:entry>
-
         <f:invisibleEntry >
             <f:textbox value="${cloud.getCloudName()}" field="cloudName" />
         </f:invisibleEntry>
@@ -39,10 +35,6 @@
 
         <f:entry title="${%Clone's user}" field="credentialsId" description="The user and password to connect to chosen snapshot">
             <c:select/>
-        </f:entry>
-
-        <f:entry title="${%SSH port}" field="SSHPort" description="The port that the virtual machine listens on for ssh connections">
-            <f:textbox default="22" clazz="required number" />
         </f:entry>
 
         <f:entry title="${%Slave name template}" field="nameTemplate" description="Name template for a created slave">

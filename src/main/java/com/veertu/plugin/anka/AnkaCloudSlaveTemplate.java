@@ -42,7 +42,6 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
     public static String SharedNetwork = "shared";
     public static String HostNetwork = "host";
     private static final Logger LOGGER = Logger.getLogger(AnkaCloudSlaveTemplate.class.getName());
-    private final String capsuleNamePrefix;
     //private final List<String> masterImages;
     private final String masterVmId;
     private final String tag;
@@ -64,11 +63,10 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
 
     @DataBoundConstructor
     public AnkaCloudSlaveTemplate(
-            final String cloudName, final String capsuleNamePrefix, final String remoteFS, final String masterVmId,
+            final String cloudName, final String remoteFS, final String masterVmId,
             final String tag, final String labelString, final String templateDescription,
             final int numberOfExecutors, final int launchDelay, final String credentialsId,
-            boolean keepAliveOnError, int SSHPort, String nameTemplate, @Nullable List<EnvironmentEntry> environments) {
-        this.capsuleNamePrefix = capsuleNamePrefix;
+            boolean keepAliveOnError, String nameTemplate, @Nullable List<EnvironmentEntry> environments) {
         this.remoteFS = remoteFS;
         this.labelString = labelString;
         this.templateDescription = templateDescription;
@@ -80,7 +78,7 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
         this.credentialsId = credentialsId;
         this.launchDelay = launchDelay;
         this.keepAliveOnError = keepAliveOnError;
-        this.SSHPort = SSHPort;
+        this.SSHPort = 22;
         this.cloudName = cloudName;
         this.environments = environments;
         this.nameTemplate = nameTemplate;
@@ -121,11 +119,6 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
 
     public String getTag() {
         return tag;
-    }
-
-
-    public String getCapsuleNamePrefix() {
-        return capsuleNamePrefix;
     }
 
     public int getLaunchDelay() {

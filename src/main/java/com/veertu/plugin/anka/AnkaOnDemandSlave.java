@@ -38,7 +38,7 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
 
     public static String generateName(AnkaCloudSlaveTemplate template){
         String randomString = RandomStringUtils.randomAlphanumeric(16);
-        return template.getCapsuleNamePrefix() + template.getMasterVmId() + randomString;
+        return template.getMasterVmId() + randomString;
     }
 
     public static AnkaOnDemandSlave createProvisionedSlave(AnkaCloudSlaveTemplate template, Label label, AnkaMgmtVm vm)
@@ -74,8 +74,8 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
 
 
     public void setDescription(String jobAndNumber) {
-        this.description = String.format("prefix: %s, master image: %s, job name and build number: %s, vm info: (%s)",
-                template.getCapsuleNamePrefix(), template.getMasterVmId(), jobAndNumber, this.vm.getInfo());
+        this.description = String.format("master image: %s, job name and build number: %s, vm info: (%s)",
+                template.getMasterVmId(), jobAndNumber, this.vm.getInfo());
 
     }
 
