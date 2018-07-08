@@ -30,17 +30,13 @@ public class AnkaMgmtCloud extends Cloud {
     private final String ankaMgmtUrl;
 
 
-
-    private final String ankaMgmtPort;
-
     @DataBoundConstructor
-    public AnkaMgmtCloud(String ankaMgmtUrl, String ankaMgmtPort,
+    public AnkaMgmtCloud(String ankaMgmtUrl,
                      String cloudName,
                      List<AnkaCloudSlaveTemplate> templates) {
         super(cloudName);
         this.cloudName = cloudName;
         this.ankaMgmtUrl = ankaMgmtUrl;
-        this.ankaMgmtPort = ankaMgmtPort;
         if (templates == null) {
             this.templates = Collections.emptyList();
         } else {
@@ -53,17 +49,13 @@ public class AnkaMgmtCloud extends Cloud {
         return cloudName;
     }
 
-    public String getAnkaMgmtPort() {
-        return ankaMgmtPort;
-    }
-
     public String getAnkaMgmtUrl() {
         return ankaMgmtUrl;
     }
 
     public List<AnkaVmTemplate> listVmTemplates() {
         try {
-            return AnkaVmFactory.getInstance().listTemplates(this.ankaMgmtUrl, this.ankaMgmtPort);
+            return AnkaVmFactory.getInstance().listTemplates(this.ankaMgmtUrl);
         } catch (AnkaMgmtException e) {
             e.printStackTrace();
             Log("Problem connecting to Anka mgmt host");
@@ -73,7 +65,7 @@ public class AnkaMgmtCloud extends Cloud {
 
     public List<String> getTemplateTags(String masterVmId) {
         try {
-            return AnkaVmFactory.getInstance().listTemplateTags(this.ankaMgmtUrl, this.ankaMgmtPort, masterVmId);
+            return AnkaVmFactory.getInstance().listTemplateTags(this.ankaMgmtUrl, masterVmId);
         } catch (AnkaMgmtException e) {
             e.printStackTrace();
             Log("Problem connecting to Anka mgmt host");
@@ -103,7 +95,7 @@ public class AnkaMgmtCloud extends Cloud {
                 break;
             }
             try {
-                vm = AnkaVmFactory.getInstance().makeAnkaVm(this.ankaMgmtUrl, this.ankaMgmtPort,
+                vm = AnkaVmFactory.getInstance().makeAnkaVm(this.ankaMgmtUrl,
                         t.getMasterVmId(), t.getTag(), t.getNameTemplate(), t.getSSHPort());
                 NodeProvisioner.PlannedNode newNode = AnkaPlannedNode.createInstance(t, label, vm);
                 plannedNodes.add(newNode);

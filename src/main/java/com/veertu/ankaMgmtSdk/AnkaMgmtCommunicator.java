@@ -12,6 +12,13 @@ import org.apache.http.conn.HttpHostConnectException;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.conn.ssl.NoopHostnameVerifier;
+import org.apache.http.ssl.TrustStrategy;
+import org.apache.http.ssl.SSLContextBuilder;
+import org.apache.http.client.utils.URIBuilder;
+import java.security.cert.X509Certificate;
+import java.security.cert.CertificateException;
+import javax.net.ssl.SSLContext;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -21,6 +28,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,21 +38,23 @@ import java.util.List;
 public class AnkaMgmtCommunicator {
 
 
-    private final String host;
-    private final String port;
-    private String scheme;
+    private final URL mgmtUrl;
 
-    public AnkaMgmtCommunicator(String host, String port) throws AnkaMgmtException {
-        this.host = host;
-        this.port = port;
-        this.scheme = "https";
+    public AnkaMgmtCommunicator(String url) throws AnkaMgmtException {
         try {
-            String url = String.format("%s://%s:%s", this.scheme, this.host, this.port);
-            this.doRequest(RequestMethod.GET, url);
-        } catch (SSLException e) {
-            this.scheme = "http";
+            URL tmpUrl = new URL(url);
+            URIBuilder b = new URIBuilder();
+            b.setScheme(tmpUrl.getProtocol());
+            b.setHost( tmpUrl.getHost());
+            b.setPort(tmpUrl.getPort());
+            mgmtUrl = b.build().toURL();
+
+            String statusUrl = String.format("%s/api/v1/status", mgmtUrl.toString());
+            this.doRequest(RequestMethod.GET, statusUrl);
         } catch (IOException e) {
             e.printStackTrace();
+            throw new AnkaMgmtException(e);
+        } catch (java.net.URISyntaxException e) {
             throw new AnkaMgmtException(e);
         }
         this.listTemplates();
@@ -52,7 +62,7 @@ public class AnkaMgmtCommunicator {
 
     public List<AnkaVmTemplate> listTemplates() throws AnkaMgmtException {
         List<AnkaVmTemplate> templates = new ArrayList<AnkaVmTemplate>();
-        String url = String.format("%s://%s:%s/api/v1/registry/vm", this.scheme, this.host, this.port);
+        String url = String.format("%s/api/v1/registry/vm", mgmtUrl.toString());
         try {
             JSONObject jsonResponse = this.doRequest(RequestMethod.GET, url);
             String logicalResult = jsonResponse.getString("status");
@@ -74,7 +84,7 @@ public class AnkaMgmtCommunicator {
 
     public List<String> getTemplateTags(String templateId) throws AnkaMgmtException {
         List<String> tags = new ArrayList<String>();
-        String url = String.format("%s://%s:%s/api/v1/registry/vm?id=%s", this.scheme, this.host, this.port, templateId);
+        String url = String.format("%s/api/v1/registry/vm?id=%s", mgmtUrl.toString(), templateId);
         try {
             JSONObject jsonResponse = this.doRequest(RequestMethod.GET, url);
             String logicalResult = jsonResponse.getString("status");
@@ -98,7 +108,7 @@ public class AnkaMgmtCommunicator {
     }
 
     public String startVm(String templateId, String tag, String nameTemplate) throws AnkaMgmtException {
-        String url = String.format("%s://%s:%s/api/v1/vm", this.scheme, this.host, this.port);
+        String url = String.format("%s/api/v1/vm", mgmtUrl.toString());
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("vmid", templateId);
         if (tag != null)
@@ -125,7 +135,7 @@ public class AnkaMgmtCommunicator {
     }
 
     public AnkaVmSession showVm(String sessionId) throws AnkaMgmtException {
-        String url = String.format("%s://%s:%s/api/v1/vm?id=%s", this.scheme, this.host, this.port, sessionId);
+        String url = String.format("%s/api/v1/vm?id=%s", mgmtUrl.toString(), sessionId);
         try {
             JSONObject jsonResponse = this.doRequest(RequestMethod.GET, url);
             String logicalResult = jsonResponse.getString("status");
@@ -141,7 +151,7 @@ public class AnkaMgmtCommunicator {
     }
 
     public boolean terminateVm(String sessionId) throws AnkaMgmtException {
-        String url = String.format("%s://%s:%s/api/v1/vm", this.scheme, this.host, this.port);
+        String url = String.format("%s/api/v1/vm", mgmtUrl.toString());
         try {
             JSONObject jsonObject = new JSONObject();
             jsonObject.put("id", sessionId);
@@ -160,7 +170,7 @@ public class AnkaMgmtCommunicator {
 
     private List<String> list() throws AnkaMgmtException {
         List<String> vmIds = new ArrayList<String>();
-        String url = String.format("%s://%s:%s/list", this.scheme, this.host, this.port);
+        String url = String.format("%s/list", mgmtUrl.toString());
         try {
             JSONObject jsonResponse = this.doRequest(RequestMethod.GET, url);
             String logicalResult = jsonResponse.getString("result");
@@ -186,60 +196,81 @@ public class AnkaMgmtCommunicator {
     }
 
     private JSONObject doRequest(RequestMethod method, String url, JSONObject requestBody) throws IOException, AnkaMgmtException {
-    CloseableHttpClient httpClient = HttpClientBuilder.create().build();
-    HttpRequestBase request;
-    try {
-        switch (method) {
-            case POST:
-                HttpPost postRequest = new HttpPost(url);
-                request = setBody(postRequest, requestBody);
-                break;
-            case DELETE:
-                HttpDeleteWithBody delRequest = new HttpDeleteWithBody(url);
-                request = setBody(delRequest, requestBody);
-                break;
-            case GET:
-                request = new HttpGet(url);
-                break;
-            default:
-                request = new HttpGet(url);
-                break;
+
+        HttpClientBuilder builder = HttpClientBuilder.create();
+
+        // allow self-signed certs
+        try {
+            class NulllTrustStrategy implements TrustStrategy {
+                public boolean isTrusted(
+                        final X509Certificate[] chain,
+                        final String authType) throws CertificateException {
+                    return true;
+                }
+            };
+
+            SSLContext sslContext = new SSLContextBuilder()
+                    .loadTrustMaterial(null, new NulllTrustStrategy()).build();
+            builder.setSSLContext(sslContext);
+            builder.setSSLHostnameVerifier(new NoopHostnameVerifier());
+        } catch (Exception e) {
         }
 
-        HttpResponse response = httpClient.execute(request);
-        int responseCode = response.getStatusLine().getStatusCode();
-        if (responseCode != 200) {
-            System.out.println(response.toString());
-            return null;
-        }
-        HttpEntity entity = response.getEntity();
-        if ( entity != null ) {
-            BufferedReader rd = new BufferedReader(
-                    new InputStreamReader(entity.getContent()));
-            StringBuffer result = new StringBuffer();
-            String line = "";
-            while ((line = rd.readLine()) != null) {
-                result.append(line);
+        CloseableHttpClient httpClient = builder.build();
+
+        HttpRequestBase request;
+        try {
+            switch (method) {
+                case POST:
+                    HttpPost postRequest = new HttpPost(url);
+                    request = setBody(postRequest, requestBody);
+                    break;
+                case DELETE:
+                    HttpDeleteWithBody delRequest = new HttpDeleteWithBody(url);
+                    request = setBody(delRequest, requestBody);
+                    break;
+                case GET:
+                    request = new HttpGet(url);
+                    break;
+                default:
+                    request = new HttpGet(url);
+                    break;
             }
-            JSONObject jsonResponse = new JSONObject(result.toString());
-            return jsonResponse;
-        }
 
-    } catch (HttpHostConnectException e) {
-        throw new AnkaMgmtException(e);
-    } catch (SSLException e) {
-        throw e;
-    } catch (UnsupportedEncodingException e) {
-        e.printStackTrace();
-        throw new RuntimeException(e);
-    } catch (IOException e) {
-        e.printStackTrace();
-        throw new AnkaMgmtException(e);
-    } finally {
-        httpClient.close();
+            HttpResponse response = httpClient.execute(request);
+            int responseCode = response.getStatusLine().getStatusCode();
+            if (responseCode != 200) {
+                System.out.println(response.toString());
+                return null;
+            }
+            HttpEntity entity = response.getEntity();
+            if ( entity != null ) {
+                BufferedReader rd = new BufferedReader(
+                        new InputStreamReader(entity.getContent()));
+                StringBuffer result = new StringBuffer();
+                String line = "";
+                while ((line = rd.readLine()) != null) {
+                    result.append(line);
+                }
+                JSONObject jsonResponse = new JSONObject(result.toString());
+                return jsonResponse;
+            }
+
+        } catch (HttpHostConnectException e) {
+            throw new AnkaMgmtException(e);
+        } catch (SSLException e) {
+            throw e;
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new AnkaMgmtException(e);
+        } finally {
+            httpClient.close();
+        }
+        return null;
     }
-    return null;
-}
 
     private HttpRequestBase setBody(HttpEntityEnclosingRequestBase request, JSONObject requestBody) throws UnsupportedEncodingException {
         request.setHeader("content-type", "application/json");

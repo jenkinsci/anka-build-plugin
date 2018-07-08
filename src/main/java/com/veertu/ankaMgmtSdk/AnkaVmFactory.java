@@ -23,40 +23,40 @@ public class AnkaVmFactory {
         this.communicators = new HashMap<String, AnkaMgmtCommunicator>();
     }
 
-    private AnkaMgmtCommunicator getCommunicator(String mgmtHost, String mgmtPort) throws AnkaMgmtException {
-        String communicatorKey = mgmtHost + ":" + mgmtPort;
+    private AnkaMgmtCommunicator getCommunicator(String mgmtUrl) throws AnkaMgmtException {
+        String communicatorKey = mgmtUrl;
         AnkaMgmtCommunicator communicator = this.communicators.get(communicatorKey);
         if (communicator == null) {
-            communicator = new AnkaMgmtCommunicator(mgmtHost, mgmtPort);
+            communicator = new AnkaMgmtCommunicator(mgmtUrl);
             this.communicators.put(communicatorKey, communicator);
         }
         return communicator;
     }
 
-    public AnkaMgmtVm makeAnkaVm(String mgmtHost, String mgmtPort, String templateId,
+    public AnkaMgmtVm makeAnkaVm(String mgmtUrl, String templateId,
                                  String tag, String nameTemplate, int sshPort) throws AnkaMgmtException {
 
-        logger.info(String.format("making anka vm, host: %s, port: %s, " +
-                "templateId: %s, sshPort: %d", mgmtHost, mgmtPort, templateId, sshPort));
+        logger.info(String.format("making anka vm, url: %s, " +
+                "templateId: %s, sshPort: %d", mgmtUrl, templateId, sshPort));
         if (nameTemplate == null || nameTemplate.isEmpty())
             nameTemplate = "$template_name-$node_name-$ts";
         else if (!nameTemplate.contains("$ts"))
             nameTemplate = String.format("%s-%d", nameTemplate, vmCounter++);
 
-        AnkaMgmtCommunicator communicator = getCommunicator(mgmtHost, mgmtPort);
+        AnkaMgmtCommunicator communicator = getCommunicator(mgmtUrl);
         String sessionId = communicator.startVm(templateId, tag, nameTemplate);
         AnkaMgmtVm vm = new ConcAnkaMgmtVm(sessionId, communicator, sshPort);
         return vm;
 
     }
 
-    public List<AnkaVmTemplate> listTemplates(String mgmtHost, String mgmtPort) throws AnkaMgmtException {
-        AnkaMgmtCommunicator communicator = getCommunicator(mgmtHost, mgmtPort);
+    public List<AnkaVmTemplate> listTemplates(String mgmtUrl) throws AnkaMgmtException {
+        AnkaMgmtCommunicator communicator = getCommunicator(mgmtUrl);
         return communicator.listTemplates();
     }
 
-    public List<String> listTemplateTags(String mgmtHost, String ankaMgmtPort, String masterVmId) throws AnkaMgmtException {
-        AnkaMgmtCommunicator communicator = getCommunicator(mgmtHost, ankaMgmtPort);
+    public List<String> listTemplateTags(String mgmtUrl, String masterVmId) throws AnkaMgmtException {
+        AnkaMgmtCommunicator communicator = getCommunicator(mgmtUrl);
         return communicator.getTemplateTags(masterVmId);
     }
 }
