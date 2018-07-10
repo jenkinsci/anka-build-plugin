@@ -241,7 +241,7 @@ public class AnkaMgmtCommunicator {
             int responseCode = response.getStatusLine().getStatusCode();
             if (responseCode != 200) {
                 System.out.println(response.toString());
-                return null;
+                throw new AnkaMgmtException(new Exception("Incorrect URL"));
             }
             HttpEntity entity = response.getEntity();
             if ( entity != null ) {
