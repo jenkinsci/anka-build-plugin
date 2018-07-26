@@ -12,8 +12,8 @@ public class ConcAnkaMgmtVm implements AnkaMgmtVm {
     private final AnkaMgmtCommunicator communicator;
     private final String sessionId;
     private final int waitUnit = 1000;
-    private final int maxRunningTimeout = waitUnit * 20;
-    private final int maxIpTimeout = waitUnit * 20;
+    private final int maxRunningTimeout = waitUnit * 40;
+    private final int maxIpTimeout = waitUnit * 60;
     private final int sshConnectionPort;
     private AnkaVmSession cachedVmSession;
     private final int cacheTime = 60 * 5 * 1000; // 5 minutes
@@ -80,16 +80,9 @@ public class ConcAnkaMgmtVm implements AnkaMgmtVm {
         int timeWaited = 0;
         String status;
 
-        while (getStatus().equals("Scheduling")) {
+        while (getStatus().equals("Scheduling") || getStatus().equals("Pulling")) {
             Thread.sleep(waitUnit);
-            logger.info(String.format("waiting for vm %s %d to start", this.sessionId, timeWaited));
-        }
-
-        status = getStatus();
-        if (!status.equals("Starting") && !status.equals("Started") && !status.equals("Scheduled")) {
-            logger.info(String.format("vm %s in unexpected state %s, terminating", this.sessionId, status));
-            this.terminate();
-            throw new IOException("could not start vm");
+            logger.info(String.format("waiting for vm %s %d to start, state %s", this.sessionId, timeWaited, getStatus()));
         }
 
         while (!getStatus().equals("Started") || getSessionInfoCache() == null) {
