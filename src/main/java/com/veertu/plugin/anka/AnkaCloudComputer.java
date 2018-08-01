@@ -58,6 +58,9 @@ public class AnkaCloudComputer extends AbstractCloudComputer {
     private void checkLatestJobAndChangeNodeBehaviour(){
         // check the lates build and report back to slave object , in case keepAliveOnerror is set
         RunList<?> jobs = this.getBuilds();
+        if (jobs.isEmpty()) {
+            return;
+        }
         ResultTrend trend = ResultTrend.getResultTrend(jobs.getLastBuild());
         AnkaMgmtCloud.Log("slave: %s, vm id: %s exited build with trend: %s", this.slave.getNodeName(),
                 this.slave.getVM().getId(), trend.toString());
