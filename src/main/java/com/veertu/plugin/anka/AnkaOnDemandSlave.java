@@ -52,7 +52,7 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
     private static AnkaOnDemandSlave createJNLPSlave(AnkaCloudSlaveTemplate template, Label label, String mgmtUrl) throws InterruptedException, AnkaMgmtException, IOException, Descriptor.FormException {
 //        AnkaMgmtCloud.Log("vm %s is booting...", vm.getId());
         String nodeName = generateName(template);
-        String jnlpCommand = JnlpCommandBuilder.makeCommand(nodeName, template);
+        String jnlpCommand = JnlpCommandBuilder.makeStartUpScript(nodeName);
 
         AnkaMgmtVm vm = AnkaVmFactory.getInstance().makeAnkaVm(mgmtUrl,
                 template.getMasterVmId(), template.getTag(), template.getNameTemplate(), template.getSSHPort(), jnlpCommand);
