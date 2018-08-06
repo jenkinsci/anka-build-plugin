@@ -52,6 +52,8 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
     private final int numberOfExecutors;
     private final Mode mode;
     private final String credentialsId;
+    private LaunchMethod launchMethod = LaunchMethod.SSH;
+    private String launchMethodString = "ssh";
     //    private final List<? extends NodeProperty<?>> nodeProperties;
     private transient Set<LabelAtom> labelSet;
     private final boolean keepAliveOnError;
@@ -66,7 +68,7 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
             final String cloudName, final String remoteFS, final String masterVmId,
             final String tag, final String labelString, final String templateDescription,
             final int numberOfExecutors, final int launchDelay, final String credentialsId,
-            boolean keepAliveOnError, String nameTemplate, @Nullable List<EnvironmentEntry> environments) {
+            boolean keepAliveOnError, String nameTemplate, String launchMethod, @Nullable List<EnvironmentEntry> environments) {
         this.remoteFS = remoteFS;
         this.labelString = labelString;
         this.templateDescription = templateDescription;
@@ -82,6 +84,7 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
         this.cloudName = cloudName;
         this.environments = environments;
         this.nameTemplate = nameTemplate;
+        this.setLaunchMethod(launchMethod);
         readResolve();
     }
 
@@ -201,6 +204,23 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
     @DataBoundSetter
     public void setRetentionStrategy(RetentionStrategy retentionStrategy) {
         this.retentionStrategy = retentionStrategy;
+    }
+
+    public void setLaunchMethod(String launchMethod) {
+        this.launchMethodString = launchMethod;
+        if (launchMethod.equals("ssh")) {
+            this.launchMethod = LaunchMethod.SSH;
+        } else {
+            this.launchMethod = LaunchMethod.JNLP;
+        }
+    }
+
+    public String getLaunchMethodString() {
+        return launchMethodString;
+    }
+
+    public LaunchMethod getLaunchMethod() {
+        return this.launchMethod;
     }
 
     /**

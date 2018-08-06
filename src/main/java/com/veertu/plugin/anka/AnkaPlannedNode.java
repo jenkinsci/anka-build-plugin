@@ -47,18 +47,18 @@ public class AnkaPlannedNode extends NodeProvisioner.PlannedNode{
     }
 
     public static AnkaPlannedNode createInstance(final AnkaCloudSlaveTemplate template,
-                                                 final Label label, final AnkaMgmtVm vm) throws AnkaHostException, IOException{
+                                                 final Label label, final String mgmtUrl) throws AnkaHostException, IOException{
         final int numberOfExecutors = template.getNumberOfExecutors();
         final String name = AnkaOnDemandSlave.generateName(template);
         final Callable<Node> provisionNodeCallable = new Callable<Node>() {
             public Node call() throws Exception {
                 AnkaOnDemandSlave slave = null;
                 try {
-                    slave = AnkaOnDemandSlave.createProvisionedSlave(template, label, vm);
+                    slave = AnkaOnDemandSlave.createProvisionedSlave(template, label, mgmtUrl);
                 }
                 catch  (Exception e) {
                     AnkaMgmtCloud.Log("createProvisionedSlave() caught exception %s", e.getMessage());
-                    vm.terminate();
+//                    vm.terminate();
                     throw e;
                 }
                 AnkaMgmtCloud.Log("got a slave adding it to jenkins");

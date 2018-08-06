@@ -2,6 +2,7 @@ package com.veertu.ankaMgmtSdk;
 
 import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
 import com.veertu.plugin.anka.AnkaMgmtCloud;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
@@ -107,7 +108,7 @@ public class AnkaMgmtCommunicator {
         return tags;
     }
 
-    public String startVm(String templateId, String tag, String nameTemplate) throws AnkaMgmtException {
+    public String startVm(String templateId, String tag, String nameTemplate, String startUpScript) throws AnkaMgmtException {
         String url = String.format("%s/api/v1/vm", mgmtUrl.toString());
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("vmid", templateId);
@@ -115,6 +116,11 @@ public class AnkaMgmtCommunicator {
             jsonObject.put("tag", tag);
         if (nameTemplate != null)
             jsonObject.put("name_template", nameTemplate);
+        if (startUpScript != null) {
+            String b64Script = Base64.encodeBase64String(startUpScript.getBytes());
+            jsonObject.put("startup_script", b64Script);
+
+        }
         JSONObject jsonResponse = null;
         try {
             jsonResponse = this.doRequest(RequestMethod.POST, url, jsonObject);

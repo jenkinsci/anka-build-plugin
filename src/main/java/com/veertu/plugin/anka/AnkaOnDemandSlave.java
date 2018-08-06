@@ -1,6 +1,7 @@
 package com.veertu.plugin.anka;
 
 import com.veertu.ankaMgmtSdk.AnkaMgmtVm;
+import com.veertu.ankaMgmtSdk.AnkaVmFactory;
 import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
 import hudson.Extension;
 import hudson.model.Computer;
@@ -8,10 +9,7 @@ import hudson.model.Descriptor;
 import hudson.model.Label;
 import hudson.model.TaskListener;
 import hudson.plugins.sshslaves.SSHLauncher;
-import hudson.slaves.ComputerLauncher;
-import hudson.slaves.ComputerListener;
-import hudson.slaves.NodeProperty;
-import hudson.slaves.EnvironmentVariablesNodeProperty;
+import hudson.slaves.*;
 import org.apache.commons.lang.RandomStringUtils;
 
 import java.io.IOException;
@@ -41,17 +39,54 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
         return template.getMasterVmId() + randomString;
     }
 
-    public static AnkaOnDemandSlave createProvisionedSlave(AnkaCloudSlaveTemplate template, Label label, AnkaMgmtVm vm)
+    public static AnkaOnDemandSlave createProvisionedSlave(AnkaCloudSlaveTemplate template, Label label, String mgmtUrl)
             throws IOException, AnkaMgmtException, Descriptor.FormException, InterruptedException {
+        if (template.getLaunchMethod() == LaunchMethod.SSH) {
+            return createSSHSlave(template, label, mgmtUrl);
+        } else if (template.getLaunchMethod() == LaunchMethod.JNLP) {
+            return createJNLPSlave(template, label, mgmtUrl);
+        }
+        return null;
+    }
 
+    private static AnkaOnDemandSlave createJNLPSlave(AnkaCloudSlaveTemplate template, Label label, String mgmtUrl) throws InterruptedException, AnkaMgmtException, IOException, Descriptor.FormException {
+//        AnkaMgmtCloud.Log("vm %s is booting...", vm.getId());
+        String nodeName = generateName(template);
+        String jnlpCommand = JnlpCommandBuilder.makeCommand(nodeName, template);
+
+        AnkaMgmtVm vm = AnkaVmFactory.getInstance().makeAnkaVm(mgmtUrl,
+                template.getMasterVmId(), template.getTag(), template.getNameTemplate(), template.getSSHPort(), jnlpCommand);
+        vm.waitForBoot();
+        AnkaMgmtCloud.Log("vm %s %s is booted, creating ssh launcher", vm.getId(), vm.getName());
+        JNLPLauncher launcher = new JNLPLauncher();
+        ArrayList<EnvironmentVariablesNodeProperty.Entry> a = new ArrayList<EnvironmentVariablesNodeProperty.Entry>();
+        for (AnkaCloudSlaveTemplate.EnvironmentEntry e :template.getEnvironments()) {
+            a.add(new EnvironmentVariablesNodeProperty.Entry(e.name, e.value));
+        }
+
+        EnvironmentVariablesNodeProperty env = new EnvironmentVariablesNodeProperty(a);
+        ArrayList<NodeProperty<?>> props = new ArrayList<>();
+        props.add(env);
+
+        AnkaMgmtCloud.Log("launcher created for vm %s %s", vm.getId(), vm.getName());
+        AnkaOnDemandSlave slave = new AnkaOnDemandSlave(nodeName, template.getTemplateDescription(), template.getRemoteFS(),
+                template.getNumberOfExecutors(),
+                template.getMode(),
+                label.toString(),
+                launcher,
+                props, template, vm);
+        return slave;
+    }
+
+    private static AnkaOnDemandSlave createSSHSlave(AnkaCloudSlaveTemplate template, Label label, String mgmtUrl) throws InterruptedException, AnkaMgmtException, IOException, Descriptor.FormException {
+        AnkaMgmtVm vm = AnkaVmFactory.getInstance().makeAnkaVm(mgmtUrl,
+                template.getMasterVmId(), template.getTag(), template.getNameTemplate(), template.getSSHPort());
         AnkaMgmtCloud.Log("vm %s is booting...", vm.getId());
         vm.waitForBoot();
         AnkaMgmtCloud.Log("vm %s %s is booted, creating ssh launcher", vm.getId(), vm.getName());
         SSHLauncher launcher = new SSHLauncher(vm.getConnectionIp(), vm.getConnectionPort(),
                 template.getCredentialsId(),
                 null, null, null, null, launchTimeoutSeconds, maxNumRetries, retryWaitTime);
-
-        AnkaCloudLauncher delegateLauncher = new AnkaLauncher(vm, launcher);
 
         ArrayList<EnvironmentVariablesNodeProperty.Entry> a = new ArrayList<EnvironmentVariablesNodeProperty.Entry>();
         for (AnkaCloudSlaveTemplate.EnvironmentEntry e :template.getEnvironments()) {
@@ -64,12 +99,13 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
 
         AnkaMgmtCloud.Log("launcher created for vm %s %s", vm.getId(), vm.getName());
         String name = vm.getName();
-        return new AnkaOnDemandSlave(name, template.getTemplateDescription(), template.getRemoteFS(),
+        AnkaOnDemandSlave slave = new AnkaOnDemandSlave(name, template.getTemplateDescription(), template.getRemoteFS(),
                 template.getNumberOfExecutors(),
                 template.getMode(),
                 label.toString(),
-                /*delegateLauncher*/launcher,
+                launcher,
                 props, template, vm);
+        return slave;
     }
 
 

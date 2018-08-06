@@ -87,7 +87,6 @@ public class AnkaMgmtCloud extends Cloud {
         }
 
         while (excessWorkload > 0) {
-            AnkaMgmtVm vm = null;
 
             // check that mgmt server has this template
             if (!hasMasterVm(t.getMasterVmId())) {
@@ -95,9 +94,8 @@ public class AnkaMgmtCloud extends Cloud {
                 break;
             }
             try {
-                vm = AnkaVmFactory.getInstance().makeAnkaVm(this.ankaMgmtUrl,
-                        t.getMasterVmId(), t.getTag(), t.getNameTemplate(), t.getSSHPort());
-                NodeProvisioner.PlannedNode newNode = AnkaPlannedNode.createInstance(t, label, vm);
+
+                NodeProvisioner.PlannedNode newNode = AnkaPlannedNode.createInstance(t, label, ankaMgmtUrl);
                 plannedNodes.add(newNode);
                 excessWorkload -= t.getNumberOfExecutors();
             }

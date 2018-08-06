@@ -33,7 +33,17 @@
             <f:checkbox checked="${instance.isKeepAliveOnError()?'true':'false'}" field="keepAliveOnError" />
         </f:entry>
 
-        <f:entry title="${%Clone's user}" field="credentialsId" description="The user and password to connect to chosen snapshot">
+        <f:entry title="${%Launch Method}" field="launchMethod" description="slave launch method">
+           <f:entry>
+            <f:radio name="launchMethod" title="SSH" value="ssh" checked="${instance.launchMethodString == 'ssh'}"/>
+           </f:entry>
+
+           <f:entry>
+            <f:radio name="launchMethod" title="JNLP" value="jnlp" checked="${instance.launchMethodString == 'jnlp'}"
+             description="Use Jnlp for node creation, NOTE!: Home folder must contain 'agent.jar'"/>
+           </f:entry>
+        </f:entry>
+        <f:entry title="${%Clone's user (SSH)}" description="The user and password to connect to chosen snapshot (SSH only)" field="credentialsId" >
             <c:select/>
         </f:entry>
 
