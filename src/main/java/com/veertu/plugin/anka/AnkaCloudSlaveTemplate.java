@@ -22,10 +22,7 @@ import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.DataBoundSetter;
 import javax.annotation.Nullable;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -67,8 +64,8 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
     public AnkaCloudSlaveTemplate(
             final String cloudName, final String remoteFS, final String masterVmId,
             final String tag, final String labelString, final String templateDescription,
-            final int numberOfExecutors, final int launchDelay, final String credentialsId,
-            boolean keepAliveOnError, String nameTemplate, String launchMethod, @Nullable List<EnvironmentEntry> environments) {
+            final int numberOfExecutors, final int launchDelay,
+            boolean keepAliveOnError, JSONObject launchMethod, String nameTemplate, @Nullable List<EnvironmentEntry> environments) {
         this.remoteFS = remoteFS;
         this.labelString = labelString;
         this.templateDescription = templateDescription;
@@ -77,14 +74,14 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
         this.tag = tag;
         // this.selectedMasterImage=selectedMasterImage;
         this.mode = Mode.EXCLUSIVE;
-        this.credentialsId = credentialsId;
+        this.credentialsId = launchMethod.optString("credentialsId", null);
         this.launchDelay = launchDelay;
         this.keepAliveOnError = keepAliveOnError;
         this.SSHPort = 22;
         this.cloudName = cloudName;
         this.environments = environments;
         this.nameTemplate = nameTemplate;
-        this.setLaunchMethod(launchMethod);
+        this.setLaunchMethod(launchMethod.getString("value"));
         readResolve();
     }
 

@@ -33,46 +33,42 @@
             <f:checkbox checked="${instance.isKeepAliveOnError()?'true':'false'}" field="keepAliveOnError" />
         </f:entry>
 
-        <f:entry title="${%Launch Method}" field="launchMethod" description="slave launch method">
-           <f:entry>
-            <f:radio name="launchMethod" title="SSH" value="ssh" checked="${instance.launchMethodString == 'ssh'}"/>
-           </f:entry>
 
-           <f:entry>
-            <f:radio name="launchMethod" title="JNLP" value="jnlp" checked="${instance.launchMethodString == 'jnlp'}"
-             description="Use Jnlp for node creation, NOTE!: Home folder must contain 'agent.jar'"/>
-           </f:entry>
+        <f:entry title="${%Launch Method}" field="launchMethod" description="slave launch method">
+            <table width="100%">
+                <f:radioBlock name="launchMethod" value="ssh" title="SSH" checked="${instance.launchMethodString != 'jnlp'}">
+                    <f:entry title="${%Clone's user (SSH)}" description="The user and password to connect to chosen template" field="credentialsId" >
+                        <c:select/>
+                    </f:entry>
+                </f:radioBlock>
+                <f:radioBlock name="launchMethod" title="JNLP" value="jnlp" checked="${instance.launchMethodString == 'jnlp'}"/>
+            </table>
         </f:entry>
-        <f:entry title="${%Clone's user (SSH)}" description="The user and password to connect to chosen snapshot (SSH only)" field="credentialsId" >
-            <c:select/>
-        </f:entry>
+
 
         <f:entry title="${%Slave name template}" field="nameTemplate" description="Name template for a created slave">
             <f:textbox default="" />
         </f:entry>
 
         <f:block>
-            <table>
-                <f:entry title="${%Environment variables}">
-                    <f:repeatable field="environments">
-                        <table width="100%">
-                            <f:entry title="${%Name}" field="name">
-                                <f:textbox />
-                            </f:entry>
-                            <f:entry title="${%Value}" field="value">
-                                <f:textbox />
-                            </f:entry>
-                            <f:entry>
-                                <div align="right">
-                                    <f:repeatableDeleteButton />
-                                </div>
-                            </f:entry>
-                        </table>
-                    </f:repeatable>
-                </f:entry>
-            </table>
+            <f:entry title="${%Environment variables}">
+                <f:repeatable field="environments">
+                    <table width="100%">
+                        <f:entry title="${%Name}" field="name">
+                            <f:textbox />
+                        </f:entry>
+                        <f:entry title="${%Value}" field="value">
+                            <f:textbox />
+                        </f:entry>
+                        <f:entry>
+                            <div align="right">
+                                <f:repeatableDeleteButton />
+                            </div>
+                        </f:entry>
+                    </table>
+                </f:repeatable>
+            </f:entry>
         </f:block>
-
     </table>
 
 </j:jelly>
