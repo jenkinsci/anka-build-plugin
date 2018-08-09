@@ -6,20 +6,20 @@ import jenkins.slaves.JnlpSlaveAgentProtocol;
 public class JnlpCommandBuilder {
 
     static private String scriptTemplate =
-            "echo \"Initiating startup script\" > log.txt\n" +
+            "echo \"Initiating startup script\" > /tmp/log.txt\n" +
             "if [ ! -f agent.jar ]; then\n" +
-            "   echo \"downloading jar\" >> log.txt\n" +
-            "   CURL=$(curl --fail -O \"%s/jnlpJars/agent.jar\" --output agent.jar 2>&1)\n" +
+            "   echo \"downloading jar from %s\" >> /tmp/log.txt\n" +
+            "   curl --fail -s %s/jnlpJars/agent.jar -o agent.jar\n" +
             "   if [ $? -ne 0 ]; then\n" +
-            "       CURL=$(curl --fail -O \"%s/jnlpJars/agent.jar\" --output agent.jar 2>&1)\n" +
+            "       curl --fail -s %s/jnlpJars/slave.jar -o agent.jar\n" +
             "       if [ $? -ne 0 ]; then\n" +
-            "           echo $CURL | grep --quiet 'The requested URL returned error: 404' >> log.txt\n" +
+            "           echo 'Error downloading agent jar' >> /tmp/log.txt\n" +
             "           exit 1\n" +
             "       fi\n" +
             "   fi\n" +
             "fi\n" +
-            "echo \"Executing java command: %s\" >> log.txt\n" +
-            "%s &> log.txt\n";
+            "echo \"Executing java command: %s\" >> /tmp/log.txt\n" +
+            "%s &> /tmp/log.txt\n";
 
 
     public static String makeCommand(String nodeName) {
@@ -32,8 +32,8 @@ public class JnlpCommandBuilder {
     public static String makeStartUpScript(String nodeName) {
 
         String jarCommand = makeCommand(nodeName);
-        String script = String.format(scriptTemplate, Jenkins.getInstance().getRootUrl(),
-                Jenkins.getInstance().getRootUrl(), jarCommand, jarCommand);
+        String jenkinsUrl = Jenkins.getInstance().getRootUrl();
+        String script = String.format(scriptTemplate, jenkinsUrl, jenkinsUrl, jenkinsUrl, jarCommand, jarCommand);
         return script;
 
     }
