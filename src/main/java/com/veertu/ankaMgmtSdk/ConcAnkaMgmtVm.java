@@ -13,7 +13,7 @@ public class ConcAnkaMgmtVm implements AnkaMgmtVm {
     private final String sessionId;
     private final int waitUnit = 1000;
     private final int maxRunningTimeout = waitUnit * 40;
-    private final int maxIpTimeout = waitUnit * 60;
+    private final int maxIpTimeout = waitUnit * 120;
     private final int sshConnectionPort;
     private AnkaVmSession cachedVmSession;
     private final int cacheTime = 60 * 5 * 1000; // 5 minutes
