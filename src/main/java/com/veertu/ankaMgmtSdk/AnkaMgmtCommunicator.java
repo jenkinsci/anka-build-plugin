@@ -108,7 +108,7 @@ public class AnkaMgmtCommunicator {
         return tags;
     }
 
-    public String startVm(String templateId, String tag, String nameTemplate, String startUpScript) throws AnkaMgmtException {
+    public String startVm(String templateId, String tag, String nameTemplate, String startUpScript, String groupId) throws AnkaMgmtException {
         String url = String.format("%s/api/v1/vm", mgmtUrl.toString());
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("vmid", templateId);
@@ -119,7 +119,9 @@ public class AnkaMgmtCommunicator {
         if (startUpScript != null) {
             String b64Script = Base64.encodeBase64String(startUpScript.getBytes());
             jsonObject.put("startup_script", b64Script);
-
+        }
+        if (groupId != null) {
+            jsonObject.put("group_id", groupId);
         }
         JSONObject jsonResponse = null;
         try {
@@ -173,6 +175,28 @@ public class AnkaMgmtCommunicator {
         }
     }
 
+    public List<NodeGroup> getNodeGroups() throws AnkaMgmtException {
+        List<NodeGroup> groups = new ArrayList<>();
+        String url = String.format("%s/api/v1/group", mgmtUrl.toString());
+        try {
+            JSONObject jsonResponse = this.doRequest(RequestMethod.GET, url);
+            String logicalResponse = jsonResponse.getString("status");
+            if (logicalResponse.equals("OK")) {
+                JSONArray groupsJson = jsonResponse.getJSONArray("body");
+                for (int i = 0; i < groupsJson.length(); i++) {
+                    JSONObject groupJsonObject = groupsJson.getJSONObject(i);
+                    NodeGroup nodeGroup = new NodeGroup(groupJsonObject);
+                    groups.add(nodeGroup);
+                }
+            } else {
+                throw new AnkaMgmtException(jsonResponse.getString("message"));
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new AnkaMgmtException(e);
+        }
+        return groups;
+    }
 
     private List<String> list() throws AnkaMgmtException {
         List<String> vmIds = new ArrayList<String>();

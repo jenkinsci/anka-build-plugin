@@ -13,6 +13,10 @@
             <f:select />
         </f:entry>
 
+        <f:entry title="${%Node Group}" field="group" description="The node group the vm will run on">
+            <f:select />
+        </f:entry>
+
         <f:entry title="${%Description}" field="templateDescription">
             <f:textbox />
         </f:entry>

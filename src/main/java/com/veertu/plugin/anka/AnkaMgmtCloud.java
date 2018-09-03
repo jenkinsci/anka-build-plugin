@@ -3,6 +3,7 @@ package com.veertu.plugin.anka;
 import com.veertu.ankaMgmtSdk.AnkaMgmtVm;
 import com.veertu.ankaMgmtSdk.AnkaVmFactory;
 import com.veertu.ankaMgmtSdk.AnkaVmTemplate;
+import com.veertu.ankaMgmtSdk.NodeGroup;
 import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
 import hudson.Extension;
 import hudson.model.*;
@@ -74,6 +75,16 @@ public class AnkaMgmtCloud extends Cloud {
     }
 
     public List<AnkaCloudSlaveTemplate> getTemplates() { return templates; }
+
+    public List<NodeGroup> getNodeGroups() {
+        try{
+            return AnkaVmFactory.getInstance().getNodeGroups(ankaMgmtUrl);
+        } catch (AnkaMgmtException e) {
+            e.printStackTrace();
+            Log("Problem connecting to Anka mgmt host");
+            return new ArrayList<>();
+        }
+    }
 
     @Override
     public Collection<NodeProvisioner.PlannedNode> provision(Label label, int excessWorkload) {

@@ -8,4 +8,8 @@ public class AnkaMgmtException extends Exception {
     public AnkaMgmtException(Throwable e) {
         super(e);
     }
+
+    public AnkaMgmtException(String message) {
+        super(message);
+    }
 }

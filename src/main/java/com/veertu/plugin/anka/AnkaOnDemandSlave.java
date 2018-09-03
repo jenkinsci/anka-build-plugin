@@ -55,7 +55,7 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
         String jnlpCommand = JnlpCommandBuilder.makeStartUpScript(nodeName);
 
         AnkaMgmtVm vm = AnkaVmFactory.getInstance().makeAnkaVm(mgmtUrl,
-                template.getMasterVmId(), template.getTag(), template.getNameTemplate(), template.getSSHPort(), jnlpCommand);
+                template.getMasterVmId(), template.getTag(), template.getNameTemplate(), template.getSSHPort(), jnlpCommand, template.getGroup());
         vm.waitForBoot();
         AnkaMgmtCloud.Log("vm %s %s is booted, creating ssh launcher", vm.getId(), vm.getName());
         JNLPLauncher launcher = new JNLPLauncher();
@@ -80,7 +80,7 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
 
     private static AnkaOnDemandSlave createSSHSlave(AnkaCloudSlaveTemplate template, Label label, String mgmtUrl) throws InterruptedException, AnkaMgmtException, IOException, Descriptor.FormException {
         AnkaMgmtVm vm = AnkaVmFactory.getInstance().makeAnkaVm(mgmtUrl,
-                template.getMasterVmId(), template.getTag(), template.getNameTemplate(), template.getSSHPort());
+                template.getMasterVmId(), template.getTag(), template.getNameTemplate(), template.getSSHPort(), null, template.getGroup());
         AnkaMgmtCloud.Log("vm %s is booting...", vm.getId());
         vm.waitForBoot();
         AnkaMgmtCloud.Log("vm %s %s is booted, creating ssh launcher", vm.getId(), vm.getName());

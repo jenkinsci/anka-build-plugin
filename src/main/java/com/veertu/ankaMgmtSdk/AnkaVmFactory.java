@@ -35,11 +35,11 @@ public class AnkaVmFactory {
 
     public AnkaMgmtVm makeAnkaVm(String mgmtUrl, String templateId,
                                  String tag, String nameTemplate, int sshPort) throws AnkaMgmtException {
-        return makeAnkaVm(mgmtUrl, templateId, nameTemplate, tag, sshPort, null);
+        return makeAnkaVm(mgmtUrl, templateId, nameTemplate, tag, sshPort, null, null);
     }
 
     public AnkaMgmtVm makeAnkaVm(String mgmtUrl, String templateId,
-                                 String tag, String nameTemplate, int sshPort, String startUpScript) throws AnkaMgmtException {
+                                 String tag, String nameTemplate, int sshPort, String startUpScript, String groupId) throws AnkaMgmtException {
 
         logger.info(String.format("making anka vm, url: %s, " +
                 "templateId: %s, sshPort: %d", mgmtUrl, templateId, sshPort));
@@ -49,7 +49,7 @@ public class AnkaVmFactory {
             nameTemplate = String.format("%s-%d", nameTemplate, vmCounter++);
 
         AnkaMgmtCommunicator communicator = getCommunicator(mgmtUrl);
-        String sessionId = communicator.startVm(templateId, tag, nameTemplate, startUpScript);
+        String sessionId = communicator.startVm(templateId, tag, nameTemplate, startUpScript, groupId);
         AnkaMgmtVm vm = new ConcAnkaMgmtVm(sessionId, communicator, sshPort);
         return vm;
 
@@ -63,5 +63,10 @@ public class AnkaVmFactory {
     public List<String> listTemplateTags(String mgmtUrl, String masterVmId) throws AnkaMgmtException {
         AnkaMgmtCommunicator communicator = getCommunicator(mgmtUrl);
         return communicator.getTemplateTags(masterVmId);
+    }
+
+    public List<NodeGroup> getNodeGroups(String mgmtUrl) throws AnkaMgmtException {
+        AnkaMgmtCommunicator communicator = getCommunicator(mgmtUrl);
+        return communicator.getNodeGroups();
     }
 }

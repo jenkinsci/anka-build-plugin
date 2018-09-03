@@ -4,6 +4,7 @@ import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernameListBoxModel;
 import com.cloudbees.plugins.credentials.domains.SchemeRequirement;
 import com.veertu.ankaMgmtSdk.AnkaVmTemplate;
+import com.veertu.ankaMgmtSdk.NodeGroup;
 import com.veertu.plugin.anka.exceptions.AnkaHostException;
 import hudson.Extension;
 import hudson.model.*;
@@ -49,6 +50,7 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
     private final int numberOfExecutors;
     private final Mode mode;
     private final String credentialsId;
+    private final String group;
     private LaunchMethod launchMethod = LaunchMethod.SSH;
     private String launchMethodString = "ssh";
     //    private final List<? extends NodeProperty<?>> nodeProperties;
@@ -65,7 +67,7 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
             final String cloudName, final String remoteFS, final String masterVmId,
             final String tag, final String labelString, final String templateDescription,
             final int numberOfExecutors, final int launchDelay,
-            boolean keepAliveOnError, JSONObject launchMethod, String nameTemplate, @Nullable List<EnvironmentEntry> environments) {
+            boolean keepAliveOnError, JSONObject launchMethod, String group, String nameTemplate, @Nullable List<EnvironmentEntry> environments) {
         this.remoteFS = remoteFS;
         this.labelString = labelString;
         this.templateDescription = templateDescription;
@@ -81,6 +83,7 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
         this.cloudName = cloudName;
         this.environments = environments;
         this.nameTemplate = nameTemplate;
+        this.group = group;
         this.setLaunchMethod(launchMethod.getString("value"));
         readResolve();
     }
@@ -153,6 +156,12 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
     public Set<LabelAtom> getLabelSet() {
         return this.labelSet;
     }
+
+
+    public String getGroup() {
+        return group;
+    }
+
 
     @Override
     public Descriptor<AnkaCloudSlaveTemplate> getDescriptor() {
@@ -289,6 +298,23 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
                 return cloud.getTemplateTags(masterVmId);
             }
             return new ArrayList<>();
+        }
+
+        public List<NodeGroup> getNodeGroups(AnkaMgmtCloud cloud) {
+            if (cloud != null) {
+                return cloud.getNodeGroups();
+            }
+            return new ArrayList<>();
+        }
+
+        public ListBoxModel doFillGroupItems(@QueryParameter String cloudName) {
+            AnkaMgmtCloud cloud = (AnkaMgmtCloud) Jenkins.getInstance().getCloud(cloudName);
+            ListBoxModel models = new ListBoxModel();
+            models.add("Choose Node Group Or Leave Empty for all)", null);
+            for (NodeGroup nodeGroup: getNodeGroups(cloud)) {
+                models.add(nodeGroup.getName(), nodeGroup.getId());
+            }
+            return models;
         }
 
         public ListBoxModel doFillMasterVmIdItems(@QueryParameter String cloudName) {
