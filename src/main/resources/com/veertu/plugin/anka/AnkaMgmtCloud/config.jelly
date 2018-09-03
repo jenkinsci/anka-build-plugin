@@ -4,7 +4,7 @@
 
         <f:textbox clazz="required string" />
     </f:entry>
-    <f:entry title="Build Controller URL" field="ankaMgmtUrl">
+    <f:entry title="Build Controller URL with port" field="ankaMgmtUrl">
         <f:textbox clazz="required string" />
     </f:entry>
 
