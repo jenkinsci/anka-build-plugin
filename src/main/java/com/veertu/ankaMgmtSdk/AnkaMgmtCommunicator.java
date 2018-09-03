@@ -21,6 +21,7 @@ import java.security.cert.X509Certificate;
 import java.security.cert.CertificateException;
 import javax.net.ssl.SSLContext;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import javax.net.ssl.SSLException;
@@ -194,6 +195,8 @@ public class AnkaMgmtCommunicator {
         } catch (IOException e) {
             e.printStackTrace();
             throw new AnkaMgmtException(e);
+        } catch (JSONException e) {
+            return groups;
         }
         return groups;
     }
