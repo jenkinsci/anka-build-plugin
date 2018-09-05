@@ -310,7 +310,7 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
         public ListBoxModel doFillGroupItems(@QueryParameter String cloudName) {
             AnkaMgmtCloud cloud = (AnkaMgmtCloud) Jenkins.getInstance().getCloud(cloudName);
             ListBoxModel models = new ListBoxModel();
-            models.add("Choose Node Group Or Leave Empty for all)", null);
+            models.add("Choose Node Group Or Leave Empty for all", null);
             for (NodeGroup nodeGroup: getNodeGroups(cloud)) {
                 models.add(nodeGroup.getName(), nodeGroup.getId());
             }
