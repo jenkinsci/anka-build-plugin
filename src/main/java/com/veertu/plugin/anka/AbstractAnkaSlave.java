@@ -68,8 +68,8 @@ public abstract class AbstractAnkaSlave extends AbstractCloudSlave {
 
     public void terminate() throws IOException, InterruptedException {
         super.terminate();
-        vm.terminate();
-
+        if (vm != null)
+            vm.terminate();
     }
 
     @Override

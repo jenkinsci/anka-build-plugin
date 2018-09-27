@@ -19,12 +19,14 @@ public class ConcAnkaMgmtVm implements AnkaMgmtVm {
     private final int cacheTime = 60 * 5 * 1000; // 5 minutes
     private int lastCached = 0;
     private static java.util.logging.Logger logger = java.util.logging.Logger.getLogger("anka-sdk");
+    private boolean terminated;
 
 
     public ConcAnkaMgmtVm(String sessionId, AnkaMgmtCommunicator communicator, int sshConnectionPort) {
         this.communicator = communicator;
         this.sessionId = sessionId;
         this.sshConnectionPort = sshConnectionPort;
+        this.terminated = false;
         logger.info(String.format("init VM %s", sessionId));
     }
 
@@ -147,8 +149,11 @@ public class ConcAnkaMgmtVm implements AnkaMgmtVm {
     }
 
     public void terminate() {
+        if (terminated)
+            return;
         try {
             this.communicator.terminateVm(this.sessionId);
+            terminated = true;
         } catch (AnkaMgmtException e) {
             e.printStackTrace();
         }

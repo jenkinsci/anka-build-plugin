@@ -81,31 +81,37 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
     private static AnkaOnDemandSlave createSSHSlave(AnkaCloudSlaveTemplate template, Label label, String mgmtUrl) throws InterruptedException, AnkaMgmtException, IOException, Descriptor.FormException {
         AnkaMgmtVm vm = AnkaVmFactory.getInstance().makeAnkaVm(mgmtUrl,
                 template.getMasterVmId(), template.getTag(), template.getNameTemplate(), template.getSSHPort(), null, template.getGroup());
-        AnkaMgmtCloud.Log("vm %s is booting...", vm.getId());
-        vm.waitForBoot();
-        AnkaMgmtCloud.Log("vm %s %s is booted, creating ssh launcher", vm.getId(), vm.getName());
-        SSHLauncher launcher = new SSHLauncher(vm.getConnectionIp(), vm.getConnectionPort(),
-                template.getCredentialsId(),
-                null, null, null, null, launchTimeoutSeconds, maxNumRetries, retryWaitTime);
+        try {
+            AnkaMgmtCloud.Log("vm %s is booting...", vm.getId());
+            vm.waitForBoot();
+            AnkaMgmtCloud.Log("vm %s %s is booted, creating ssh launcher", vm.getId(), vm.getName());
+            SSHLauncher launcher = new SSHLauncher(vm.getConnectionIp(), vm.getConnectionPort(),
+                    template.getCredentialsId(),
+                    null, null, null, null, launchTimeoutSeconds, maxNumRetries, retryWaitTime);
 
-        ArrayList<EnvironmentVariablesNodeProperty.Entry> a = new ArrayList<EnvironmentVariablesNodeProperty.Entry>();
-        for (AnkaCloudSlaveTemplate.EnvironmentEntry e :template.getEnvironments()) {
-            a.add(new EnvironmentVariablesNodeProperty.Entry(e.name, e.value));
+            ArrayList<EnvironmentVariablesNodeProperty.Entry> a = new ArrayList<EnvironmentVariablesNodeProperty.Entry>();
+            for (AnkaCloudSlaveTemplate.EnvironmentEntry e : template.getEnvironments()) {
+                a.add(new EnvironmentVariablesNodeProperty.Entry(e.name, e.value));
+            }
+
+            EnvironmentVariablesNodeProperty env = new EnvironmentVariablesNodeProperty(a);
+            ArrayList<NodeProperty<?>> props = new ArrayList<>();
+            props.add(env);
+
+            AnkaMgmtCloud.Log("launcher created for vm %s %s", vm.getId(), vm.getName());
+            String name = vm.getName();
+            AnkaOnDemandSlave slave = new AnkaOnDemandSlave(name, template.getTemplateDescription(), template.getRemoteFS(),
+                    template.getNumberOfExecutors(),
+                    template.getMode(),
+                    label.toString(),
+                    launcher,
+                    props, template, vm);
+            return slave;
         }
-
-        EnvironmentVariablesNodeProperty env = new EnvironmentVariablesNodeProperty(a);
-        ArrayList<NodeProperty<?>> props = new ArrayList<>();
-        props.add(env);
-
-        AnkaMgmtCloud.Log("launcher created for vm %s %s", vm.getId(), vm.getName());
-        String name = vm.getName();
-        AnkaOnDemandSlave slave = new AnkaOnDemandSlave(name, template.getTemplateDescription(), template.getRemoteFS(),
-                template.getNumberOfExecutors(),
-                template.getMode(),
-                label.toString(),
-                launcher,
-                props, template, vm);
-        return slave;
+        catch (Exception e) {
+            vm.terminate();
+            throw e;
+        }
     }
 
 

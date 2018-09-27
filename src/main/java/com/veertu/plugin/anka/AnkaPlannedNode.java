@@ -58,7 +58,8 @@ public class AnkaPlannedNode extends NodeProvisioner.PlannedNode{
                 }
                 catch  (Exception e) {
                     AnkaMgmtCloud.Log("createProvisionedSlave() caught exception %s", e.getMessage());
-//                    vm.terminate();
+                    //slave.terminate();
+                    e.printStackTrace();
                     throw e;
                 }
                 AnkaMgmtCloud.Log("got a slave adding it to jenkins");
