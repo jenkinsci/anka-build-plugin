@@ -63,7 +63,14 @@ public class AnkaPlannedNode extends NodeProvisioner.PlannedNode{
                     throw e;
                 }
                 AnkaMgmtCloud.Log("got a slave adding it to jenkins");
-                Jenkins.getInstance().addNode(slave);
+                try {
+                    Jenkins.getInstance().addNode(slave);
+                }
+                catch  (Exception e) {
+                    AnkaMgmtCloud.Log("Failed to add slave %s", slave.getDisplayName());
+                    slave.terminate();
+                    throw e;
+                }
                 long startTime = System.currentTimeMillis(); // fetch starting time
                 while (true) {
                     try {
