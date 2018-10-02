@@ -12,11 +12,11 @@ public class ConcAnkaMgmtVm implements AnkaMgmtVm {
     private final AnkaMgmtCommunicator communicator;
     private final String sessionId;
     private final int waitUnit = 1000;
-    private final int maxRunningTimeout = waitUnit * 60;
+    private final int maxRunningTimeout = waitUnit * 60 * 60; // 1 hour
     private final int maxIpTimeout = waitUnit * 240;
     private final int sshConnectionPort;
     private AnkaVmSession cachedVmSession;
-    private final int cacheTime = 60 * 5 * 1000; // 5 minutes
+    private final int cacheTime = 5; // 5 seconds
     private int lastCached = 0;
     private static java.util.logging.Logger logger = java.util.logging.Logger.getLogger("anka-sdk");
     private boolean terminated;
@@ -77,18 +77,38 @@ public class ConcAnkaMgmtVm implements AnkaMgmtVm {
         }
     }
 
+    private boolean isStarting() throws AnkaMgmtException {
+
+        if (getSessionInfoCache() == null) {
+            return true;
+        }
+
+        String status = getStatus();
+
+
+        switch (status){
+            case "Scheduling":
+            case "Pulling":
+                return true;
+            case "Started":
+                return false;
+            case "Terminated":
+            case "Terminating":
+            case "Stopping":
+            case "Stopped":
+            case "Error":
+                throw new AnkaMgmtException(String.format("Unexpected state %s for vm %s", status, sessionId));
+            default:
+                return true;
+        }
+    }
+
     public String waitForBoot() throws InterruptedException, IOException, AnkaMgmtException {
         logger.info(String.format("waiting for vm %s to boot", this.sessionId));
         int timeWaited = 0;
-        String status;
 
-        while (getStatus().equals("Scheduling") || getStatus().equals("Pulling")) {
-            Thread.sleep(waitUnit);
-            logger.info(String.format("waiting for vm %s %d to start, state %s", this.sessionId, timeWaited, getStatus()));
-        }
-
-        while (!getStatus().equals("Started") || getSessionInfoCache() == null) {
-            // wait for the vm to spin up TODO: put this in const
+        while (isStarting()) {
+            // wait for the vm to spin up
             Thread.sleep(waitUnit);
             timeWaited += waitUnit;
             logger.info(String.format("waiting for vm %s %d to boot", this.sessionId, timeWaited));
@@ -126,6 +146,13 @@ public class ConcAnkaMgmtVm implements AnkaMgmtVm {
 
     public String getName() {
         AnkaVmSession session = this.getSessionInfoCache();
+        if (session == null) {
+            return "";
+        }
+        AnkaVmInfo vmInfo = session.getVmInfo();
+        if (vmInfo == null) {
+            return "";
+        }
         return session.getVmInfo().getName();
     }
 
@@ -139,8 +166,14 @@ public class ConcAnkaMgmtVm implements AnkaMgmtVm {
 
     public int getConnectionPort() {
         AnkaVmSession session = this.getSessionInfoCache();
-
-        for (PortForwardingRule rule: session.getVmInfo().getPortForwardingRules()) {
+        if (session == null){
+            return 0;
+        }
+        AnkaVmInfo vmInfo = session.getVmInfo();
+        if (vmInfo == null) {
+            return 0;
+        }
+        for (PortForwardingRule rule: vmInfo.getPortForwardingRules()) {
             if (rule.getGuestPort() == this.sshConnectionPort) {
                 return rule.getHostPort();
             }
@@ -161,11 +194,17 @@ public class ConcAnkaMgmtVm implements AnkaMgmtVm {
 
     public boolean isRunning() {
         AnkaVmSession session = this.getSessionInfoCache();
+        if (session == null ) {
+            return false;
+        }
         return session.getSessionState().equals("Started") && session.getVmInfo().getStatus().equals("running");
     }
 
     public String getInfo() {
         AnkaVmSession session = this.getSessionInfoCache();
+        if (session == null) {
+            return "";
+        }
         return String.format("host: %s, uuid: %s, machine ip: %s",
                 session.getVmInfo().getHostIp(), session.getVmInfo().getUuid(), session.getVmInfo().getVmIp());
     }

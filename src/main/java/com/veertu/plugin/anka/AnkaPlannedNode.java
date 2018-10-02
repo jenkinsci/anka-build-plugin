@@ -106,6 +106,9 @@ public class AnkaPlannedNode extends NodeProvisioner.PlannedNode{
 
     private static void tryToCallSlave(AnkaOnDemandSlave slave) throws ExecutionException, InterruptedException {
         Computer computer = slave.toComputer();
+        if (computer == null) {
+            throw new ExecutionException("No link to computer", new NullPointerException("computer link is null"));
+        }
         Future<?> f = computer.connect(false);
         f.get();
     }
