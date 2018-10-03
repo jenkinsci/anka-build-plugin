@@ -24,7 +24,6 @@ import org.kohsuke.stapler.DataBoundSetter;
 import javax.annotation.Nullable;
 
 import java.util.*;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials;
@@ -51,6 +50,9 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
     private final Mode mode;
     private final String credentialsId;
     private final String group;
+
+    private final String extraArgs;
+
     private LaunchMethod launchMethod = LaunchMethod.SSH;
     private String launchMethodString = "ssh";
     //    private final List<? extends NodeProperty<?>> nodeProperties;
@@ -61,6 +63,7 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
     private List<EnvironmentEntry> environments;
     private RetentionStrategy retentionStrategy = new RunOnceCloudRetentionStrategy(1);
     private final String nameTemplate;
+    private String javaArgs;
 
     @DataBoundConstructor
     public AnkaCloudSlaveTemplate(
@@ -84,6 +87,8 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
         this.environments = environments;
         this.nameTemplate = nameTemplate;
         this.group = group;
+        this.extraArgs = launchMethod.optString("extraArgs", null);
+        this.javaArgs = launchMethod.optString("javaArgs", null);
         this.setLaunchMethod(launchMethod.getString("value"));
         readResolve();
     }
@@ -190,6 +195,14 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
         return new ArrayList<EnvironmentEntry>();
     }
 
+    public String getJnlpArgsString() {
+        return extraArgs;
+    }
+
+    public String getExtraArgs() {
+        return getJnlpArgsString();
+    }
+
     /*Collection<KeyValuePair> getEnvironmentKeyValuePairs() {
         if (null == environments || environments.isEmpty()) {
             return null;
@@ -227,6 +240,10 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
 
     public LaunchMethod getLaunchMethod() {
         return this.launchMethod;
+    }
+
+    public String getJavaArgs() {
+        return this.javaArgs;
     }
 
     /**

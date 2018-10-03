@@ -53,13 +53,13 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
     private static AnkaOnDemandSlave createJNLPSlave(AnkaCloudSlaveTemplate template, Label label, String mgmtUrl) throws InterruptedException, AnkaMgmtException, IOException, Descriptor.FormException {
 //        AnkaMgmtCloud.Log("vm %s is booting...", vm.getId());
         String nodeName = generateName(template);
-        String jnlpCommand = JnlpCommandBuilder.makeStartUpScript(nodeName);
+        String jnlpCommand = JnlpCommandBuilder.makeStartUpScript(nodeName, template.getJnlpArgsString(), template.getJavaArgs());
 
         AnkaMgmtVm vm = AnkaVmFactory.getInstance().makeAnkaVm(mgmtUrl,
                 template.getMasterVmId(), template.getTag(), template.getNameTemplate(), template.getSSHPort(), jnlpCommand, template.getGroup());
         vm.waitForBoot();
-        AnkaMgmtCloud.Log("vm %s %s is booted, creating ssh launcher", vm.getId(), vm.getName());
-        JNLPLauncher launcher = new JNLPLauncher();
+        AnkaMgmtCloud.Log("vm %s %s is booted, creating jnlp launcher", vm.getId(), vm.getName());
+        JNLPLauncher launcher = new JNLPLauncher(true);
         ArrayList<EnvironmentVariablesNodeProperty.Entry> a = new ArrayList<EnvironmentVariablesNodeProperty.Entry>();
         for (AnkaCloudSlaveTemplate.EnvironmentEntry e :template.getEnvironments()) {
             a.add(new EnvironmentVariablesNodeProperty.Entry(e.name, e.value));
@@ -76,6 +76,7 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
                 label.toString(),
                 launcher,
                 props, template, vm);
+        Jenkins.getInstance().addNode(slave);
         return slave;
     }
 

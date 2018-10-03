@@ -22,16 +22,23 @@ public class JnlpCommandBuilder {
             "%s &> /tmp/log.txt\n";
 
 
-    public static String makeCommand(String nodeName) {
+    public static String makeCommand(String nodeName, String extraArgs, String javaArgs) {
         String effectiveJenkinsUrl = Jenkins.getInstance().getRootUrl();
-        String format = "java -jar agent.jar -jnlpUrl %s/computer/%s/slave-agent.jnlp -secret %s";
+        String format = "java %s -jar agent.jar -jnlpUrl %s/computer/%s/slave-agent.jnlp -secret %s ";
         String secret = JnlpSlaveAgentProtocol.SLAVE_SECRET.mac(nodeName);
-        return String.format(format, effectiveJenkinsUrl, nodeName, secret);
+        if (javaArgs == null) {
+            javaArgs = "";
+        }
+        String command = String.format(format, javaArgs, effectiveJenkinsUrl, nodeName, secret);
+        if (extraArgs != null) {
+            command += extraArgs;
+        }
+        return command;
     }
 
-    public static String makeStartUpScript(String nodeName) {
+    public static String makeStartUpScript(String nodeName, String extraArgs, String javaArgs) {
 
-        String jarCommand = makeCommand(nodeName);
+        String jarCommand = makeCommand(nodeName, extraArgs, javaArgs);
         String jenkinsUrl = Jenkins.getInstance().getRootUrl();
         String script = String.format(scriptTemplate, jenkinsUrl, jenkinsUrl, jenkinsUrl, jarCommand, jarCommand);
         return script;
