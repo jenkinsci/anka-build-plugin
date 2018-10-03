@@ -76,7 +76,6 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
                 label.toString(),
                 launcher,
                 props, template, vm);
-        Jenkins.getInstance().addNode(slave);
         return slave;
     }
 
