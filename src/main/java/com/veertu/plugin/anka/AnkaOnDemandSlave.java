@@ -10,6 +10,7 @@ import hudson.model.Label;
 import hudson.model.TaskListener;
 import hudson.plugins.sshslaves.SSHLauncher;
 import hudson.slaves.*;
+import jenkins.model.Jenkins;
 import org.apache.commons.lang.RandomStringUtils;
 
 import java.io.IOException;
@@ -82,12 +83,6 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
         AnkaMgmtVm vm = AnkaVmFactory.getInstance().makeAnkaVm(mgmtUrl,
                 template.getMasterVmId(), template.getTag(), template.getNameTemplate(), template.getSSHPort(), null, template.getGroup());
         try {
-            AnkaMgmtCloud.Log("vm %s is booting...", vm.getId());
-            vm.waitForBoot();
-            AnkaMgmtCloud.Log("vm %s %s is booted, creating ssh launcher", vm.getId(), vm.getName());
-            SSHLauncher launcher = new SSHLauncher(vm.getConnectionIp(), vm.getConnectionPort(),
-                    template.getCredentialsId(),
-                    null, null, null, null, launchTimeoutSeconds, maxNumRetries, retryWaitTime);
 
             ArrayList<EnvironmentVariablesNodeProperty.Entry> a = new ArrayList<EnvironmentVariablesNodeProperty.Entry>();
             for (AnkaCloudSlaveTemplate.EnvironmentEntry e : template.getEnvironments()) {
@@ -98,17 +93,30 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
             ArrayList<NodeProperty<?>> props = new ArrayList<>();
             props.add(env);
 
-            AnkaMgmtCloud.Log("launcher created for vm %s %s", vm.getId(), vm.getName());
-            String name = vm.getName();
-            AnkaOnDemandSlave slave = new AnkaOnDemandSlave(name, template.getTemplateDescription(), template.getRemoteFS(),
+            AnkaOnDemandSlave slave = new AnkaOnDemandSlave(vm.getId(), template.getTemplateDescription(), template.getRemoteFS(),
                     template.getNumberOfExecutors(),
                     template.getMode(),
                     label.toString(),
-                    launcher,
+                    null,
                     props, template, vm);
+            AnkaMgmtCloud.Log("vm %s is booting...", vm.getId());
+            vm.waitForBoot();
+            AnkaMgmtCloud.Log("vm %s %s is booted, creating ssh launcher", vm.getId(), vm.getName());
+            SSHLauncher launcher = new SSHLauncher(vm.getConnectionIp(), vm.getConnectionPort(),
+                    template.getCredentialsId(),
+                    null, null, null, null, launchTimeoutSeconds, maxNumRetries, retryWaitTime);
+
+
+
+            slave.setLauncher(launcher);
+
+            AnkaMgmtCloud.Log("launcher created for vm %s %s", vm.getId(), vm.getName());
+            String name = vm.getName();
+            slave.setNodeName(name);
             return slave;
         }
         catch (Exception e) {
+            e.printStackTrace();
             vm.terminate();
             throw e;
         }

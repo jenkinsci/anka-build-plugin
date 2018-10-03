@@ -18,7 +18,6 @@ import java.util.List;
  */
 public abstract class AbstractAnkaSlave extends AbstractCloudSlave {
 
-    protected String name;
     protected AnkaCloudSlaveTemplate template;
     protected AnkaMgmtVm vm;
     public final int launchTimeout = 300;
@@ -65,7 +64,13 @@ public abstract class AbstractAnkaSlave extends AbstractCloudSlave {
         return new AnkaCloudComputer(this);
     }
 
+    public String getNodeName() {
+        return name;
+    }
 
+    public int hashCode() {
+        return name.hashCode();
+    }
     public void terminate() throws IOException, InterruptedException {
         super.terminate();
         if (vm != null)
