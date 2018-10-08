@@ -22,13 +22,19 @@ public class JnlpCommandBuilder {
             "%s &> /tmp/log.txt\n";
 
 
-    public static String makeCommand(String nodeName, String extraArgs, String javaArgs) {
-        String effectiveJenkinsUrl = Jenkins.getInstance().getRootUrl();
+    public static String makeCommand(String nodeName, String extraArgs, String javaArgs, String overrideJenkinsUrl) {
         String format = "java %s -jar agent.jar -jnlpUrl %s/computer/%s/slave-agent.jnlp -secret %s ";
         String secret = JnlpSlaveAgentProtocol.SLAVE_SECRET.mac(nodeName);
         if (javaArgs == null) {
             javaArgs = "";
         }
+
+        String effectiveJenkinsUrl = Jenkins.getInstance().getRootUrl();
+
+        if (overrideJenkinsUrl != null && !overrideJenkinsUrl.isEmpty()) {
+            effectiveJenkinsUrl = overrideJenkinsUrl;
+        }
+
         String command = String.format(format, javaArgs, effectiveJenkinsUrl, nodeName, secret);
         if (extraArgs != null) {
             command += extraArgs;
@@ -36,9 +42,9 @@ public class JnlpCommandBuilder {
         return command;
     }
 
-    public static String makeStartUpScript(String nodeName, String extraArgs, String javaArgs) {
+    public static String makeStartUpScript(String nodeName, String extraArgs, String javaArgs, String overrideJenkinsUrl) {
 
-        String jarCommand = makeCommand(nodeName, extraArgs, javaArgs);
+        String jarCommand = makeCommand(nodeName, extraArgs, javaArgs, overrideJenkinsUrl);
         String jenkinsUrl = Jenkins.getInstance().getRootUrl();
         String script = String.format(scriptTemplate, jenkinsUrl, jenkinsUrl, jenkinsUrl, jarCommand, jarCommand);
         return script;

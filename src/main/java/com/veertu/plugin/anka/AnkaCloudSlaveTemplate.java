@@ -64,6 +64,7 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
     private RetentionStrategy retentionStrategy = new RunOnceCloudRetentionStrategy(1);
     private final String nameTemplate;
     private String javaArgs;
+    private String jnlpJenkinsOverrideUrl;
 
     @DataBoundConstructor
     public AnkaCloudSlaveTemplate(
@@ -89,6 +90,7 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
         this.group = group;
         this.extraArgs = launchMethod.optString("extraArgs", null);
         this.javaArgs = launchMethod.optString("javaArgs", null);
+        this.jnlpJenkinsOverrideUrl = launchMethod.optString("jnlpJenkinsOverrideUrl", null);
         this.setLaunchMethod(launchMethod.getString("value"));
         readResolve();
     }
@@ -244,6 +246,10 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
 
     public String getJavaArgs() {
         return this.javaArgs;
+    }
+
+    public String getJnlpJenkinsOverrideUrl() {
+        return jnlpJenkinsOverrideUrl;
     }
 
     /**

@@ -52,6 +52,10 @@
                     <f:entry title="${%Java args}" description="Args to append to the jnlp command right after 'java' " field="javaArgs" >
                         <f:textbox default="" />
                     </f:entry>
+                    <f:entry title="${%Override JNLP Url}" description="Speficy a different url than jenkins root url " field="jnlpJenkinsOverrideUrl" >
+                        <f:textbox default="" />
+                    </f:entry>
+
                 </f:radioBlock>
             </table>
         </f:entry>
