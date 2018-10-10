@@ -11,6 +11,7 @@ import hudson.model.TaskListener;
 import hudson.plugins.sshslaves.SSHLauncher;
 import hudson.slaves.*;
 import jenkins.model.Jenkins;
+import jenkins.slaves.RemotingWorkDirSettings;
 import org.apache.commons.lang.RandomStringUtils;
 
 import java.io.IOException;
@@ -59,7 +60,10 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
                 template.getMasterVmId(), template.getTag(), template.getNameTemplate(), template.getSSHPort(), jnlpCommand, template.getGroup());
         vm.waitForBoot();
         AnkaMgmtCloud.Log("vm %s %s is booted, creating jnlp launcher", vm.getId(), vm.getName());
-        JNLPLauncher launcher = new JNLPLauncher(true);
+        String tunnel = "";
+        JNLPLauncher launcher = new JNLPLauncher(template.getJnlpTunnel(),
+                "",
+                RemotingWorkDirSettings.getEnabledDefaults());
         ArrayList<EnvironmentVariablesNodeProperty.Entry> a = new ArrayList<EnvironmentVariablesNodeProperty.Entry>();
         for (AnkaCloudSlaveTemplate.EnvironmentEntry e :template.getEnvironments()) {
             a.add(new EnvironmentVariablesNodeProperty.Entry(e.name, e.value));

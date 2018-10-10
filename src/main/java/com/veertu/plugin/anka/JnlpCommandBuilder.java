@@ -19,7 +19,7 @@ public class JnlpCommandBuilder {
             "   fi\n" +
             "fi\n" +
             "echo \"Executing java command: %s\" >> /tmp/log.txt\n" +
-            "%s &> /tmp/log.txt\n";
+            "%s &> /tmp/log1.txt\n";
 
 
     public static String makeCommand(String nodeName, String extraArgs, String javaArgs, String overrideJenkinsUrl) {

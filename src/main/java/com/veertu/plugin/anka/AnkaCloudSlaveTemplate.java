@@ -65,6 +65,7 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
     private final String nameTemplate;
     private String javaArgs;
     private String jnlpJenkinsOverrideUrl;
+    private String jnlpTunnel;
 
     @DataBoundConstructor
     public AnkaCloudSlaveTemplate(
@@ -91,6 +92,7 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
         this.extraArgs = launchMethod.optString("extraArgs", null);
         this.javaArgs = launchMethod.optString("javaArgs", null);
         this.jnlpJenkinsOverrideUrl = launchMethod.optString("jnlpJenkinsOverrideUrl", null);
+        this.jnlpTunnel = launchMethod.optString("jnlpTunnel", null);
         this.setLaunchMethod(launchMethod.getString("value"));
         readResolve();
     }
@@ -250,6 +252,11 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
 
     public String getJnlpJenkinsOverrideUrl() {
         return jnlpJenkinsOverrideUrl;
+    }
+    public String getJnlpTunnel() {
+        if (jnlpTunnel == null)
+            return "";
+        return jnlpTunnel;
     }
 
     /**

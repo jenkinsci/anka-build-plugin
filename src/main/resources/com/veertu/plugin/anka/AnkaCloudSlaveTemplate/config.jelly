@@ -46,13 +46,16 @@
                     </f:entry>
                 </f:radioBlock>
                 <f:radioBlock name="launchMethod" title="JNLP" value="jnlp" checked="${instance.launchMethodString == 'jnlp'}" >
-                    <f:entry title="${%Extra jnlp command args}" description="Args to append to the jnlp command" field="extraArgs" >
+                    <f:entry title="${%Extra JNLP arguments}" description="Arguments to append to JNLP command" field="extraArgs" >
                         <f:textbox default="" />
                     </f:entry>
-                    <f:entry title="${%Java args}" description="Args to append to the jnlp command right after 'java' " field="javaArgs" >
+                    <f:entry title="${%Java options}" description="Additional java options" field="javaArgs" >
                         <f:textbox default="" />
                     </f:entry>
-                    <f:entry title="${%Override JNLP Url}" description="Speficy a different url than jenkins root url " field="jnlpJenkinsOverrideUrl" >
+                    <f:entry title="${%Override JNLP Url}" description="Specify a different url than jenkins root url " field="jnlpJenkinsOverrideUrl" >
+                        <f:textbox default="" />
+                    </f:entry>
+                    <f:entry title="${%Tunnel connection through}" description="Specify a tunnel if the agent needs it to connect to the master" field="jnlpTunnel" >
                         <f:textbox default="" />
                     </f:entry>
 
