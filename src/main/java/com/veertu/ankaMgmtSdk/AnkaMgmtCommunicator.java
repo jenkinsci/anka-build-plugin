@@ -277,7 +277,7 @@ public class AnkaMgmtCommunicator {
             if ( entity != null ) {
                 BufferedReader rd = new BufferedReader(
                         new InputStreamReader(entity.getContent()));
-                StringBuffer result = new StringBuffer();
+                StringBuilder result = new StringBuilder();
                 String line = "";
                 while ((line = rd.readLine()) != null) {
                     result.append(line);
