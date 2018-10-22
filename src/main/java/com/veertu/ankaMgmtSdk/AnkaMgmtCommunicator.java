@@ -166,10 +166,7 @@ public class AnkaMgmtCommunicator {
             jsonObject.put("id", sessionId);
             JSONObject jsonResponse = this.doRequest(RequestMethod.DELETE, url, jsonObject);
             String logicalResult = jsonResponse.getString("status");
-            if (logicalResult.equals("OK")) {
-                return true;
-            }
-            return false;
+            return logicalResult.equals("OK");
         } catch (IOException e) {
             e.printStackTrace();
             return false;

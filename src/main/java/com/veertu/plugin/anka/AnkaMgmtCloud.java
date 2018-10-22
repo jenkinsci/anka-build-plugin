@@ -146,10 +146,7 @@ public class AnkaMgmtCloud extends Cloud {
     @Override
     public boolean canProvision(Label label) {
         AnkaCloudSlaveTemplate template = getTemplateFromLabel(label);
-        if (template == null){
-            return false;
-        }
-        return true;
+        return template != null;
     }
 
 
