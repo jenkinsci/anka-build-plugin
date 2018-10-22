@@ -1,7 +1,6 @@
 package com.veertu.plugin.anka;
 
 import com.veertu.ankaMgmtSdk.AnkaMgmtVm;
-import hudson.slaves.DelegatingComputerLauncher;
 import hudson.slaves.ComputerLauncher;
 import hudson.slaves.SlaveComputer;
 import hudson.model.TaskListener;

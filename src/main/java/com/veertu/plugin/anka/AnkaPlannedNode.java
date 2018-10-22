@@ -1,6 +1,5 @@
 package com.veertu.plugin.anka;
 
-import com.veertu.ankaMgmtSdk.AnkaMgmtVm;
 import com.veertu.plugin.anka.exceptions.AnkaHostException;
 import hudson.model.Computer;
 import hudson.model.Label;
