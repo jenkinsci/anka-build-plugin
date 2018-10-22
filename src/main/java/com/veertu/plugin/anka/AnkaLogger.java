@@ -5,8 +5,8 @@ package com.veertu.plugin.anka;
  */
 public interface AnkaLogger {
 
-    public void logInfo(String message);
-    public void logWarning(String message);
-    public void logError(String message);
-    public void logFatalError(String message);
+    void logInfo(String message);
+    void logWarning(String message);
+    void logError(String message);
+    void logFatalError(String message);
 }
