@@ -50,8 +50,7 @@ public class AnkaVmFactory {
 
         AnkaMgmtCommunicator communicator = getCommunicator(mgmtUrl);
         String sessionId = communicator.startVm(templateId, tag, nameTemplate, startUpScript, groupId);
-        AnkaMgmtVm vm = new ConcAnkaMgmtVm(sessionId, communicator, sshPort);
-        return vm;
+        return new ConcAnkaMgmtVm(sessionId, communicator, sshPort);
 
     }
 

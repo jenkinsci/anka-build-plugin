@@ -72,13 +72,12 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
         props.add(env);
 
         AnkaMgmtCloud.Log("launcher created for vm %s %s", vm.getId(), vm.getName());
-        AnkaOnDemandSlave slave = new AnkaOnDemandSlave(nodeName, template.getTemplateDescription(), template.getRemoteFS(),
+        return new AnkaOnDemandSlave(nodeName, template.getTemplateDescription(), template.getRemoteFS(),
                 template.getNumberOfExecutors(),
                 template.getMode(),
                 label.toString(),
                 launcher,
                 props, template, vm);
-        return slave;
     }
 
     private static AnkaOnDemandSlave createSSHSlave(AnkaCloudSlaveTemplate template, Label label, String mgmtUrl) throws InterruptedException, AnkaMgmtException, IOException, Descriptor.FormException {

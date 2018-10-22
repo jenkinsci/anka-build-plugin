@@ -46,8 +46,7 @@ public class JnlpCommandBuilder {
 
         String jarCommand = makeCommand(nodeName, extraArgs, javaArgs, overrideJenkinsUrl);
         String jenkinsUrl = Jenkins.getInstance().getRootUrl();
-        String script = String.format(scriptTemplate, jenkinsUrl, jenkinsUrl, jenkinsUrl, jarCommand, jarCommand);
-        return script;
+        return String.format(scriptTemplate, jenkinsUrl, jenkinsUrl, jenkinsUrl, jarCommand, jarCommand);
 
     }
 }

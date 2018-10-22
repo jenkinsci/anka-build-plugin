@@ -282,8 +282,7 @@ public class AnkaMgmtCommunicator {
                 while ((line = rd.readLine()) != null) {
                     result.append(line);
                 }
-                JSONObject jsonResponse = new JSONObject(result.toString());
-                return jsonResponse;
+                return new JSONObject(result.toString());
             }
 
         } catch (HttpHostConnectException e) {
