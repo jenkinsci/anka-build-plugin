@@ -97,12 +97,7 @@ public class RunOnceCloudRetentionStrategy extends CloudRetentionStrategy implem
                                 AnkaMgmtCloud.Log("node not found for %s", c.getName());
 
                             }
-                        } catch(InterruptedException e) {
-                            logger.log(Level.WARNING, "Failed to terminate " + c.getName(), e);
-                            synchronized(RunOnceCloudRetentionStrategy.this) {
-                                terminating = false;
-                            }
-                        } catch(IOException e) {
+                        } catch(InterruptedException | IOException e) {
                             logger.log(Level.WARNING, "Failed to terminate " + c.getName(), e);
                             synchronized(RunOnceCloudRetentionStrategy.this) {
                                 terminating = false;
