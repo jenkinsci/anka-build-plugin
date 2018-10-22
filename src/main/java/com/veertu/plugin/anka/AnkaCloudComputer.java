@@ -56,7 +56,7 @@ public class AnkaCloudComputer extends AbstractCloudComputer {
     }
 
     private void checkLatestJobAndChangeNodeBehaviour(){
-        // check the lates build and report back to slave object , in case keepAliveOnerror is set
+        // check the latest build and report back to slave object , in case keepAliveOnerror is set
         RunList<?> jobs = this.getBuilds();
         if (jobs.isEmpty()) {
             return;

@@ -1,7 +1,7 @@
     <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
              xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:c="/lib/credentials">
 
-    <table wdith="100%">
+    <table width="100%">
         <f:invisibleEntry >
             <f:textbox value="${cloud.getCloudName()}" field="cloudName" />
         </f:invisibleEntry>
