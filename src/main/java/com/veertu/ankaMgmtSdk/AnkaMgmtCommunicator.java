@@ -246,10 +246,8 @@ public class AnkaMgmtCommunicator {
         } catch (Exception e) {
         }
 
-        CloseableHttpClient httpClient = builder.build();
-
-        HttpRequestBase request;
-        try {
+        try (CloseableHttpClient httpClient = builder.build()) {
+            HttpRequestBase request;
             switch (method) {
                 case POST:
                     HttpPost postRequest = new HttpPost(url);
@@ -295,8 +293,6 @@ public class AnkaMgmtCommunicator {
         } catch (IOException e) {
             e.printStackTrace();
             throw new AnkaMgmtException(e);
-        } finally {
-            httpClient.close();
         }
         return null;
     }
