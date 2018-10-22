@@ -64,13 +64,6 @@ public abstract class AbstractAnkaSlave extends AbstractCloudSlave {
         return new AnkaCloudComputer(this);
     }
 
-    public String getNodeName() {
-        return name;
-    }
-
-    public int hashCode() {
-        return name.hashCode();
-    }
     public void terminate() throws IOException, InterruptedException {
         super.terminate();
         if (vm != null)

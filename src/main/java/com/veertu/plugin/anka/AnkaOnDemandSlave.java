@@ -24,7 +24,6 @@ import java.util.List;
 public class AnkaOnDemandSlave extends AbstractAnkaSlave {
 
     private boolean hadProblemsInBuild = false;
-    private String description;
     private boolean acceptingTasks = true;
 
     protected AnkaOnDemandSlave(String name, String nodeDescription, String remoteFS, int numExecutors,
@@ -128,13 +127,10 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
 
 
     public void setDescription(String jobAndNumber) {
-        this.description = String.format("master image: %s, job name and build number: %s, vm info: (%s)",
+        String description = String.format("master image: %s, job name and build number: %s, vm info: (%s)",
                 template.getMasterVmId(), jobAndNumber, this.vm.getInfo());
+        super.setNodeDescription(description);
 
-    }
-
-    public String getNodeDescription(){
-        return this.description;
     }
 
 

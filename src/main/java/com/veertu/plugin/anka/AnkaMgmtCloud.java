@@ -1,6 +1,5 @@
 package com.veertu.plugin.anka;
 
-import com.veertu.ankaMgmtSdk.AnkaMgmtVm;
 import com.veertu.ankaMgmtSdk.AnkaVmFactory;
 import com.veertu.ankaMgmtSdk.AnkaVmTemplate;
 import com.veertu.ankaMgmtSdk.NodeGroup;
@@ -25,7 +24,6 @@ import java.util.logging.Level;
 public class AnkaMgmtCloud extends Cloud {
 
 
-    private final String cloudName;
     private final List<AnkaCloudSlaveTemplate> templates;
     private static java.util.logging.Logger MgmtLogger = java.util.logging.Logger.getLogger("anka-host");
     private final String ankaMgmtUrl;
@@ -36,7 +34,6 @@ public class AnkaMgmtCloud extends Cloud {
                      String cloudName,
                      List<AnkaCloudSlaveTemplate> templates) {
         super(cloudName);
-        this.cloudName = cloudName;
         this.ankaMgmtUrl = ankaMgmtUrl;
         if (templates == null) {
             this.templates = Collections.emptyList();
@@ -47,7 +44,7 @@ public class AnkaMgmtCloud extends Cloud {
     }
 
     public String getCloudName() {
-        return cloudName;
+        return name;
     }
 
     public String getAnkaMgmtUrl() {
