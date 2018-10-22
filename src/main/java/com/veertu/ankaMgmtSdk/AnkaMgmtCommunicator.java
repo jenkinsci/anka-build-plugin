@@ -240,7 +240,7 @@ public class AnkaMgmtCommunicator {
                         final String authType) throws CertificateException {
                     return true;
                 }
-            };
+            }
 
             SSLContext sslContext = new SSLContextBuilder()
                     .loadTrustMaterial(null, new NulllTrustStrategy()).build();
