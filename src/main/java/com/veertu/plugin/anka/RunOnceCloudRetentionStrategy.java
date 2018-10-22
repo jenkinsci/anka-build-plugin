@@ -4,12 +4,12 @@ import hudson.slaves.AbstractCloudComputer;
 import hudson.slaves.AbstractCloudSlave;
 import hudson.slaves.CloudRetentionStrategy;
 import hudson.slaves.RetentionStrategy;
-import hudson.util.TimeUnit2;
 import org.kohsuke.accmod.Restricted;
 import org.kohsuke.accmod.restrictions.NoExternalUse;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -37,7 +37,7 @@ public class RunOnceCloudRetentionStrategy extends CloudRetentionStrategy implem
     public long check(final AbstractCloudComputer c) {
         if(c.isIdle() && !disabled) {
             final long idleMilliseconds = System.currentTimeMillis() - c.getIdleStartMilliseconds();
-            if(idleMilliseconds > TimeUnit2.MINUTES.toMillis(idleMinutes)) {
+            if(idleMilliseconds > TimeUnit.MINUTES.toMillis(idleMinutes)) {
                 logger.log(Level.FINE, "Disconnecting {0}", c.getName());
                 done(c);
             }
