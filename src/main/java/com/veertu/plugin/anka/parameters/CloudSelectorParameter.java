@@ -74,7 +74,7 @@ public class CloudSelectorParameter extends SimpleParameterDefinition {
     }
 
     public static List<AnkaMgmtCloud> getAnkaClouds() {
-        List<AnkaMgmtCloud> ankaClouds = new ArrayList<AnkaMgmtCloud>();
+        List<AnkaMgmtCloud> ankaClouds = new ArrayList<>();
         for (Cloud cloud : Jenkins.getInstance().clouds) {
             if (cloud instanceof AnkaMgmtCloud) {
                 ankaClouds.add((AnkaMgmtCloud) cloud);

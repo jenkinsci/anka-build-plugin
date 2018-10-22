@@ -63,7 +63,7 @@ public class AnkaMgmtCommunicator {
     }
 
     public List<AnkaVmTemplate> listTemplates() throws AnkaMgmtException {
-        List<AnkaVmTemplate> templates = new ArrayList<AnkaVmTemplate>();
+        List<AnkaVmTemplate> templates = new ArrayList<>();
         String url = String.format("%s/api/v1/registry/vm", mgmtUrl.toString());
         try {
             JSONObject jsonResponse = this.doRequest(RequestMethod.GET, url);
@@ -85,7 +85,7 @@ public class AnkaMgmtCommunicator {
     }
 
     public List<String> getTemplateTags(String templateId) throws AnkaMgmtException {
-        List<String> tags = new ArrayList<String>();
+        List<String> tags = new ArrayList<>();
         String url = String.format("%s/api/v1/registry/vm?id=%s", mgmtUrl.toString(), templateId);
         try {
             JSONObject jsonResponse = this.doRequest(RequestMethod.GET, url);
@@ -199,7 +199,7 @@ public class AnkaMgmtCommunicator {
     }
 
     private List<String> list() throws AnkaMgmtException {
-        List<String> vmIds = new ArrayList<String>();
+        List<String> vmIds = new ArrayList<>();
         String url = String.format("%s/list", mgmtUrl.toString());
         try {
             JSONObject jsonResponse = this.doRequest(RequestMethod.GET, url);

@@ -57,7 +57,7 @@ public class AnkaMgmtCloud extends Cloud {
         } catch (AnkaMgmtException e) {
             e.printStackTrace();
             Log("Problem connecting to Anka mgmt host");
-            return new ArrayList<AnkaVmTemplate>();
+            return new ArrayList<>();
         }
     }
 

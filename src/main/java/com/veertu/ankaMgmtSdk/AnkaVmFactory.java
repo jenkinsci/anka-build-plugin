@@ -20,7 +20,7 @@ public class AnkaVmFactory {
     }
     private java.util.logging.Logger logger =  java.util.logging.Logger.getLogger("AnkaVmFactory");
     private AnkaVmFactory() {
-        this.communicators = new HashMap<String, AnkaMgmtCommunicator>();
+        this.communicators = new HashMap<>();
     }
 
     private AnkaMgmtCommunicator getCommunicator(String mgmtUrl) throws AnkaMgmtException {

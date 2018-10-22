@@ -196,7 +196,7 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
     {
         if (environments != null)
             return environments;
-        return new ArrayList<EnvironmentEntry>();
+        return new ArrayList<>();
     }
 
     public String getJnlpArgsString() {

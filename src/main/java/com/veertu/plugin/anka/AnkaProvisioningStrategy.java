@@ -44,7 +44,7 @@ public class AnkaProvisioningStrategy extends NodeProvisioner.Strategy {
 
     private static List<AnkaMgmtCloud> getAnkaClouds() {
 
-        List<AnkaMgmtCloud> clouds = new ArrayList<AnkaMgmtCloud>();
+        List<AnkaMgmtCloud> clouds = new ArrayList<>();
         final Jenkins jenkins = Jenkins.getInstance();
         for (Cloud cloud : jenkins.clouds) {
             if (cloud instanceof AnkaMgmtCloud) {

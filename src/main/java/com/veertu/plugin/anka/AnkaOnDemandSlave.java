@@ -62,7 +62,7 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
         JNLPLauncher launcher = new JNLPLauncher(template.getJnlpTunnel(),
                 "",
                 RemotingWorkDirSettings.getEnabledDefaults());
-        ArrayList<EnvironmentVariablesNodeProperty.Entry> a = new ArrayList<EnvironmentVariablesNodeProperty.Entry>();
+        ArrayList<EnvironmentVariablesNodeProperty.Entry> a = new ArrayList<>();
         for (AnkaCloudSlaveTemplate.EnvironmentEntry e :template.getEnvironments()) {
             a.add(new EnvironmentVariablesNodeProperty.Entry(e.name, e.value));
         }
@@ -85,7 +85,7 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
                 template.getMasterVmId(), template.getTag(), template.getNameTemplate(), template.getSSHPort(), null, template.getGroup());
         try {
 
-            ArrayList<EnvironmentVariablesNodeProperty.Entry> a = new ArrayList<EnvironmentVariablesNodeProperty.Entry>();
+            ArrayList<EnvironmentVariablesNodeProperty.Entry> a = new ArrayList<>();
             for (AnkaCloudSlaveTemplate.EnvironmentEntry e : template.getEnvironments()) {
                 a.add(new EnvironmentVariablesNodeProperty.Entry(e.name, e.value));
             }
