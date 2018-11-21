@@ -13,9 +13,7 @@
             <f:select />
         </f:entry>
 
-        <f:entry title="${%Node Group}" field="group" description="The node group the vm will run on">
-            <f:select />
-        </f:entry>
+
 
         <f:entry title="${%Description}" field="templateDescription">
             <f:textbox />
@@ -87,6 +85,14 @@
                 </f:repeatable>
             </f:entry>
         </f:block>
+          <f:advanced>
+            <f:entry title="${%Node Group}" field="group" description="The node group the vm will run on (enterprise only)">
+                <f:select />
+            </f:entry>
+            <f:entry title="${%Priority}" field="priority" description="The job's priority, lowest is more urgent (enterprise only)">
+                  <f:textbox clazz="number" default="0" />
+            </f:entry>
+          </f:advanced>
     </table>
 
 </j:jelly>
