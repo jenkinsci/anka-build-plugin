@@ -35,6 +35,10 @@ public class ConcAnkaMgmtVm implements AnkaMgmtVm {
         return session.getSessionState();
     }
 
+    private AnkaVmSession getSession() throws AnkaMgmtException {
+        return this.communicator.showVm(this.sessionId);
+    }
+
     private String getIp() throws AnkaMgmtException {
         AnkaVmSession session = this.communicator.showVm(this.sessionId);
         if ( session.getVmInfo() == null) {
@@ -78,12 +82,12 @@ public class ConcAnkaMgmtVm implements AnkaMgmtVm {
     }
 
     private boolean isStarting() throws AnkaMgmtException {
-
-        if (getSessionInfoCache() == null) {
+        AnkaVmSession sessionInfoCache = getSessionInfoCache();
+        if (sessionInfoCache == null) {
             return true;
         }
-
-        String status = getStatus();
+        AnkaVmSession session = getSession();
+        String status = session.getSessionState();
 
 
         switch (status){
@@ -97,6 +101,10 @@ public class ConcAnkaMgmtVm implements AnkaMgmtVm {
             case "Stopping":
             case "Stopped":
             case "Error":
+                String message = session.getMessage();
+                if (message != null) {
+                    throw new AnkaMgmtException(String.format("Unexpected state %s for vm %s, Message: %s", status, sessionId, message));
+                }
                 throw new AnkaMgmtException(String.format("Unexpected state %s for vm %s", status, sessionId));
             default:
                 return true;
