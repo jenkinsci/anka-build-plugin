@@ -42,6 +42,9 @@
                     <f:entry title="${%Clone's user (SSH)}" description="The user and password to connect to chosen template" field="credentialsId" >
                         <c:select/>
                     </f:entry>
+                    <f:entry title="${%Java options}" description="Additional java options" field="javaArgs" >
+                        <f:textbox default="" />
+                    </f:entry>
                 </f:radioBlock>
                 <f:radioBlock name="launchMethod" title="JNLP" value="jnlp" checked="${instance.launchMethodString == 'jnlp'}" >
                     <f:entry title="${%Extra JNLP arguments}" description="Arguments to append to JNLP command" field="extraArgs" >

@@ -107,7 +107,7 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
             AnkaMgmtCloud.Log("vm %s %s is booted, creating ssh launcher", vm.getId(), vm.getName());
             SSHLauncher launcher = new SSHLauncher(vm.getConnectionIp(), vm.getConnectionPort(),
                     template.getCredentialsId(),
-                    null, null, null, null, launchTimeoutSeconds, maxNumRetries, retryWaitTime);
+                    template.getJavaArgs(), null, null, null, launchTimeoutSeconds, maxNumRetries, retryWaitTime);
 
 
 
