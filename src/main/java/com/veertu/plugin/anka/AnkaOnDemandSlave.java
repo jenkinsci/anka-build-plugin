@@ -55,7 +55,7 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
         String jnlpCommand = JnlpCommandBuilder.makeStartUpScript(nodeName, template.getJnlpArgsString(), template.getJavaArgs(), template.getJnlpJenkinsOverrideUrl());
 
         AnkaMgmtVm vm = AnkaVmFactory.getInstance().makeAnkaVm(mgmtUrl,
-                template.getMasterVmId(), template.getTag(), template.getNameTemplate(), template.getSSHPort(), jnlpCommand, template.getGroup());
+                template.getMasterVmId(), template.getTag(), template.getNameTemplate(), template.getSSHPort(), jnlpCommand, template.getGroup(), template.getPriority());
         vm.waitForBoot();
         AnkaMgmtCloud.Log("vm %s %s is booted, creating jnlp launcher", vm.getId(), vm.getName());
         String tunnel = "";
@@ -82,7 +82,7 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
 
     private static AnkaOnDemandSlave createSSHSlave(AnkaCloudSlaveTemplate template, Label label, String mgmtUrl) throws InterruptedException, AnkaMgmtException, IOException, Descriptor.FormException {
         AnkaMgmtVm vm = AnkaVmFactory.getInstance().makeAnkaVm(mgmtUrl,
-                template.getMasterVmId(), template.getTag(), template.getNameTemplate(), template.getSSHPort(), null, template.getGroup());
+                template.getMasterVmId(), template.getTag(), template.getNameTemplate(), template.getSSHPort(), null, template.getGroup(), template.getPriority());
         try {
 
             ArrayList<EnvironmentVariablesNodeProperty.Entry> a = new ArrayList<>();
@@ -105,7 +105,7 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
             AnkaMgmtCloud.Log("vm %s %s is booted, creating ssh launcher", vm.getId(), vm.getName());
             SSHLauncher launcher = new SSHLauncher(vm.getConnectionIp(), vm.getConnectionPort(),
                     template.getCredentialsId(),
-                    null, null, null, null, launchTimeoutSeconds, maxNumRetries, retryWaitTime);
+                    template.getJavaArgs(), null, null, null, launchTimeoutSeconds, maxNumRetries, retryWaitTime);
 
 
 

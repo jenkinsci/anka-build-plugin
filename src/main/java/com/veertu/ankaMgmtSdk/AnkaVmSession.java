@@ -10,6 +10,7 @@ public class AnkaVmSession extends AnkaVMRepresentation {
     private final String sessionState;
     private final String vmId;
     private AnkaVmInfo vmInfo;
+    private String message;
 
     public AnkaVmSession(String id, JSONObject jsonObject) {
         this.id = id;
@@ -18,6 +19,9 @@ public class AnkaVmSession extends AnkaVMRepresentation {
         if (jsonObject.has("vminfo")) {
             JSONObject ankaVmInfo = jsonObject.getJSONObject("vminfo");
             this.vmInfo = new AnkaVmInfo(ankaVmInfo);
+        }
+        if (jsonObject.has("message")) {
+            this.message = jsonObject.getString("message");
         }
     }
 
@@ -32,6 +36,10 @@ public class AnkaVmSession extends AnkaVMRepresentation {
 
     public AnkaVmInfo getVmInfo() {
         return vmInfo;
+    }
+
+    public String getMessage() {
+        return this.message;
     }
 }
 

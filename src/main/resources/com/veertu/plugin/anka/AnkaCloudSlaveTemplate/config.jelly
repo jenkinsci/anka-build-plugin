@@ -13,9 +13,7 @@
             <f:select />
         </f:entry>
 
-        <f:entry title="${%Node Group}" field="group" description="The node group the vm will run on">
-            <f:select />
-        </f:entry>
+
 
         <f:entry title="${%Description}" field="templateDescription">
             <f:textbox />
@@ -43,6 +41,9 @@
                 <f:radioBlock name="launchMethod" value="ssh" title="SSH" checked="${instance.launchMethodString != 'jnlp'}">
                     <f:entry title="${%Clone's user (SSH)}" description="The user and password to connect to chosen template" field="credentialsId" >
                         <c:select/>
+                    </f:entry>
+                    <f:entry title="${%Java options}" description="Additional java options" field="javaArgs" >
+                        <f:textbox default="" />
                     </f:entry>
                 </f:radioBlock>
                 <f:radioBlock name="launchMethod" title="JNLP" value="jnlp" checked="${instance.launchMethodString == 'jnlp'}" >
@@ -87,6 +88,14 @@
                 </f:repeatable>
             </f:entry>
         </f:block>
+          <f:advanced>
+            <f:entry title="${%Node Group}" field="group" description="The node group the vm will run on (enterprise only)">
+                <f:select />
+            </f:entry>
+            <f:entry title="${%Priority}" field="priority" description="The job's priority, lowest is more urgent (enterprise only)">
+                  <f:textbox clazz="number" default="0" />
+            </f:entry>
+          </f:advanced>
     </table>
 
 </j:jelly>

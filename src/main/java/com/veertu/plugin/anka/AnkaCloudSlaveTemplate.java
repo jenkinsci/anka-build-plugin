@@ -66,13 +66,14 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
     private String javaArgs;
     private String jnlpJenkinsOverrideUrl;
     private String jnlpTunnel;
+    private int priority;
 
     @DataBoundConstructor
     public AnkaCloudSlaveTemplate(
             final String cloudName, final String remoteFS, final String masterVmId,
             final String tag, final String labelString, final String templateDescription,
             final int numberOfExecutors, final int launchDelay,
-            boolean keepAliveOnError, JSONObject launchMethod, String group, String nameTemplate, @Nullable List<EnvironmentEntry> environments) {
+            boolean keepAliveOnError, JSONObject launchMethod, String group, String nameTemplate, int priority, @Nullable List<EnvironmentEntry> environments) {
         this.remoteFS = remoteFS;
         this.labelString = labelString;
         this.templateDescription = templateDescription;
@@ -94,6 +95,7 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
         this.jnlpJenkinsOverrideUrl = launchMethod.optString("jnlpJenkinsOverrideUrl", null);
         this.jnlpTunnel = launchMethod.optString("jnlpTunnel", null);
         this.setLaunchMethod(launchMethod.getString("value"));
+        this.priority = priority;
         readResolve();
     }
 
@@ -257,6 +259,10 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
         if (jnlpTunnel == null)
             return "";
         return jnlpTunnel;
+    }
+
+    public int getPriority() {
+        return this.priority;
     }
 
     /**
