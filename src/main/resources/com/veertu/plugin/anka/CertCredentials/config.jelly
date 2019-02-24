@@ -1,0 +1,23 @@
+
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form" xmlns:st="jelly:stapler">
+  <f:entry title="${%Client Key}" field="clientKey">
+    <f:textarea/>
+  </f:entry>
+  <f:entry title="${%Client Certificate}" field="clientCertificate">
+    <f:textarea/>
+  </f:entry>
+  <f:entry title="${%Name}" field="name">
+    <f:textbox/>
+  </f:entry>
+  <f:entry field="${instance != null ? null : 'id'}" title="${%ID}" help="${descriptor.getHelpFile('id')}">
+      <f:textbox name="_.id"
+                 value="${instance != null ? instance.id : null}"
+                 readonly="${instance != null ? 'readonly' : null}"
+                 checkUrl="${instance != null ? null : descriptor.getCheckUrl('id')}"
+      />
+    </f:entry>
+    <f:entry title="${%Description}" field="description">
+      <f:textbox/>
+    </f:entry>
+</j:jelly>

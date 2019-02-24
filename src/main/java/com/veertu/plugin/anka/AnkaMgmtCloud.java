@@ -1,14 +1,24 @@
 package com.veertu.plugin.anka;
 
-import com.veertu.ankaMgmtSdk.AnkaVmFactory;
+import com.cloudbees.plugins.credentials.CredentialsMatchers;
+import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.common.StandardUsernameListBoxModel;
+import com.cloudbees.plugins.credentials.domains.DomainRequirement;
+import com.veertu.ankaMgmtSdk.AnkaAPI;
 import com.veertu.ankaMgmtSdk.AnkaVmTemplate;
+import com.veertu.ankaMgmtSdk.AuthType;
 import com.veertu.ankaMgmtSdk.NodeGroup;
 import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
 import hudson.Extension;
 import hudson.model.*;
+//import hudson.security.ACL;
+import hudson.security.AccessControlled;
 import hudson.slaves.Cloud;
 import hudson.slaves.NodeProvisioner;
 import hudson.slaves.SlaveComputer;
+import hudson.util.ListBoxModel;
+import jenkins.model.Jenkins;
+import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.util.ArrayList;
@@ -16,6 +26,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
+
+import static com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials;
 
 
 /**
@@ -27,11 +39,15 @@ public class AnkaMgmtCloud extends Cloud {
     private final List<AnkaCloudSlaveTemplate> templates;
     private static java.util.logging.Logger MgmtLogger = java.util.logging.Logger.getLogger("anka-host");
     private final String ankaMgmtUrl;
-
+    private final AnkaAPI ankaAPI;
+    private final String credentialsId;
+    private final boolean skipTLSVerification;
 
     @DataBoundConstructor
     public AnkaMgmtCloud(String ankaMgmtUrl,
                      String cloudName,
+                     String credentialsId,
+                     boolean skipTLSVerification,
                      List<AnkaCloudSlaveTemplate> templates) {
         super(cloudName);
         this.ankaMgmtUrl = ankaMgmtUrl;
@@ -40,7 +56,27 @@ public class AnkaMgmtCloud extends Cloud {
         } else {
             this.templates = templates;
         }
+        this.credentialsId = credentialsId;
+        CertCredentials credentials = lookUpCredentials(credentialsId);
         Log("Init Anka Cloud");
+        this.skipTLSVerification = skipTLSVerification;
+        if (credentials != null && credentials.getClientCertificate() != null &&
+                !credentials.getClientCertificate().isEmpty() && credentials.getClientKey() != null &&
+                !credentials.getClientKey().isEmpty()) {
+            ankaAPI = new AnkaAPI(ankaMgmtUrl, skipTLSVerification, credentials.getClientCertificate() , credentials.getClientKey(), AuthType.CERTIFICATE);
+        } else {
+            ankaAPI = new AnkaAPI(ankaMgmtUrl, skipTLSVerification);
+        }
+    }
+
+
+    private CertCredentials lookUpCredentials(String credentialsId) {
+        return CredentialsMatchers.firstOrNull(CredentialsProvider.lookupCredentials(CertCredentials.class, Jenkins.getInstance(), null, new DomainRequirement[]{}), CredentialsMatchers.withId(credentialsId));
+
+    }
+
+    public String getCredentialsId() {
+        return credentialsId;
     }
 
     public String getCloudName() {
@@ -51,9 +87,17 @@ public class AnkaMgmtCloud extends Cloud {
         return ankaMgmtUrl;
     }
 
+    public boolean getSkipTLSVerification() {
+        return skipTLSVerification;
+    }
+
+
     public List<AnkaVmTemplate> listVmTemplates() {
+        if (ankaAPI == null) {
+            return new ArrayList<>();
+        }
         try {
-            return AnkaVmFactory.getInstance().listTemplates(this.ankaMgmtUrl);
+            return ankaAPI.listTemplates();
         } catch (AnkaMgmtException e) {
             e.printStackTrace();
             Log("Problem connecting to Anka mgmt host");
@@ -62,8 +106,11 @@ public class AnkaMgmtCloud extends Cloud {
     }
 
     public List<String> getTemplateTags(String masterVmId) {
+        if (ankaAPI == null) {
+            return new ArrayList<>();
+        }
         try {
-            return AnkaVmFactory.getInstance().listTemplateTags(this.ankaMgmtUrl, masterVmId);
+            return ankaAPI.listTemplateTags(masterVmId);
         } catch (AnkaMgmtException e) {
             e.printStackTrace();
             Log("Problem connecting to Anka mgmt host");
@@ -74,8 +121,11 @@ public class AnkaMgmtCloud extends Cloud {
     public List<AnkaCloudSlaveTemplate> getTemplates() { return templates; }
 
     public List<NodeGroup> getNodeGroups() {
+        if (ankaAPI == null) {
+            return new ArrayList<>();
+        }
         try{
-            return AnkaVmFactory.getInstance().getNodeGroups(ankaMgmtUrl);
+            return ankaAPI.getNodeGroups();
         } catch (AnkaMgmtException e) {
             e.printStackTrace();
             Log("Problem connecting to Anka mgmt host");
@@ -103,7 +153,7 @@ public class AnkaMgmtCloud extends Cloud {
             }
             try {
 
-                NodeProvisioner.PlannedNode newNode = AnkaPlannedNode.createInstance(t, label, ankaMgmtUrl);
+                NodeProvisioner.PlannedNode newNode = AnkaPlannedNode.createInstance(ankaAPI, t, label);
                 plannedNodes.add(newNode);
                 excessWorkload -= t.getNumberOfExecutors();
             }
@@ -216,6 +266,19 @@ public class AnkaMgmtCloud extends Cloud {
         @Override
         public String getDisplayName() {
             return "Anka Cloud";
+        }
+
+        public ListBoxModel doFillCredentialsIdItems(@AncestorInPath ItemGroup context) {
+            if (!(context instanceof AccessControlled ? (AccessControlled) context : Jenkins.getInstance()).hasPermission(Computer.CONFIGURE)) {
+                return new ListBoxModel();
+            }
+            final List<CertCredentials> credentials;
+            credentials = lookupCredentials(CertCredentials.class, Jenkins.getInstance(), null, new ArrayList<DomainRequirement>());
+            ListBoxModel listBox = new StandardUsernameListBoxModel();
+            for (CertCredentials cred: credentials) {
+                listBox.add(cred.getName(), cred.getId());
+            }
+            return listBox;
         }
     }
 

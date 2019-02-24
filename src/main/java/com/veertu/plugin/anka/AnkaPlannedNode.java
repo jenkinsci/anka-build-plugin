@@ -1,5 +1,6 @@
 package com.veertu.plugin.anka;
 
+import com.veertu.ankaMgmtSdk.AnkaAPI;
 import com.veertu.ankaMgmtSdk.AnkaMgmtVm;
 import com.veertu.plugin.anka.exceptions.AnkaHostException;
 import hudson.model.Computer;
@@ -46,15 +47,15 @@ public class AnkaPlannedNode extends NodeProvisioner.PlannedNode{
             return new AnkaPlannedNode(slave.getDisplayName(), f, numberOfExecutors);
     }
 
-    public static AnkaPlannedNode createInstance(final AnkaCloudSlaveTemplate template,
-                                                 final Label label, final String mgmtUrl) throws AnkaHostException, IOException{
+    public static AnkaPlannedNode createInstance(final AnkaAPI ankaAPI, final AnkaCloudSlaveTemplate template,
+                                                 final Label label) throws AnkaHostException, IOException{
         final int numberOfExecutors = template.getNumberOfExecutors();
         final String name = AnkaOnDemandSlave.generateName(template);
         final Callable<Node> provisionNodeCallable = new Callable<Node>() {
             public Node call() throws Exception {
                 AnkaOnDemandSlave slave = null;
                 try {
-                    slave = AnkaOnDemandSlave.createProvisionedSlave(template, label, mgmtUrl);
+                    slave = AnkaOnDemandSlave.createProvisionedSlave(ankaAPI, template, label);
                 }
                 catch  (Exception e) {
                     AnkaMgmtCloud.Log("createProvisionedSlave() caught exception %s", e.getMessage());
