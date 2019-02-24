@@ -11,7 +11,6 @@ import com.veertu.ankaMgmtSdk.NodeGroup;
 import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
 import hudson.Extension;
 import hudson.model.*;
-//import hudson.security.ACL;
 import hudson.security.AccessControlled;
 import hudson.slaves.Cloud;
 import hudson.slaves.NodeProvisioner;
@@ -37,7 +36,7 @@ public class AnkaMgmtCloud extends Cloud {
 
 
     private final List<AnkaCloudSlaveTemplate> templates;
-    private static java.util.logging.Logger MgmtLogger = java.util.logging.Logger.getLogger("anka-host");
+    private static final transient java.util.logging.Logger MgmtLogger = java.util.logging.Logger.getLogger("anka-host");
     private final String ankaMgmtUrl;
     private final AnkaAPI ankaAPI;
     private final String credentialsId;
@@ -71,8 +70,13 @@ public class AnkaMgmtCloud extends Cloud {
 
 
     private CertCredentials lookUpCredentials(String credentialsId) {
-        return CredentialsMatchers.firstOrNull(CredentialsProvider.lookupCredentials(CertCredentials.class, Jenkins.getInstance(), null, new DomainRequirement[]{}), CredentialsMatchers.withId(credentialsId));
-
+        List<CertCredentials> credentials = lookupCredentials(CertCredentials.class, Jenkins.getInstance(), null, new ArrayList<DomainRequirement>());
+        for (CertCredentials creds: credentials) {
+            if (creds.getId().equals(credentialsId)) {
+                return creds;
+            }
+        }
+        return null;
     }
 
     public String getCredentialsId() {

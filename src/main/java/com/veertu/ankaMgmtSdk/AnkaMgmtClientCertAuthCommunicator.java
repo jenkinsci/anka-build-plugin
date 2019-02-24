@@ -1,7 +1,6 @@
 package com.veertu.ankaMgmtSdk;
 
 import org.apache.http.client.config.RequestConfig;
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.ssl.SSLContextBuilder;
@@ -30,6 +29,8 @@ public class AnkaMgmtClientCertAuthCommunicator extends AnkaMgmtCommunicator {
         RequestConfig.Builder requestBuilder = RequestConfig.custom();
         requestBuilder = requestBuilder.setConnectTimeout(timeout);
         requestBuilder = requestBuilder.setConnectionRequestTimeout(timeout);
+        requestBuilder.setSocketTimeout(timeout);
+
         HttpClientBuilder builder = HttpClientBuilder.create();
 
         KeyStore keyStore = this.authenticator.getKeyStore();

@@ -2,9 +2,7 @@ package com.veertu.ankaMgmtSdk;
 
 import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Created by asafgur on 18/05/2017.
@@ -16,7 +14,7 @@ public class AnkaAPI {
     private AnkaMgmtCommunicator communicator;
     private static int vmCounter = 1;
 
-    private java.util.logging.Logger logger =  java.util.logging.Logger.getLogger("AnkaAPI");
+    private transient java.util.logging.Logger logger =  java.util.logging.Logger.getLogger("AnkaAPI");
 
     public AnkaAPI(String mgmtUrl, boolean skipTLSVerification) {
         this.mgmtURL = mgmtUrl;

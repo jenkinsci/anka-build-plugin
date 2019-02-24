@@ -38,7 +38,7 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
     public static final String BridgedNetwork = "bridge";
     public static String SharedNetwork = "shared";
     public static String HostNetwork = "host";
-    private static final Logger LOGGER = Logger.getLogger(AnkaCloudSlaveTemplate.class.getName());
+    private static final transient Logger LOGGER = Logger.getLogger(AnkaCloudSlaveTemplate.class.getName());
     //private final List<String> masterImages;
     private final String masterVmId;
     private final String tag;

@@ -20,6 +20,7 @@ public class CertCredentials implements Credentials {
     private final String id;
     private final String name;
     private final CredentialsScope scope;
+    private final String description;
 
     @DataBoundConstructor
     public CertCredentials(CredentialsScope scope, String id, String name, String description,
@@ -27,6 +28,7 @@ public class CertCredentials implements Credentials {
         this.id = IdCredentials.Helpers.fixEmptyId(id);
         this.scope = scope;
         this.name = name;
+        this.description = description;
         this.clientKey = Util.fixEmptyAndTrim(clientKey) == null ? null : Secret.fromString(clientKey);
         this.clientCertificate = Util.fixEmptyAndTrim(clientCertificate);
     }
@@ -38,6 +40,10 @@ public class CertCredentials implements Credentials {
 
     public String getName() {
         return name;
+    }
+
+    public String getDescription() {
+        return description;
     }
 
     @CheckForNull

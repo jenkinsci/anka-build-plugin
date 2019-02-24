@@ -31,7 +31,6 @@ import java.security.cert.CertificateException;
 import javax.net.ssl.SSLContext;
 
 import org.apache.http.ssl.SSLContextBuilder;
-import org.apache.http.ssl.TrustStrategy;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -43,7 +42,6 @@ import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URL;
-import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -54,14 +52,13 @@ import java.util.List;
 public class AnkaMgmtCommunicator {
 
     protected URL mgmtUrl;
-    protected final int timeout;
+    protected final int timeout = 30000;
     protected final int maxRetries;
     protected boolean skipTLSVerification;
 
 
     public AnkaMgmtCommunicator(String url) {
         this.maxRetries = 10;
-        this.timeout = 4000;
         try {
             URL tmpUrl = new URL(url);
             URIBuilder b = new URIBuilder();
@@ -360,6 +357,8 @@ public class AnkaMgmtCommunicator {
         RequestConfig.Builder requestBuilder = RequestConfig.custom();
         requestBuilder = requestBuilder.setConnectTimeout(timeout);
         requestBuilder = requestBuilder.setConnectionRequestTimeout(timeout);
+        requestBuilder.setSocketTimeout(timeout);
+
         HttpClientBuilder builder = HttpClientBuilder.create();
 
         SSLContext sslContext = new SSLContextBuilder()
