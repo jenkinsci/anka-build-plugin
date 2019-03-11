@@ -40,12 +40,15 @@ public class AnkaMgmtCloud extends Cloud {
     private final String ankaMgmtUrl;
     private final AnkaAPI ankaAPI;
     private final String credentialsId;
-    private final boolean skipTLSVerification;
 
+    private final String rootCA;
+
+    private final boolean skipTLSVerification;
     @DataBoundConstructor
     public AnkaMgmtCloud(String ankaMgmtUrl,
                      String cloudName,
                      String credentialsId,
+                     String rootCA,
                      boolean skipTLSVerification,
                      List<AnkaCloudSlaveTemplate> templates) {
         super(cloudName);
@@ -56,15 +59,16 @@ public class AnkaMgmtCloud extends Cloud {
             this.templates = templates;
         }
         this.credentialsId = credentialsId;
+        this.rootCA = rootCA;
         CertCredentials credentials = lookUpCredentials(credentialsId);
         Log("Init Anka Cloud");
         this.skipTLSVerification = skipTLSVerification;
         if (credentials != null && credentials.getClientCertificate() != null &&
                 !credentials.getClientCertificate().isEmpty() && credentials.getClientKey() != null &&
                 !credentials.getClientKey().isEmpty()) {
-            ankaAPI = new AnkaAPI(ankaMgmtUrl, skipTLSVerification, credentials.getClientCertificate() , credentials.getClientKey(), AuthType.CERTIFICATE);
+            ankaAPI = new AnkaAPI(ankaMgmtUrl, skipTLSVerification, credentials.getClientCertificate() , credentials.getClientKey(), AuthType.CERTIFICATE, this.rootCA);
         } else {
-            ankaAPI = new AnkaAPI(ankaMgmtUrl, skipTLSVerification);
+            ankaAPI = new AnkaAPI(ankaMgmtUrl, skipTLSVerification, rootCA);
         }
     }
 
@@ -95,6 +99,9 @@ public class AnkaMgmtCloud extends Cloud {
         return skipTLSVerification;
     }
 
+    public String getRootCA() {
+        return rootCA;
+    }
 
     public List<AnkaVmTemplate> listVmTemplates() {
         if (ankaAPI == null) {

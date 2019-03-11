@@ -22,24 +22,23 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.client.utils.URIBuilder;
 
+import java.io.*;
 import java.net.URISyntaxException;
-import java.security.KeyManagementException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.UnrecoverableKeyException;
+import java.security.*;
+import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import javax.net.ssl.SSLContext;
 
 import org.apache.http.ssl.SSLContextBuilder;
+import org.bouncycastle.cert.X509CertificateHolder;
+import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.openssl.PEMParser;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import javax.net.ssl.SSLException;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
@@ -55,6 +54,7 @@ public class AnkaMgmtCommunicator {
     protected final int timeout = 30000;
     protected final int maxRetries;
     protected boolean skipTLSVerification;
+    protected String rootCA;
 
 
     public AnkaMgmtCommunicator(String url) {
@@ -76,7 +76,17 @@ public class AnkaMgmtCommunicator {
     public AnkaMgmtCommunicator(String mgmtURL, boolean skipTLSVerification) {
         this(mgmtURL);
         this.skipTLSVerification = skipTLSVerification;
+    }
 
+    public AnkaMgmtCommunicator(String mgmtUrl, String rootCA) {
+        this(mgmtUrl);
+        this.rootCA = rootCA;
+    }
+
+    public AnkaMgmtCommunicator(String mgmtUrl, boolean skipTLSVerification, String rootCA) {
+        this(mgmtUrl);
+        this.skipTLSVerification = skipTLSVerification;
+        this.rootCA = rootCA;
     }
 
     public List<AnkaVmTemplate> listTemplates() throws AnkaMgmtException {
@@ -360,9 +370,20 @@ public class AnkaMgmtCommunicator {
         requestBuilder.setSocketTimeout(timeout);
 
         HttpClientBuilder builder = HttpClientBuilder.create();
+        KeyStore keystore = null;
+        if (rootCA != null) {
+            PEMParser reader;
+            BouncyCastleProvider bouncyCastleProvider = new BouncyCastleProvider();
+            reader = new PEMParser(new StringReader(rootCA));
+            X509CertificateHolder holder = (X509CertificateHolder)reader.readObject();
+            Certificate certificate = new JcaX509CertificateConverter().setProvider(bouncyCastleProvider).getCertificate(holder);
+            keystore = KeyStore.getInstance("JKS");
+            keystore.load(null);
+            keystore.setCertificateEntry("rootCA", certificate);
+        }
 
         SSLContext sslContext = new SSLContextBuilder()
-                .loadTrustMaterial(null, utils.strategyLambda()).build();
+                .loadTrustMaterial(keystore, utils.strategyLambda()).build();
         builder.setSSLContext(sslContext);
         setTLSVerificationIfDefined(sslContext, builder);
         CloseableHttpClient httpClient = builder.setDefaultRequestConfig(requestBuilder.build()).build();

@@ -4,10 +4,16 @@ import org.apache.http.client.config.RequestConfig;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.ssl.SSLContextBuilder;
+import org.bouncycastle.cert.X509CertificateHolder;
+import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.openssl.PEMParser;
 
 import javax.net.ssl.SSLContext;
 import java.io.IOException;
+import java.io.StringReader;
 import java.security.*;
+import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 
 public class AnkaMgmtClientCertAuthCommunicator extends AnkaMgmtCommunicator {
@@ -24,6 +30,11 @@ public class AnkaMgmtClientCertAuthCommunicator extends AnkaMgmtCommunicator {
         this.authenticator = new ClientCertAuthenticator(client, key);
     }
 
+    public AnkaMgmtClientCertAuthCommunicator(String mgmtUrl, boolean skipTLSVerification, String client, String key, String rootCA) {
+        super(mgmtUrl, skipTLSVerification, rootCA);
+        this.authenticator = new ClientCertAuthenticator(client, key);
+    }
+
     protected CloseableHttpClient makeHttpClient() throws CertificateException, NoSuchAlgorithmException,
             KeyStoreException, IOException, UnrecoverableKeyException, KeyManagementException {
         RequestConfig.Builder requestBuilder = RequestConfig.custom();
@@ -34,6 +45,14 @@ public class AnkaMgmtClientCertAuthCommunicator extends AnkaMgmtCommunicator {
         HttpClientBuilder builder = HttpClientBuilder.create();
 
         KeyStore keyStore = this.authenticator.getKeyStore();
+        if (rootCA != null) {
+            PEMParser reader;
+            BouncyCastleProvider bouncyCastleProvider = new BouncyCastleProvider();
+            reader = new PEMParser(new StringReader(rootCA));
+            X509CertificateHolder holder = (X509CertificateHolder)reader.readObject();
+            Certificate certificate = new JcaX509CertificateConverter().setProvider(bouncyCastleProvider).getCertificate(holder);
+            keyStore.setCertificateEntry("rootCA", certificate);
+        }
 
         SSLContext sslContext = new SSLContextBuilder()
                 .loadKeyMaterial(keyStore, authenticator.getPemPassword().toCharArray())

@@ -36,6 +36,11 @@ public class AnkaMgmtOpenIdCommunicator extends AnkaMgmtCommunicator {
 
     }
 
+    public AnkaMgmtOpenIdCommunicator(String mgmtUrl, boolean skipTLSVerification, String client, String key, String rootCA) {
+        super(mgmtUrl, skipTLSVerification, rootCA);
+        authenticator = new OpenIdConnectAuthenticator(mgmtUrl, client, key);
+    }
+
     protected JSONObject doRequest(AnkaMgmtCommunicator.RequestMethod method, String url, JSONObject requestBody) throws IOException, AnkaMgmtException {
         int retry = 0;
         while (true){

@@ -6,12 +6,16 @@
     <f:entry title="Build Controller URL with port" field="ankaMgmtUrl">
         <f:textbox clazz="required string" />
     </f:entry>
-    <f:entry title="Skip TLS Verification (for self signed certificates" field="skipTLSVerification">
+    <f:entry title="Skip TLS Verification (for self signed certificates)" field="skipTLSVerification">
         <f:checkbox checked="${instance.getSkipTLSVerification()?'true':'false'}" field="skipTLSVerification" />
     </f:entry>
 
     <f:entry title="${%Controller Credentials}" description="Controller client certificate" field="credentialsId" >
         <c:select/>
+    </f:entry>
+
+    <f:entry title="Root CA Certificate (for validating self signed certificates)" field="rootCA">
+        <f:textarea clazz="string"  />
     </f:entry>
 
 

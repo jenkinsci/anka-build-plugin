@@ -16,20 +16,20 @@ public class AnkaAPI {
 
     private transient java.util.logging.Logger logger =  java.util.logging.Logger.getLogger("AnkaAPI");
 
-    public AnkaAPI(String mgmtUrl, boolean skipTLSVerification) {
+    public AnkaAPI(String mgmtUrl, boolean skipTLSVerification, String rootCA) {
         this.mgmtURL = mgmtUrl;
-        this.communicator = new AnkaMgmtCommunicator(mgmtUrl, skipTLSVerification);
+        this.communicator = new AnkaMgmtCommunicator(mgmtUrl, skipTLSVerification, rootCA);
     }
 
-    public AnkaAPI(String mgmtUrl, boolean skipTLSVerification, String client, String key, AuthType authType) {
+    public AnkaAPI(String mgmtUrl, boolean skipTLSVerification, String client, String key, AuthType authType, String rootCA) {
         this.mgmtURL = mgmtUrl;
 
         switch (authType) {
             case CERTIFICATE:
-                this.communicator = new AnkaMgmtClientCertAuthCommunicator(mgmtUrl, skipTLSVerification, client, key);
+                this.communicator = new AnkaMgmtClientCertAuthCommunicator(mgmtUrl, skipTLSVerification, client, key, rootCA);
                 break;
             case OPENID_CONNECT:
-                this.communicator = new AnkaMgmtOpenIdCommunicator(mgmtUrl, skipTLSVerification, client, key);
+                this.communicator = new AnkaMgmtOpenIdCommunicator(mgmtUrl, skipTLSVerification, client, key, rootCA);
                 break;
         }
     }
