@@ -56,7 +56,7 @@ public class AnkaMgmtClientCertAuthCommunicator extends AnkaMgmtCommunicator {
 
         SSLContext sslContext = new SSLContextBuilder()
                 .loadKeyMaterial(keyStore, authenticator.getPemPassword().toCharArray())
-                .loadTrustMaterial(keyStore, utils.strategyLambda()).build();
+                .loadTrustMaterial(keyStore, getTrustStartegy()).build();
         builder.setSSLContext(sslContext);
 
         setTLSVerificationIfDefined(sslContext, builder);

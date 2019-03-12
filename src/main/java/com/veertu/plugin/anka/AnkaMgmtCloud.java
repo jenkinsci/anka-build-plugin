@@ -59,7 +59,11 @@ public class AnkaMgmtCloud extends Cloud {
             this.templates = templates;
         }
         this.credentialsId = credentialsId;
-        this.rootCA = rootCA;
+        if (rootCA != null && !rootCA.isEmpty()) {
+            this.rootCA = rootCA;
+        } else {
+            this.rootCA = null;
+        }
         CertCredentials credentials = lookUpCredentials(credentialsId);
         Log("Init Anka Cloud");
         this.skipTLSVerification = skipTLSVerification;
@@ -68,7 +72,7 @@ public class AnkaMgmtCloud extends Cloud {
                 !credentials.getClientKey().isEmpty()) {
             ankaAPI = new AnkaAPI(ankaMgmtUrl, skipTLSVerification, credentials.getClientCertificate() , credentials.getClientKey(), AuthType.CERTIFICATE, this.rootCA);
         } else {
-            ankaAPI = new AnkaAPI(ankaMgmtUrl, skipTLSVerification, rootCA);
+            ankaAPI = new AnkaAPI(ankaMgmtUrl, skipTLSVerification, this.rootCA);
         }
     }
 

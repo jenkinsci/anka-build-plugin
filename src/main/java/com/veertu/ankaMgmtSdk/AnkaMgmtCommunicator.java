@@ -30,6 +30,7 @@ import java.security.cert.CertificateException;
 import javax.net.ssl.SSLContext;
 
 import org.apache.http.ssl.SSLContextBuilder;
+import org.apache.http.ssl.TrustStrategy;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -383,7 +384,7 @@ public class AnkaMgmtCommunicator {
         }
 
         SSLContext sslContext = new SSLContextBuilder()
-                .loadTrustMaterial(keystore, utils.strategyLambda()).build();
+                .loadTrustMaterial(keystore, getTrustStartegy()).build();
         builder.setSSLContext(sslContext);
         setTLSVerificationIfDefined(sslContext, builder);
         CloseableHttpClient httpClient = builder.setDefaultRequestConfig(requestBuilder.build()).build();
@@ -395,6 +396,13 @@ public class AnkaMgmtCommunicator {
         if (skipTLSVerification) {
             builder.setSSLSocketFactory(new SSLConnectionSocketFactory(sslContext, new NoopHostnameVerifier()));
         }
+    }
+
+    protected TrustStrategy getTrustStartegy() {
+        if (skipTLSVerification) {
+            return utils.strategyLambda();
+        }
+        return null;
     }
 
     protected HttpRequestBase setBody(HttpEntityEnclosingRequestBase request, JSONObject requestBody) throws UnsupportedEncodingException {
