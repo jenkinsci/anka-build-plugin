@@ -24,7 +24,7 @@ public class ClientCertAuthenticator {
     private final String pemPassword = "somePassword";
     private final String keyAlias = "key-alias";
     private final String certAlias = "cert-alias";
-    private KeyStore keyStore;
+    private transient KeyStore keyStore;
 
     public ClientCertAuthenticator(String clientCert, String clientCertKey) {
         this.clientCert = clientCert;
