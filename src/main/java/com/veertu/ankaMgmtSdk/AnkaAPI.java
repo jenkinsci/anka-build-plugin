@@ -14,7 +14,7 @@ public class AnkaAPI {
     private AnkaMgmtCommunicator communicator;
     private static int vmCounter = 1;
 
-    private transient java.util.logging.Logger logger =  java.util.logging.Logger.getLogger("AnkaAPI");
+    private static transient java.util.logging.Logger logger =  java.util.logging.Logger.getLogger("AnkaAPI");
 
     public AnkaAPI(String mgmtUrl, boolean skipTLSVerification, String rootCA) {
         this.mgmtURL = mgmtUrl;
