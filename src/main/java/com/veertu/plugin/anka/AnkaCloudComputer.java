@@ -1,11 +1,8 @@
 package com.veertu.plugin.anka;
 
-import hudson.model.Executor;
-import hudson.model.Queue;
-import hudson.model.ResultTrend;
+import hudson.model.*;
 import hudson.slaves.AbstractCloudComputer;
 import hudson.slaves.AbstractCloudSlave;
-import hudson.util.RunList;
 
 /**
  * Created by asafgur on 16/11/2016.
@@ -43,7 +40,7 @@ public class AnkaCloudComputer extends AbstractCloudComputer {
 
     @Override
     public void taskCompleted(Executor executor, Queue.Task task, long durationMS) {
-        checkLatestJobAndChangeNodeBehaviour();
+        checkLatestJobAndChangeNodeBehaviour(task);
         super.taskCompleted(executor, task, durationMS);
 
     }
@@ -51,17 +48,20 @@ public class AnkaCloudComputer extends AbstractCloudComputer {
 
     @Override
     public void taskCompletedWithProblems(Executor executor, Queue.Task task, long durationMS, Throwable problems) {
-        checkLatestJobAndChangeNodeBehaviour();
+        checkLatestJobAndChangeNodeBehaviour(task);
         super.taskCompletedWithProblems(executor, task, durationMS, problems);
     }
 
-    private void checkLatestJobAndChangeNodeBehaviour(){
-        // check the lates build and report back to slave object , in case keepAliveOnerror is set
-        RunList<?> jobs = this.getBuilds();
-        if (jobs.isEmpty()) {
+    private void checkLatestJobAndChangeNodeBehaviour(Queue.Task task){
+        // check the latest build and report back to slave object , in case keepAliveOnerror is set
+        if (!(task instanceof AbstractProject)) {
             return;
         }
-        ResultTrend trend = ResultTrend.getResultTrend(jobs.getLastBuild());
+        AbstractBuild b = ((AbstractProject)task).getLastBuild();
+        if (b == null) {
+            return;
+        }
+        ResultTrend trend = ResultTrend.getResultTrend(b);
         AnkaMgmtCloud.Log("slave: %s, vm id: %s exited build with trend: %s", this.slave.getNodeName(),
                 this.slave.getVM().getId(), trend.toString());
         switch (trend){
