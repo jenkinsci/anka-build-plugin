@@ -21,6 +21,7 @@ public abstract class AbstractAnkaSlave extends AbstractCloudSlave {
     protected AnkaCloudSlaveTemplate template;
     protected AnkaMgmtVm vm;
     public final int launchTimeout = 300;
+    protected String displayName;
 
     protected static final int launchTimeoutSeconds = 2000;
     protected static final int maxNumRetries = 5;
@@ -58,6 +59,16 @@ public abstract class AbstractAnkaSlave extends AbstractCloudSlave {
         return vm;
     }
 
+    public String getDisplayName() {
+        if (this.displayName == null || this.displayName.isEmpty()) {
+            return this.name;
+        }
+        return this.displayName;
+    }
+
+    public void setDisplayName(String displayName) {
+        this.displayName = displayName;
+    }
 
     @Override
     public AbstractCloudComputer createComputer() {

@@ -36,6 +36,20 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
 
     public static String generateName(AnkaCloudSlaveTemplate template){
         String randomString = RandomStringUtils.randomAlphanumeric(16);
+        String nameTemplate = template.getNameTemplate();
+        if (nameTemplate != null && !nameTemplate.isEmpty()) {
+            nameTemplate = nameTemplate.replace("$intance_id", "");
+            nameTemplate = nameTemplate.replace("$node_id", "");
+            nameTemplate = nameTemplate.replace("$node_name", "");
+            nameTemplate = nameTemplate.replace("$template_name", "");
+            nameTemplate = nameTemplate.replace("$template_id", template.getMasterVmId());
+            if (nameTemplate.contains("$ts")) {
+                Long unixTime = System.currentTimeMillis() / 1000L;
+                nameTemplate = nameTemplate.replace("$ts", unixTime.toString());
+                return nameTemplate;
+            }
+            return nameTemplate + "_" + randomString;
+        }
         return template.getMasterVmId() + randomString;
     }
 
@@ -58,6 +72,7 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
                 template.getMasterVmId(), template.getTag(), template.getNameTemplate(), template.getSSHPort(), jnlpCommand, template.getGroup(), template.getPriority());
         vm.waitForBoot();
         AnkaMgmtCloud.Log("vm %s %s is booted, creating jnlp launcher", vm.getId(), vm.getName());
+
         String tunnel = "";
         JNLPLauncher launcher = new JNLPLauncher(template.getJnlpTunnel(),
                 "",
@@ -78,6 +93,7 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
                 label.toString(),
                 launcher,
                 props, template, vm);
+        slave.setDisplayName(vm.getName());
         return slave;
     }
 
