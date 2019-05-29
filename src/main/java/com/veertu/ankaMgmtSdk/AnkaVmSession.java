@@ -25,6 +25,12 @@ public class AnkaVmSession extends AnkaVMRepresentation {
         }
     }
 
+    public static AnkaVmSession makeAnkaVmSessionFromJson(JSONObject jsonObject) {
+        String instance_id = jsonObject.getString("instance_id");
+        JSONObject vm = jsonObject.getJSONObject("vm");
+        return new AnkaVmSession(instance_id, vm);
+    }
+
 
     public String getSessionState() {
         return sessionState;

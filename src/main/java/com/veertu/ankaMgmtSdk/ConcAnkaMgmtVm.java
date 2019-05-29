@@ -18,7 +18,7 @@ public class ConcAnkaMgmtVm implements AnkaMgmtVm {
     private AnkaVmSession cachedVmSession;
     private final int cacheTime = 5; // 5 seconds
     private int lastCached = 0;
-    private static java.util.logging.Logger logger = java.util.logging.Logger.getLogger("anka-sdk");
+    private static transient java.util.logging.Logger logger = java.util.logging.Logger.getLogger("anka-sdk");
     private boolean terminated;
 
 

@@ -1,12 +1,24 @@
 <?jelly escape-by-default='true'?>
-<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:f="/lib/form" xmlns:c="/lib/credentials">
     <f:entry title="${%Anka Build Cloud}" field="cloudName">
-
         <f:textbox clazz="required string" />
     </f:entry>
     <f:entry title="Build Controller URL with port" field="ankaMgmtUrl">
         <f:textbox clazz="required string" />
     </f:entry>
+    <f:entry title="Skip TLS Verification (for self signed certificates)" field="skipTLSVerification">
+        <f:checkbox checked="${instance.getSkipTLSVerification()?'true':'false'}" field="skipTLSVerification" />
+    </f:entry>
+
+    <f:entry title="${%Controller Credentials}" description="Controller client certificate" field="credentialsId" >
+        <c:select/>
+    </f:entry>
+
+    <f:entry title="Root CA Certificate (for validating self signed certificates)" field="rootCA">
+        <f:textarea clazz="string"  />
+    </f:entry>
+
+
 
     <f:section title="VM templates">
         <!-- templates section-->

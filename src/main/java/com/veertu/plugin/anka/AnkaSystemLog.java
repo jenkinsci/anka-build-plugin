@@ -8,7 +8,7 @@ import java.util.logging.Logger;
  */
 public class AnkaSystemLog implements AnkaLogger {
 
-    private final Logger logger;
+    private final transient Logger logger;
     private final String logPrefix;
 
     public AnkaSystemLog(Logger logger, String logPrefix) {

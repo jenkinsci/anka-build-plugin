@@ -18,7 +18,7 @@ import java.util.logging.Logger;
  */
 public class RunOnceCloudRetentionStrategy extends CloudRetentionStrategy implements ExecutorListener {
 
-    public static final Logger logger = Logger.getLogger(RunOnceCloudRetentionStrategy.class.getName());
+    public static final transient Logger logger = Logger.getLogger(RunOnceCloudRetentionStrategy.class.getName());
 
     private int idleMinutes = 1;
     private transient boolean terminating;

@@ -1,48 +1,65 @@
 package com.veertu.ankaMgmtSdk;
 
 import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
+import com.veertu.ankaMgmtSdk.exceptions.AnkaUnAuthenticatedRequestException;
+import com.veertu.ankaMgmtSdk.exceptions.AnkaUnauthorizedRequestException;
+import com.veertu.ankaMgmtSdk.exceptions.ClientException;
 import com.veertu.plugin.anka.AnkaMgmtCloud;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.http.conn.HttpHostConnectException;
+import org.apache.http.conn.ssl.NoopHostnameVerifier;
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.conn.ssl.NoopHostnameVerifier;
-import org.apache.http.ssl.TrustStrategy;
-import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.client.utils.URIBuilder;
-import java.security.cert.X509Certificate;
+
+import java.io.*;
+import java.net.URISyntaxException;
+import java.security.*;
+import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import javax.net.ssl.SSLContext;
+
+import org.apache.http.ssl.SSLContextBuilder;
+import org.apache.http.ssl.TrustStrategy;
+import org.bouncycastle.cert.X509CertificateHolder;
+import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.openssl.PEMParser;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import javax.net.ssl.SSLException;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+
 
 /**
  * Created by asafgur on 09/05/2017.
  */
 public class AnkaMgmtCommunicator {
 
+    protected URL mgmtUrl;
+    protected final int timeout = 30000;
+    protected final int maxRetries;
+    protected boolean skipTLSVerification;
+    protected String rootCA;
 
-    private final URL mgmtUrl;
 
-    public AnkaMgmtCommunicator(String url) throws AnkaMgmtException {
+    public AnkaMgmtCommunicator(String url) {
+        this.maxRetries = 10;
         try {
             URL tmpUrl = new URL(url);
             URIBuilder b = new URIBuilder();
@@ -51,15 +68,26 @@ public class AnkaMgmtCommunicator {
             b.setPort(tmpUrl.getPort());
             mgmtUrl = b.build().toURL();
 
-            String statusUrl = String.format("%s/api/v1/status", mgmtUrl.toString());
-            this.doRequest(RequestMethod.GET, statusUrl);
-        } catch (IOException e) {
+        } catch (IOException | URISyntaxException e) {
+
             e.printStackTrace();
-            throw new AnkaMgmtException(e);
-        } catch (java.net.URISyntaxException e) {
-            throw new AnkaMgmtException(e);
         }
-        this.listTemplates();
+    }
+
+    public AnkaMgmtCommunicator(String mgmtURL, boolean skipTLSVerification) {
+        this(mgmtURL);
+        this.skipTLSVerification = skipTLSVerification;
+    }
+
+    public AnkaMgmtCommunicator(String mgmtUrl, String rootCA) {
+        this(mgmtUrl);
+        this.rootCA = rootCA;
+    }
+
+    public AnkaMgmtCommunicator(String mgmtUrl, boolean skipTLSVerification, String rootCA) {
+        this(mgmtUrl);
+        this.skipTLSVerification = skipTLSVerification;
+        this.rootCA = rootCA;
     }
 
     public List<AnkaVmTemplate> listTemplates() throws AnkaMgmtException {
@@ -84,6 +112,7 @@ public class AnkaMgmtCommunicator {
         return templates;
     }
 
+
     public List<String> getTemplateTags(String templateId) throws AnkaMgmtException {
         List<String> tags = new ArrayList<String>();
         String url = String.format("%s/api/v1/registry/vm?id=%s", mgmtUrl.toString(), templateId);
@@ -99,14 +128,38 @@ public class AnkaMgmtCommunicator {
                     tags.add(tag);
                 }
             }
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             AnkaMgmtCloud.Log("Exception trying to access: '%s'", url);
-        }
-        catch (org.json.JSONException e) {
+        } catch (org.json.JSONException e) {
             AnkaMgmtCloud.Log("Exception trying to parse response: '%s'", url);
         }
         return tags;
+    }
+
+
+    public List<NodeGroup> getNodeGroups() throws AnkaMgmtException {
+        List<NodeGroup> groups = new ArrayList<>();
+        String url = String.format("%s/api/v1/group", mgmtUrl.toString());
+        try {
+            JSONObject jsonResponse = this.doRequest(RequestMethod.GET, url);
+            String logicalResponse = jsonResponse.getString("status");
+            if (logicalResponse.equals("OK")) {
+                JSONArray groupsJson = jsonResponse.getJSONArray("body");
+                for (int i = 0; i < groupsJson.length(); i++) {
+                    JSONObject groupJsonObject = groupsJson.getJSONObject(i);
+                    NodeGroup nodeGroup = new NodeGroup(groupJsonObject);
+                    groups.add(nodeGroup);
+                }
+            } else {
+                throw new AnkaMgmtException(jsonResponse.getString("message"));
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new AnkaMgmtException(e);
+        } catch (JSONException e) {
+            return groups;
+        }
+        return groups;
     }
 
     public String startVm(String templateId, String tag, String nameTemplate, String startUpScript, String groupId, int priority) throws AnkaMgmtException {
@@ -179,51 +232,47 @@ public class AnkaMgmtCommunicator {
         }
     }
 
-    public List<NodeGroup> getNodeGroups() throws AnkaMgmtException {
-        List<NodeGroup> groups = new ArrayList<>();
-        String url = String.format("%s/api/v1/group", mgmtUrl.toString());
-        try {
-            JSONObject jsonResponse = this.doRequest(RequestMethod.GET, url);
-            String logicalResponse = jsonResponse.getString("status");
-            if (logicalResponse.equals("OK")) {
-                JSONArray groupsJson = jsonResponse.getJSONArray("body");
-                for (int i = 0; i < groupsJson.length(); i++) {
-                    JSONObject groupJsonObject = groupsJson.getJSONObject(i);
-                    NodeGroup nodeGroup = new NodeGroup(groupJsonObject);
-                    groups.add(nodeGroup);
-                }
-            } else {
-                throw new AnkaMgmtException(jsonResponse.getString("message"));
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-            throw new AnkaMgmtException(e);
-        } catch (JSONException e) {
-            return groups;
-        }
-        return groups;
-    }
 
-    private List<String> list() throws AnkaMgmtException {
-        List<String> vmIds = new ArrayList<String>();
-        String url = String.format("%s/list", mgmtUrl.toString());
+    public List<AnkaVmSession> list() throws AnkaMgmtException {
+        List<AnkaVmSession> vms = new ArrayList<>();
+        String url = String.format("%s/api/v1/vm", mgmtUrl.toString());
         try {
             JSONObject jsonResponse = this.doRequest(RequestMethod.GET, url);
-            String logicalResult = jsonResponse.getString("result");
+            String logicalResult = jsonResponse.getString("status");
             if (logicalResult.equals("OK")) {
-                JSONArray vmsJson = jsonResponse.getJSONArray("instance_id");
+                JSONArray vmsJson = jsonResponse.getJSONArray("body");
                 for (int i = 0; i < vmsJson.length(); i++) {
-                    String vmId = vmsJson.getString(i);
-                    vmIds.add(vmId);
+                    JSONObject vmJson = vmsJson.getJSONObject(i);
+                    String instanceId = vmJson.getString("instance_id");
+                    JSONObject vm = vmJson.getJSONObject("vm");
+                    vm.put("instance_id", instanceId);
+                    vm.put("cr_time", vm.getString("cr_time"));
+                    AnkaVmSession ankaVmSession = AnkaVmSession.makeAnkaVmSessionFromJson(vmJson);
+                    vms.add(ankaVmSession);
                 }
             }
-            return vmIds;
+            return vms;
         } catch (IOException e) {
-            return vmIds;
+            return vms;
         }
     }
 
-    private enum RequestMethod {
+    public AnkaCloudStatus status() throws AnkaMgmtException {
+        String url = String.format("%s/api/v1/status", mgmtUrl.toString());
+        try {
+            JSONObject jsonResponse = this.doRequest(RequestMethod.GET, url);
+            String logicalResult = jsonResponse.getString("status");
+            if (logicalResult.equals("OK")) {
+                JSONObject statusJson = jsonResponse.getJSONObject("body");
+                return AnkaCloudStatus.fromJson(statusJson);
+            }
+            return null;
+        } catch (IOException e) {
+            return null;
+        }
+    }
+
+    protected enum RequestMethod {
         GET, POST, DELETE
     }
 
@@ -231,84 +280,132 @@ public class AnkaMgmtCommunicator {
         return doRequest(method, url, null);
     }
 
-    private JSONObject doRequest(RequestMethod method, String url, JSONObject requestBody) throws IOException, AnkaMgmtException {
+    protected JSONObject doRequest(RequestMethod method, String url, JSONObject requestBody) throws IOException, AnkaMgmtException {
+        int retry = 0;
+        while (true){
+            try {
+                retry++;
 
-        HttpClientBuilder builder = HttpClientBuilder.create();
+                CloseableHttpClient httpClient = makeHttpClient();
+                HttpRequestBase request;
+                try {
+                    switch (method) {
+                        case POST:
+                            HttpPost postRequest = new HttpPost(url);
+                            request = setBody(postRequest, requestBody);
+                            break;
+                        case DELETE:
+                            HttpDeleteWithBody delRequest = new HttpDeleteWithBody(url);
+                            request = setBody(delRequest, requestBody);
+                            break;
+                        case GET:
+                            request = new HttpGet(url);
+                            break;
+                        default:
+                            request = new HttpGet(url);
+                            break;
+                    }
 
-        // allow self-signed certs
-        try {
-            class NulllTrustStrategy implements TrustStrategy {
-                public boolean isTrusted(
-                        final X509Certificate[] chain,
-                        final String authType) throws CertificateException {
-                    return true;
+                    HttpResponse response = httpClient.execute(request);
+                    int responseCode = response.getStatusLine().getStatusCode();
+                    if (responseCode == 401) {
+                        throw new AnkaUnAuthenticatedRequestException("Authentication Required");
+                    }
+                    if (responseCode == 403) {
+                        throw new AnkaUnauthorizedRequestException("Not authorized to perform this request");
+                    }
+                    if (responseCode >= 400) {
+                        throw new ClientException(request.getMethod() + request.getURI().toString() + "Bad Request");
+                    }
+
+                    if (responseCode != 200) {
+                        AnkaMgmtCloud.Log(String.format("url: %s response: %s", url, response.toString()));
+                        return null;
+                    }
+                    HttpEntity entity = response.getEntity();
+                    if (entity != null) {
+                        BufferedReader rd = new BufferedReader(
+                                new InputStreamReader(entity.getContent()));
+                        StringBuffer result = new StringBuffer();
+                        String line = "";
+                        while ((line = rd.readLine()) != null) {
+                            result.append(line);
+                        }
+                        JSONObject jsonResponse = new JSONObject(result.toString());
+                        return jsonResponse;
+                    }
+
+                } catch (ClientException | SSLException e) {
+                    // don't retry on client exception
+                    throw e;
+                } catch (HttpHostConnectException | ConnectTimeoutException e) {
+                    throw new AnkaMgmtException(e);
+                } catch (UnsupportedEncodingException e) {
+                    e.printStackTrace();
+                    throw new RuntimeException(e);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    throw new AnkaMgmtException(e);
+                } finally {
+                    httpClient.close();
                 }
-            };
+                return null;
+            } catch (ClientException e) {
+                // don't retry on client exception
+                throw new AnkaMgmtException(e);
+            } catch (Exception e) {
+                if (retry >= maxRetries) {
+                    continue;
+                }
 
-            SSLContext sslContext = new SSLContextBuilder()
-                    .loadTrustMaterial(null, new NulllTrustStrategy()).build();
-            builder.setSSLContext(sslContext);
-            builder.setSSLHostnameVerifier(new NoopHostnameVerifier());
-        } catch (Exception e) {
+                throw new AnkaMgmtException(e);
+            }
         }
 
-        CloseableHttpClient httpClient = builder.build();
+    }
 
-        HttpRequestBase request;
-        try {
-            switch (method) {
-                case POST:
-                    HttpPost postRequest = new HttpPost(url);
-                    request = setBody(postRequest, requestBody);
-                    break;
-                case DELETE:
-                    HttpDeleteWithBody delRequest = new HttpDeleteWithBody(url);
-                    request = setBody(delRequest, requestBody);
-                    break;
-                case GET:
-                    request = new HttpGet(url);
-                    break;
-                default:
-                    request = new HttpGet(url);
-                    break;
-            }
+    protected CloseableHttpClient makeHttpClient() throws KeyStoreException, NoSuchAlgorithmException, KeyManagementException, CertificateException, IOException, UnrecoverableKeyException {
+        RequestConfig.Builder requestBuilder = RequestConfig.custom();
+        requestBuilder = requestBuilder.setConnectTimeout(timeout);
+        requestBuilder = requestBuilder.setConnectionRequestTimeout(timeout);
+        requestBuilder.setSocketTimeout(timeout);
 
-            HttpResponse response = httpClient.execute(request);
-            int responseCode = response.getStatusLine().getStatusCode();
-            if (responseCode != 200) {
-                System.out.println(response.toString());
-                throw new AnkaMgmtException(new Exception("Incorrect URL"));
-            }
-            HttpEntity entity = response.getEntity();
-            if ( entity != null ) {
-                BufferedReader rd = new BufferedReader(
-                        new InputStreamReader(entity.getContent()));
-                StringBuffer result = new StringBuffer();
-                String line = "";
-                while ((line = rd.readLine()) != null) {
-                    result.append(line);
-                }
-                JSONObject jsonResponse = new JSONObject(result.toString());
-                return jsonResponse;
-            }
+        HttpClientBuilder builder = HttpClientBuilder.create();
+        KeyStore keystore = null;
+        if (rootCA != null) {
+            PEMParser reader;
+            BouncyCastleProvider bouncyCastleProvider = new BouncyCastleProvider();
+            reader = new PEMParser(new StringReader(rootCA));
+            X509CertificateHolder holder = (X509CertificateHolder)reader.readObject();
+            Certificate certificate = new JcaX509CertificateConverter().setProvider(bouncyCastleProvider).getCertificate(holder);
+            keystore = KeyStore.getInstance("JKS");
+            keystore.load(null);
+            keystore.setCertificateEntry("rootCA", certificate);
+        }
 
-        } catch (HttpHostConnectException e) {
-            throw new AnkaMgmtException(e);
-        } catch (SSLException e) {
-            throw e;
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-            throw new RuntimeException(e);
-        } catch (IOException e) {
-            e.printStackTrace();
-            throw new AnkaMgmtException(e);
-        } finally {
-            httpClient.close();
+        SSLContext sslContext = new SSLContextBuilder()
+                .loadTrustMaterial(keystore, getTrustStartegy()).build();
+        builder.setSSLContext(sslContext);
+        setTLSVerificationIfDefined(sslContext, builder);
+        CloseableHttpClient httpClient = builder.setDefaultRequestConfig(requestBuilder.build()).build();
+        return httpClient;
+
+    }
+
+    protected void setTLSVerificationIfDefined(SSLContext sslContext, HttpClientBuilder builder) {
+        if (skipTLSVerification) {
+            builder.setSSLSocketFactory(new SSLConnectionSocketFactory(sslContext, new NoopHostnameVerifier()));
+        }
+    }
+
+    protected TrustStrategy getTrustStartegy() {
+        if (skipTLSVerification) {
+            return utils.strategyLambda();
         }
         return null;
     }
 
-    private HttpRequestBase setBody(HttpEntityEnclosingRequestBase request, JSONObject requestBody) throws UnsupportedEncodingException {
+    protected HttpRequestBase setBody(HttpEntityEnclosingRequestBase request, JSONObject requestBody) throws UnsupportedEncodingException {
         request.setHeader("content-type", "application/json");
         StringEntity body = new StringEntity(requestBody.toString());
         request.setEntity(body);
