@@ -85,7 +85,7 @@ public class AnkaPlannedNode extends NodeProvisioner.PlannedNode{
                         if ((System.currentTimeMillis() - startTime) < slave.launchTimeout * 1000){
                             AnkaMgmtCloud.Log("caught ExecutionException when trying to start %s " +
                                     "sleeping for 5 seconds to retry", slave.getNodeName());
-                            Thread.sleep(5000);
+                            Thread.sleep(1000);
                             continue;
                         }
                         AnkaMgmtCloud.Log("Failed to connect to slave %s", slave.getNodeName());
