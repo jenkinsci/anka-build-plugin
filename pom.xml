@@ -9,7 +9,7 @@
     <relativePath />
   </parent>
   <artifactId>anka-build</artifactId>
-  <version>1.19.1-SNAPSHOT</version>
+  <version>1.20-SNAPSHOT</version>
   <packaging>hpi</packaging>
 
   <properties>
@@ -139,7 +139,7 @@
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>ssh-slaves</artifactId>
-      <version>1.12</version>
+      <version>1.26</version>
     </dependency>
       <dependency>
           <groupId>org.bouncycastle</groupId>

@@ -193,10 +193,16 @@ public class AnkaMgmtCommunicator {
             if (uuidsJson.length() >= 1 ){
                 return uuidsJson.getString(0);
             }
-
-//            return jsonResponse.getString("body");
         }
-        return null;
+        if (tag != null && !tag.isEmpty()) {
+            String message = jsonResponse.getString("message");
+            if (message.equals("No such tag "+ tag)) {
+                AnkaMgmtCloud.Log("Tag " + tag + " not found. starting vm with latest tag");
+                return startVm(templateId, null, nameTemplate, startUpScript, groupId, priority);
+            }
+        }
+
+        throw new AnkaMgmtException(jsonResponse.getString("message"));
     }
 
     public AnkaVmSession showVm(String sessionId) throws AnkaMgmtException {
