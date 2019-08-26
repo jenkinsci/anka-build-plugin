@@ -111,9 +111,52 @@ public class ConcAnkaMgmtVm implements AnkaMgmtVm {
         }
     }
 
-    public String waitForBoot() throws InterruptedException, IOException, AnkaMgmtException {
+    private boolean isScheduling() throws AnkaMgmtException {
+        AnkaVmSession sessionInfoCache = getSessionInfoCache();
+        if (sessionInfoCache == null) {
+            return true;
+        }
+        AnkaVmSession session = getSession();
+        String status = session.getSessionState();
+
+
+        switch (status){
+            case "Scheduling":
+                return true;
+            case "Pulling":
+            case "Started":
+                return false;
+            case "Terminated":
+            case "Terminating":
+            case "Stopping":
+            case "Stopped":
+            case "Error":
+                String message = session.getMessage();
+                if (message != null) {
+                    throw new AnkaMgmtException(String.format("Unexpected state %s for vm %s, Message: %s", status, sessionId, message));
+                }
+                throw new AnkaMgmtException(String.format("Unexpected state %s for vm %s", status, sessionId));
+            default:
+                return true;
+        }
+    }
+
+    public String waitForBoot(int schedulingTimeout) throws InterruptedException, IOException, AnkaMgmtException {
         logger.info(String.format("waiting for vm %s to boot", this.sessionId));
         int timeWaited = 0;
+
+        while (isScheduling()) {
+            // terminate if scheduling timeout is reached
+            Thread.sleep(waitUnit);
+            timeWaited += waitUnit;
+            logger.info(String.format("waiting for vm %s %d to stop scheduling", this.sessionId, timeWaited));
+            if (timeWaited > schedulingTimeout * waitUnit) {
+                this.terminate();
+                throw new IOException("vm scheduling too long");
+            }
+        }
+
+        timeWaited = 0;
 
         while (isStarting()) {
             // wait for the vm to spin up

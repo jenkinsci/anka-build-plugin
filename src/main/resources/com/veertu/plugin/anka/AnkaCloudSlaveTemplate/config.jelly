@@ -95,6 +95,9 @@
             <f:entry title="${%Priority}" field="priority" description="The job's priority, lowest is more urgent (enterprise only)">
                   <f:textbox clazz="number" default="0" />
             </f:entry>
+            <f:entry title="${%Scheduling Timeout}" field="schedulingTimeout" description="Seconds for timeout when node is in scheduling state">
+                  <f:textbox clazz="number" default="${descriptor.schedulingTimeout}"/>
+            </f:entry>
           </f:advanced>
     </table>
 

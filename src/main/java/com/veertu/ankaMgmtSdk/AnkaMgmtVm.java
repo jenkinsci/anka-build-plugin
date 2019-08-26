@@ -9,7 +9,7 @@ import java.io.IOException;
  */
 public interface AnkaMgmtVm {
 
-    String waitForBoot() throws InterruptedException, IOException, AnkaMgmtException;
+    String waitForBoot(int schedulingTimeout) throws InterruptedException, IOException, AnkaMgmtException;
     String getId();
     String getName();
     String getConnectionIp();

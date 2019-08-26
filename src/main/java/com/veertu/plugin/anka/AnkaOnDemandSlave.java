@@ -70,7 +70,7 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
 
         AnkaMgmtVm vm = ankaAPI.makeAnkaVm(
                 template.getMasterVmId(), template.getTag(), template.getNameTemplate(), template.getSSHPort(), jnlpCommand, template.getGroup(), template.getPriority());
-        vm.waitForBoot();
+        vm.waitForBoot(template.getSchedulingTimeout());
         AnkaMgmtCloud.Log("vm %s %s is booted, creating jnlp launcher", vm.getId(), vm.getName());
 
         String tunnel = "";
@@ -118,7 +118,7 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
                     null,
                     props, template, vm);
             AnkaMgmtCloud.Log("vm %s is booting...", vm.getId());
-            vm.waitForBoot();
+            vm.waitForBoot(template.getSchedulingTimeout());
             AnkaMgmtCloud.Log("vm %s %s is booted, creating ssh launcher", vm.getId(), vm.getName());
             SSHLauncher launcher = new SSHLauncher(vm.getConnectionIp(), vm.getConnectionPort(),
                     template.getCredentialsId(),

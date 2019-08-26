@@ -35,6 +35,7 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
 
     protected static final SchemeRequirement HTTP_SCHEME = new SchemeRequirement("http");
     protected static final SchemeRequirement HTTPS_SCHEME = new SchemeRequirement("https");
+    protected static final int DEFAULT_SCHEDULING_TIMEOUT = 180;
     public static final String BridgedNetwork = "bridge";
     public static String SharedNetwork = "shared";
     public static String HostNetwork = "host";
@@ -67,13 +68,14 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
     private String jnlpJenkinsOverrideUrl;
     private String jnlpTunnel;
     private int priority;
+    private int schedulingTimeout = DEFAULT_SCHEDULING_TIMEOUT;
 
     @DataBoundConstructor
     public AnkaCloudSlaveTemplate(
             final String cloudName, final String remoteFS, final String masterVmId,
             final String tag, final String labelString, final String templateDescription,
             final int numberOfExecutors, final int launchDelay,
-            boolean keepAliveOnError, JSONObject launchMethod, String group, String nameTemplate, int priority, @Nullable List<EnvironmentEntry> environments) {
+            boolean keepAliveOnError, JSONObject launchMethod, String group, String nameTemplate, int priority, int schedulingTimeout, @Nullable List<EnvironmentEntry> environments) {
         this.remoteFS = remoteFS;
         this.labelString = labelString;
         this.templateDescription = templateDescription;
@@ -96,6 +98,10 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
         this.jnlpTunnel = launchMethod.optString("jnlpTunnel", null);
         this.setLaunchMethod(launchMethod.getString("value"));
         this.priority = priority;
+        if (schedulingTimeout <= 0)
+            this.schedulingTimeout = DEFAULT_SCHEDULING_TIMEOUT;
+        else
+            this.schedulingTimeout = schedulingTimeout;
         readResolve();
     }
 
@@ -265,6 +271,13 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
         return this.priority;
     }
 
+    public int getSchedulingTimeout() {
+        if (this.schedulingTimeout <= 0)
+            return DEFAULT_SCHEDULING_TIMEOUT;
+        else
+            return this.schedulingTimeout;
+    }
+
     /**
      *  ui stuff
      */
@@ -379,6 +392,10 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
 
         public List<String> getNetworkConfigOptions(){
             return Arrays.asList(HostNetwork, SharedNetwork);
+        }
+
+        public int getSchedulingTimeout() {
+            return DEFAULT_SCHEDULING_TIMEOUT;
         }
 
     }
