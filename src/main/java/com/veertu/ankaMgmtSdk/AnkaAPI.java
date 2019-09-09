@@ -62,4 +62,8 @@ public class AnkaAPI {
     public List<NodeGroup> getNodeGroups() throws AnkaMgmtException {
         return communicator.getNodeGroups();
     }
+
+    public void revertLatestTag(String templateID) throws AnkaMgmtException {
+        communicator.revertRegistryVM(templateID);
+    }
 }

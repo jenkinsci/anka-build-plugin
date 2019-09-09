@@ -22,7 +22,6 @@ import java.util.List;
  */
 public class AnkaOnDemandSlave extends AbstractAnkaSlave {
 
-    private boolean hadProblemsInBuild = false;
     private boolean acceptingTasks = true;
 
     protected AnkaOnDemandSlave(String name, String nodeDescription, String remoteFS, int numExecutors,

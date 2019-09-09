@@ -70,12 +70,17 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
     private int priority;
     private int schedulingTimeout = DEFAULT_SCHEDULING_TIMEOUT;
 
+    private SaveImageParameters saveImageParameters;
+
     @DataBoundConstructor
     public AnkaCloudSlaveTemplate(
             final String cloudName, final String remoteFS, final String masterVmId,
             final String tag, final String labelString, final String templateDescription,
             final int numberOfExecutors, final int launchDelay,
-            boolean keepAliveOnError, JSONObject launchMethod, String group, String nameTemplate, int priority, int schedulingTimeout, @Nullable List<EnvironmentEntry> environments) {
+            boolean keepAliveOnError, JSONObject launchMethod, String group,
+            String nameTemplate, int priority, int schedulingTimeout,
+            Boolean saveImage, String templateId, String pushTag, Boolean deleteLatest, String description, Boolean suspend,
+            @Nullable List<EnvironmentEntry> environments) {
         this.remoteFS = remoteFS;
         this.labelString = labelString;
         this.templateDescription = templateDescription;
@@ -102,6 +107,12 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
             this.schedulingTimeout = DEFAULT_SCHEDULING_TIMEOUT;
         else
             this.schedulingTimeout = schedulingTimeout;
+        if (saveImage) {
+            this.saveImageParameters = new SaveImageParameters(saveImage, templateId, pushTag,
+                    deleteLatest, description, suspend);
+        } else {
+            this.saveImageParameters = null;
+        }
         readResolve();
     }
 
@@ -215,6 +226,58 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
         return getJnlpArgsString();
     }
 
+
+    public SaveImageParameters getSaveImageParameters() {
+        return saveImageParameters;
+    }
+
+    public Boolean getSuspend() {
+        if (saveImageParameters != null) {
+            return saveImageParameters.getSuspend();
+        }
+        return true;
+    }
+
+    public Boolean getSaveImage() {
+        if (saveImageParameters != null) {
+            return saveImageParameters.getSaveImage();
+        }
+        return false;
+    }
+
+    public String getTemplateId() {
+        if (saveImageParameters != null) {
+            String templateId = saveImageParameters.getTemplateID();
+            if (templateId != null) {
+                return templateId;
+            }
+        }
+        if (masterVmId != null) {
+            return masterVmId;
+        }
+        return null;
+    }
+
+    public String getPushTag() {
+        if (saveImageParameters != null) {
+            return saveImageParameters.getTag();
+        }
+        return null;
+    }
+
+    public boolean isDeleteLatest() {
+        if (saveImageParameters != null) {
+            return saveImageParameters.isDeleteLatest();
+        }
+        return true;
+    }
+
+    public String getDescription() {
+        if (saveImageParameters != null) {
+            return saveImageParameters.getDescription();
+        }
+        return null;
+    }
     /*Collection<KeyValuePair> getEnvironmentKeyValuePairs() {
         if (null == environments || environments.isEmpty()) {
             return null;
@@ -310,6 +373,7 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
 
         @Override
         public boolean configure(StaplerRequest req, JSONObject formData) throws FormException {
+            System.out.println("configure");
             req.bindJSON(this, formData);
             save();
             return super.configure(req, formData);
@@ -376,6 +440,10 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
                 }
             }
             return models;
+        }
+
+        public ListBoxModel doFillTemplateIdItems(@QueryParameter String cloudName) {
+            return doFillMasterVmIdItems(cloudName);
         }
 
         public ListBoxModel doFillTagItems(@QueryParameter String cloudName , @QueryParameter String masterVmId) {

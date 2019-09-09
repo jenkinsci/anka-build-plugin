@@ -274,6 +274,10 @@ public class AnkaMgmtCloud extends Cloud {
         InternalLog(null, slave, listener, format, args);
     }
 
+    public AnkaAPI getAnkaApi() {
+        return ankaAPI;
+    }
+
 
     @Extension
     public static final class DescriptorImpl extends Descriptor<Cloud> {

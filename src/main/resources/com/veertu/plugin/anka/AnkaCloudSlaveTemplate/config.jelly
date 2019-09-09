@@ -88,6 +88,25 @@
                 </f:repeatable>
             </f:entry>
         </f:block>
+         <f:section title="Cache Builder" description="Push the vm to the registry when the build is done">
+          <f:optionalBlock inline="true" field="saveImage" title="Cache Builder" checked="${instance.getSaveImageParameters() != null }">
+               <f:entry title="${%Target Template}"  field="templateId" description="The template to save the image to">
+                   <f:select />
+               </f:entry>
+               <f:entry title="${%Tag}"  field="pushTag" description="Tag to push (date will be appended to tag string)">
+                   <f:textbox />
+               </f:entry>
+               <f:entry title="${%Description}"  field="description" description="description for the new tag">
+                   <f:textbox />
+               </f:entry>
+              <f:entry title="${%Suspend}" name="suspend" field="suspend" description="Suspend the image before pushing it to registry">
+                 <f:checkbox  />
+              </f:entry>
+              <f:entry title="${%Delete Latest Tag}" name="deleteLatest" field="deleteLatest" description="Delete the latest tag in the registry before pushing">
+                 <f:checkbox  />
+               </f:entry>
+                </f:optionalBlock>
+            </f:section>
           <f:advanced>
             <f:entry title="${%Node Group}" field="group" description="The node group the vm will run on (enterprise only)">
                 <f:select />

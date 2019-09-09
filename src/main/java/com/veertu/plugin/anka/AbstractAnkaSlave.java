@@ -1,6 +1,7 @@
 package com.veertu.plugin.anka;
 
 import com.veertu.ankaMgmtSdk.AnkaMgmtVm;
+import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
 import hudson.Extension;
 import hudson.model.Computer;
 import hudson.model.Descriptor;
@@ -10,6 +11,7 @@ import jenkins.model.Jenkins;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
+import java.awt.*;
 import java.io.IOException;
 import java.util.List;
 
@@ -18,10 +20,23 @@ import java.util.List;
  */
 public abstract class AbstractAnkaSlave extends AbstractCloudSlave {
 
+    protected boolean hadProblemsInBuild = false;
+
     protected AnkaCloudSlaveTemplate template;
     protected AnkaMgmtVm vm;
     public final int launchTimeout = 300;
     protected String displayName;
+    protected boolean taskExecuted;
+
+    public String getJobNameAndNumber() {
+        return jobNameAndNumber;
+    }
+
+    public void setJobNameAndNumber(String jobNameAndNumber) {
+        this.jobNameAndNumber = jobNameAndNumber;
+    }
+
+    protected String jobNameAndNumber;
 
     protected static final int launchTimeoutSeconds = 2000;
     protected static final int maxNumRetries = 5;
@@ -38,6 +53,7 @@ public abstract class AbstractAnkaSlave extends AbstractCloudSlave {
         this.name = name;
         this.template = template;
         this.vm = vm;
+        this.taskExecuted = false;
         readResolve();
     }
 
@@ -47,6 +63,8 @@ public abstract class AbstractAnkaSlave extends AbstractCloudSlave {
         super(name, nodeDescription, remoteFS, numExecutors, mode, labelString,
                 launcher, retentionStrategy, nodeProperties);
         this.name = name;
+        this.taskExecuted = false;
+
     }
 
 
@@ -75,15 +93,27 @@ public abstract class AbstractAnkaSlave extends AbstractCloudSlave {
         return new AnkaCloudComputer(this);
     }
 
-    public void terminate() throws IOException, InterruptedException {
-        super.terminate();
-        if (vm != null)
-            vm.terminate();
-    }
-
     @Override
     protected void _terminate(TaskListener listener) throws IOException, InterruptedException {
-        AnkaMgmtCloud.Log("terminating");
+        if (vm != null) {
+            SaveImageParameters saveImageParams = template.getSaveImageParameters();
+            if (taskExecuted && saveImageParams != null && saveImageParams.getSaveImage() && !hadProblemsInBuild) {
+                try {
+                    String cloudName = template.getCloudName();
+                    AnkaMgmtCloud cloud = (AnkaMgmtCloud) Jenkins.getInstance().getCloud(cloudName);
+                    ImageSaver.saveImage(cloud, this, vm, saveImageParams);
+                } catch (AnkaMgmtException e) {
+                    throw new IOException(e);
+                }
+            } else {
+                vm.terminate();
+
+            }
+        }
+    }
+
+    public void setTaskExecuted(boolean didExec) {
+        this.taskExecuted = didExec;
     }
 
 

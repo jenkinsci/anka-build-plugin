@@ -3,6 +3,8 @@ package com.veertu.plugin.anka;
 import hudson.model.*;
 import hudson.slaves.AbstractCloudComputer;
 import hudson.slaves.AbstractCloudSlave;
+import org.jenkinsci.plugins.workflow.support.steps.ExecutorStepExecution;
+
 
 /**
  * Created by asafgur on 16/11/2016.
@@ -12,6 +14,7 @@ public class AnkaCloudComputer extends AbstractCloudComputer {
     private final AnkaOnDemandSlave slave;
     private String uuid;
     private AnkaCloudSlaveTemplate template;
+    protected Run<?, ?> run;
 
     public AnkaCloudComputer(AbstractCloudSlave slave) {
         super(slave);
@@ -33,14 +36,26 @@ public class AnkaCloudComputer extends AbstractCloudComputer {
     @Override
     public void taskAccepted(Executor executor, Queue.Task task) {
         super.taskAccepted(executor, task);
-        String jobAndNumber = executor.getCurrentWorkUnit().getExecutable().toString();
-        this.slave.setDescription(jobAndNumber);
+        if (task instanceof ExecutorStepExecution.PlaceholderTask) {
+            this.run = ((ExecutorStepExecution.PlaceholderTask) task).run();
+            if (this.run != null ){
+                this.slave.setDescription(this.run.getFullDisplayName());
+            }
+        } else {
+            try {
+                String jobAndNumber = executor.getCurrentWorkUnit().getExecutable().toString();
+                this.slave.setDescription(jobAndNumber);
+            } catch (NullPointerException e) {
+                this.slave.setDescription(executor.getDisplayName());
+            }
+        }
     }
 
 
     @Override
     public void taskCompleted(Executor executor, Queue.Task task, long durationMS) {
         checkLatestJobAndChangeNodeBehaviour(task);
+        this.slave.setTaskExecuted(true);
         super.taskCompleted(executor, task, durationMS);
 
     }
@@ -49,10 +64,20 @@ public class AnkaCloudComputer extends AbstractCloudComputer {
     @Override
     public void taskCompletedWithProblems(Executor executor, Queue.Task task, long durationMS, Throwable problems) {
         checkLatestJobAndChangeNodeBehaviour(task);
+        this.slave.setTaskExecuted(true);
         super.taskCompletedWithProblems(executor, task, durationMS, problems);
     }
 
     private void checkLatestJobAndChangeNodeBehaviour(Queue.Task task){
+
+        if (this.run != null) {
+            Result result = this.run.getResult();
+            if (result != Result.SUCCESS) {
+                this.slave.setHadErrorsOnBuild(true);
+            }
+            return;
+        }
+
         // check the latest build and report back to slave object , in case keepAliveOnerror is set
         if (!(task instanceof AbstractProject)) {
             return;
@@ -71,11 +96,11 @@ public class AnkaCloudComputer extends AbstractCloudComputer {
             case NOW_UNSTABLE:
             case STILL_UNSTABLE :
             case UNSTABLE :
+            case ABORTED :
                 this.slave.setHadErrorsOnBuild(true);
                 break;
             case SUCCESS :
             case FIXED :
-            case ABORTED :
                 this.slave.setHadErrorsOnBuild(false);
         }
     }

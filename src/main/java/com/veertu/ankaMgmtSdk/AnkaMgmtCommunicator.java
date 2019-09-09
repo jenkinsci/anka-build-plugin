@@ -9,10 +9,7 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.client.methods.*;
 import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.http.conn.HttpHostConnectException;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
@@ -278,6 +275,68 @@ public class AnkaMgmtCommunicator {
         }
     }
 
+    public void saveImage(String instanceId, String targetVMId, String newTemplateName, String tag,
+                          String description, Boolean suspend, String shutdownScript,
+                          Boolean revertBeforePush,
+                          String revertTag,
+                          Boolean doSuspendTest
+    ) throws AnkaMgmtException {
+        String url = String.format("%s/api/v1/image", mgmtUrl.toString());
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("id", instanceId);
+        if (targetVMId != null) {
+            jsonObject.put("target_vm_id", targetVMId);
+        }
+        if (newTemplateName != null) {
+            jsonObject.put("new_template_name", newTemplateName);
+        }
+        jsonObject.put("tag", tag);
+        jsonObject.put("description", description);
+        jsonObject.put("suspend", suspend);
+        if (shutdownScript != null && !shutdownScript.isEmpty()) {
+            String b64Script = Base64.encodeBase64String(shutdownScript.getBytes());
+            jsonObject.put("script", b64Script);
+        }
+        if (revertBeforePush) {
+            jsonObject.put("revert_before_push", true);
+        }
+        if (doSuspendTest) {
+            jsonObject.put("do_suspend_sanity_test", true);
+        }
+        if (revertTag != null && !revertTag.isEmpty()) {
+            jsonObject.put("revert_tag", revertTag);
+        }
+        JSONObject jsonResponse = null;
+        try {
+            jsonResponse = this.doRequest(RequestMethod.POST, url, jsonObject);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        if (jsonResponse == null ) {
+            return;
+        }
+        String logicalResult = jsonResponse.optString("status", "fail");
+        if (!logicalResult.equals("OK")) {
+            throw new AnkaMgmtException(jsonResponse.optString("message", "error saving image"));
+        }
+
+    }
+
+    public void revertRegistryVM(String templateID) throws AnkaMgmtException {
+        String url = String.format("%s/api/v1/registry/revert?id=%s", mgmtUrl.toString(), templateID);
+        JSONObject jsonResponse = null;
+        try {
+            jsonResponse = this.doRequest(RequestMethod.DELETE, url);
+        } catch (IOException e) {
+            throw new AnkaMgmtException(e);
+        }
+        String logicalResult = jsonResponse.optString("status", "fail");
+        if (!logicalResult.equals("OK")) {
+            throw new AnkaMgmtException(jsonResponse.optString("message", "error reverting template " + templateID));
+        }
+
+    }
+
     protected enum RequestMethod {
         GET, POST, DELETE
     }
@@ -301,8 +360,12 @@ public class AnkaMgmtCommunicator {
                             request = setBody(postRequest, requestBody);
                             break;
                         case DELETE:
-                            HttpDeleteWithBody delRequest = new HttpDeleteWithBody(url);
-                            request = setBody(delRequest, requestBody);
+                            if (requestBody != null) {
+                                HttpDeleteWithBody delRequest = new HttpDeleteWithBody(url);
+                                request = setBody(delRequest, requestBody);
+                            } else {
+                                request = new HttpDelete(url);
+                            }
                             break;
                         case GET:
                             request = new HttpGet(url);

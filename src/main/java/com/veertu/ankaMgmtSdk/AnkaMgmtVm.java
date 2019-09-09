@@ -18,4 +18,10 @@ public interface AnkaMgmtVm {
     boolean isRunning();
     String getInfo();
 
+    void saveImage(String targetVMId, String tag,
+                   String description, Boolean suspend,
+                   String shutdownScript,
+                   Boolean revertBeforePush,
+                   String revertTag,
+                   Boolean doSuspendTest) throws AnkaMgmtException;
 }
