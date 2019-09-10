@@ -1,6 +1,7 @@
 package com.veertu.ankaMgmtSdk;
 
 import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
+import org.json.JSONObject;
 
 import java.util.List;
 
@@ -65,5 +66,10 @@ public class AnkaAPI {
 
     public void revertLatestTag(String templateID) throws AnkaMgmtException {
         communicator.revertRegistryVM(templateID);
+    }
+
+    public List<JSONObject> getImageRequests() throws AnkaMgmtException {
+        return communicator.getImageRequests();
+
     }
 }

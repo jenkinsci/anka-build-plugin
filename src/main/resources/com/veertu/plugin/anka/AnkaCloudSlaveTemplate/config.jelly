@@ -88,6 +88,7 @@
                 </f:repeatable>
             </f:entry>
         </f:block>
+        <j:if test="${(instance.isPushSupported(cloud))}">
          <f:section title="Cache Builder" description="Push the vm to the registry when the build is done">
           <f:optionalBlock inline="true" field="saveImage" title="Cache Builder" checked="${instance.getSaveImageParameters() != null }">
                <f:entry title="${%Target Template}"  field="templateId" description="The template to save the image to">
@@ -111,6 +112,7 @@
                </f:entry>
                 </f:optionalBlock>
             </f:section>
+           </j:if>
           <f:advanced>
             <f:entry title="${%Node Group}" field="group" description="The node group the vm will run on (enterprise only)">
                 <f:select />

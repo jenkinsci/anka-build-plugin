@@ -3,9 +3,12 @@ package com.veertu.plugin.anka;
 import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernameListBoxModel;
 import com.cloudbees.plugins.credentials.domains.SchemeRequirement;
+import com.veertu.ankaMgmtSdk.AnkaNotFoundException;
 import com.veertu.ankaMgmtSdk.AnkaVmTemplate;
 import com.veertu.ankaMgmtSdk.NodeGroup;
+import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
 import com.veertu.plugin.anka.exceptions.AnkaHostException;
+import com.veertu.plugin.anka.exceptions.AnkaVmNotFoundException;
 import hudson.Extension;
 import hudson.model.*;
 import hudson.model.Node.Mode;
@@ -79,8 +82,8 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
             final int numberOfExecutors, final int launchDelay,
             boolean keepAliveOnError, JSONObject launchMethod, String group,
             String nameTemplate, int priority, int schedulingTimeout,
-            Boolean saveImage, String templateId, String pushTag, Boolean deleteLatest,
-            String description, Boolean suspend, Boolean waitForBuildToFinish,
+            @Nullable Boolean saveImage,@Nullable String templateId,@Nullable String pushTag,@Nullable Boolean deleteLatest,
+            @Nullable String description,@Nullable Boolean suspend, @Nullable Boolean waitForBuildToFinish,
                     @Nullable List<EnvironmentEntry> environments) {
         this.remoteFS = remoteFS;
         this.labelString = labelString;
@@ -108,7 +111,7 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
             this.schedulingTimeout = DEFAULT_SCHEDULING_TIMEOUT;
         else
             this.schedulingTimeout = schedulingTimeout;
-        if (saveImage) {
+        if (saveImage != null && saveImage) {
             this.saveImageParameters = new SaveImageParameters(saveImage, templateId, pushTag,
                     deleteLatest, description, suspend, waitForBuildToFinish);
         } else {
@@ -428,6 +431,18 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
             return new ArrayList<>();
         }
 
+        public Boolean isPushSupported(AnkaMgmtCloud cloud) {
+            try {
+                cloud.getAnkaApi().getImageRequests();
+                return true;
+            } catch (AnkaNotFoundException e) {
+                return false;
+            } catch (AnkaMgmtException e) {
+                e.printStackTrace();
+                return false;
+            }
+        }
+
         public ListBoxModel doFillGroupItems(@QueryParameter String cloudName) {
             AnkaMgmtCloud cloud = (AnkaMgmtCloud) Jenkins.getInstance().getCloud(cloudName);
             ListBoxModel models = new ListBoxModel();
@@ -465,6 +480,7 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
             }
             return models;
         }
+
 
         public List<String> getNetworkConfigOptions(){
             return Arrays.asList(HostNetwork, SharedNetwork);

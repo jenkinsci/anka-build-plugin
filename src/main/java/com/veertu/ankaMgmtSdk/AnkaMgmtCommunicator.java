@@ -30,6 +30,7 @@ import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.ssl.TrustStrategy;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
+import org.bouncycastle.cert.ocsp.Req;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openssl.PEMParser;
 import org.json.JSONArray;
@@ -335,6 +336,32 @@ public class AnkaMgmtCommunicator {
             throw new AnkaMgmtException(jsonResponse.optString("message", "error reverting template " + templateID));
         }
 
+    }
+
+    public List<JSONObject> getImageRequests() throws AnkaMgmtException {
+        String url = String.format("%s/api/v1/image", mgmtUrl.toString());
+        List<JSONObject> imageRequests = new ArrayList<>();
+        JSONObject jsonResponse = null;
+        try {
+            jsonResponse = this.doRequest(RequestMethod.GET, url);
+
+        } catch (AnkaMgmtException e) {
+            Throwable cause = e.getCause();
+            if (cause instanceof ClientException) {
+                throw new AnkaNotFoundException("not found");
+            }
+        } catch (IOException e) {
+            throw new AnkaMgmtException(e);
+        }
+        String logicalResult = jsonResponse.optString("status", "fail");
+        if (!logicalResult.equals("OK")) {
+            throw new AnkaMgmtException(jsonResponse.optString("message", "could not get image requests"));
+        }
+        JSONArray jsonArray = jsonResponse.optJSONArray("body");
+        for (int i = 0; i < jsonArray.length(); i++) {
+            imageRequests.add(jsonArray.getJSONObject(i));
+        }
+        return imageRequests;
     }
 
     protected enum RequestMethod {

@@ -33,7 +33,8 @@ public abstract class AbstractAnkaSlave extends AbstractCloudSlave {
     }
 
     public void setJobNameAndNumber(String jobNameAndNumber) {
-        this.jobNameAndNumber = jobNameAndNumber;
+
+        this.jobNameAndNumber = jobNameAndNumber.replaceAll("\\P{Print}", "");
     }
 
     protected String jobNameAndNumber;

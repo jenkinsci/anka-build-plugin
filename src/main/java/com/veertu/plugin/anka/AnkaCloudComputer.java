@@ -41,13 +41,16 @@ public class AnkaCloudComputer extends AbstractCloudComputer {
             this.run = ((ExecutorStepExecution.PlaceholderTask) task).run();
             if (this.run != null ){
                 this.slave.setDescription(this.run.getFullDisplayName());
+                this.slave.setJobNameAndNumber(this.run.getFullDisplayName());
             }
         } else {
             try {
                 String jobAndNumber = executor.getCurrentWorkUnit().getExecutable().toString();
                 this.slave.setDescription(jobAndNumber);
+                this.slave.setJobNameAndNumber(jobAndNumber);
             } catch (NullPointerException e) {
                 this.slave.setDescription(executor.getDisplayName());
+                this.slave.setJobNameAndNumber(executor.getDisplayName());
             }
         }
     }
