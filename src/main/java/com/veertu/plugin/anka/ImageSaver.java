@@ -16,6 +16,7 @@ public class ImageSaver {
             tagToPush = slave.getJobNameAndNumber();
         }
         tagToPush += "_" + new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
+        boolean deleteLatest = false;
         String latestTag = null;
         if (saveImageParams.isDeleteLatest()) {
             AnkaAPI api = cloud.getAnkaApi();
@@ -23,11 +24,12 @@ public class ImageSaver {
 
             if (tags.size() > 1) {
                 latestTag = tags.get(tags.size()-1);
+                deleteLatest = true;
             }
         }
         String shutdownScript = shutdownScript();
         vm.saveImage(saveImageParams.getTemplateID(), tagToPush, saveImageParams.getDescription(),
-                saveImageParams.getSuspend(), shutdownScript, saveImageParams.isDeleteLatest(), latestTag, true );
+                saveImageParams.getSuspend(), shutdownScript, deleteLatest, latestTag, true );
     }
 
     private static String shutdownScript() {
