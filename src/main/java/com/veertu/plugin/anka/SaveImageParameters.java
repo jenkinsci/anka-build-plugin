@@ -10,12 +10,19 @@ public class SaveImageParameters {
     public static String deleteLatestKey = "deleteLatest";
     public static String descriptionKey = "description";
     public static String suspendKey = "suspend";
+    public static String waitForBuildToFinishKey = "wait_for_build_to_finish";
 
     private final Boolean saveImage;
 
     private final String templateID;
     private final String tag;
     private final Boolean deleteLatest;
+
+    public Boolean getWaitForBuildToFinish() {
+        return waitForBuildToFinish;
+    }
+
+    private final Boolean waitForBuildToFinish;
 
     public Boolean getSuspend() {
         return suspend;
@@ -45,11 +52,14 @@ public class SaveImageParameters {
 
     private final String description;
 
-    public SaveImageParameters(Boolean doSaveImage, String templateID, String tag, Boolean deleteLatest, String description, Boolean suspend) {
+    public SaveImageParameters(Boolean doSaveImage, String templateID, String tag,
+                               Boolean deleteLatest, String description, Boolean suspend,
+                               Boolean waitForBuildToFinish) {
         this.saveImage = doSaveImage;
         this.templateID = templateID;
         this.tag = tag;
         this.deleteLatest = deleteLatest;
+        this.waitForBuildToFinish = waitForBuildToFinish;
         this.description = description;
         this.suspend = suspend;
     }
@@ -64,7 +74,8 @@ public class SaveImageParameters {
                 jsonObject.optString(tagKey, null),
                 jsonObject.optBoolean(deleteLatestKey, false),
                 jsonObject.optString(descriptionKey, null),
-                jsonObject.optBoolean(suspendKey, false)
+                jsonObject.optBoolean(suspendKey, false),
+                jsonObject.optBoolean(waitForBuildToFinishKey, false)
                 );
     }
 
@@ -76,6 +87,8 @@ public class SaveImageParameters {
         jsonObject.put(deleteLatestKey, deleteLatest);
         jsonObject.put(descriptionKey, description);
         jsonObject.put(suspendKey, suspend);
+        jsonObject.put(waitForBuildToFinishKey, waitForBuildToFinish);
         return jsonObject;
     }
+
 }

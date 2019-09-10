@@ -79,8 +79,9 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
             final int numberOfExecutors, final int launchDelay,
             boolean keepAliveOnError, JSONObject launchMethod, String group,
             String nameTemplate, int priority, int schedulingTimeout,
-            Boolean saveImage, String templateId, String pushTag, Boolean deleteLatest, String description, Boolean suspend,
-            @Nullable List<EnvironmentEntry> environments) {
+            Boolean saveImage, String templateId, String pushTag, Boolean deleteLatest,
+            String description, Boolean suspend, Boolean waitForBuildToFinish,
+                    @Nullable List<EnvironmentEntry> environments) {
         this.remoteFS = remoteFS;
         this.labelString = labelString;
         this.templateDescription = templateDescription;
@@ -109,7 +110,7 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
             this.schedulingTimeout = schedulingTimeout;
         if (saveImage) {
             this.saveImageParameters = new SaveImageParameters(saveImage, templateId, pushTag,
-                    deleteLatest, description, suspend);
+                    deleteLatest, description, suspend, waitForBuildToFinish);
         } else {
             this.saveImageParameters = null;
         }
@@ -270,6 +271,13 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
             return saveImageParameters.isDeleteLatest();
         }
         return true;
+    }
+
+    public boolean getWaitForBuildToFinish() {
+        if (saveImageParameters != null) {
+            return saveImageParameters.getWaitForBuildToFinish();
+        }
+        return false;
     }
 
     public String getDescription() {

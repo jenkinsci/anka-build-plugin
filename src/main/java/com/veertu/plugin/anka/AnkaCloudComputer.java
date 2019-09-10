@@ -3,6 +3,7 @@ package com.veertu.plugin.anka;
 import hudson.model.*;
 import hudson.slaves.AbstractCloudComputer;
 import hudson.slaves.AbstractCloudSlave;
+import org.apache.tools.ant.taskdefs.Sleep;
 import org.jenkinsci.plugins.workflow.support.steps.ExecutorStepExecution;
 
 
@@ -72,7 +73,18 @@ public class AnkaCloudComputer extends AbstractCloudComputer {
 
         if (this.run != null) {
             Result result = this.run.getResult();
-            if (result != Result.SUCCESS) {
+            if (result == null && this.template.getSaveImageParameters() != null && this.template.getSaveImageParameters().getWaitForBuildToFinish()) {
+                while (run.isBuilding()) {
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                        break;
+                    }
+                }
+                result = this.run.getResult();
+            }
+            if (result == Result.FAILURE || result == Result.ABORTED || result == Result.UNSTABLE) {
                 this.slave.setHadErrorsOnBuild(true);
             }
             return;

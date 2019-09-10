@@ -21,7 +21,7 @@ public class ImageSaver {
             AnkaAPI api = cloud.getAnkaApi();
             List<String> tags = api.listTemplateTags(saveImageParams.getTemplateID());
 
-            if (tags.size() > 0) {
+            if (tags.size() > 1) {
                 latestTag = tags.get(tags.size()-1);
             }
         }
