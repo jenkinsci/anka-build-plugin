@@ -431,18 +431,6 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
             return new ArrayList<>();
         }
 
-        public Boolean isPushSupported(AnkaMgmtCloud cloud) {
-            try {
-                cloud.getAnkaApi().getImageRequests();
-                return true;
-            } catch (AnkaNotFoundException e) {
-                return false;
-            } catch (AnkaMgmtException e) {
-                e.printStackTrace();
-                return false;
-            }
-        }
-
         public ListBoxModel doFillGroupItems(@QueryParameter String cloudName) {
             AnkaMgmtCloud cloud = (AnkaMgmtCloud) Jenkins.getInstance().getCloud(cloudName);
             ListBoxModel models = new ListBoxModel();

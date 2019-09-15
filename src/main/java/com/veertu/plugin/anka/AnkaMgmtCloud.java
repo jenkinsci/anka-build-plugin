@@ -4,10 +4,7 @@ import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardUsernameListBoxModel;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
-import com.veertu.ankaMgmtSdk.AnkaAPI;
-import com.veertu.ankaMgmtSdk.AnkaVmTemplate;
-import com.veertu.ankaMgmtSdk.AuthType;
-import com.veertu.ankaMgmtSdk.NodeGroup;
+import com.veertu.ankaMgmtSdk.*;
 import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
 import hudson.Extension;
 import hudson.model.*;
@@ -278,6 +275,17 @@ public class AnkaMgmtCloud extends Cloud {
         return ankaAPI;
     }
 
+    public Boolean isPushSupported() {
+        try {
+            this.getAnkaApi().getImageRequests();
+            return true;
+        } catch (AnkaNotFoundException e) {
+            return false;
+        } catch (AnkaMgmtException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
 
     @Extension
     public static final class DescriptorImpl extends Descriptor<Cloud> {
