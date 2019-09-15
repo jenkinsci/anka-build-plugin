@@ -27,6 +27,7 @@ public abstract class AbstractAnkaSlave extends AbstractCloudSlave {
     public final int launchTimeout = 300;
     protected String displayName;
     protected boolean taskExecuted;
+    protected boolean saveImageSent;
 
     public String getJobNameAndNumber() {
         return jobNameAndNumber;
@@ -55,6 +56,7 @@ public abstract class AbstractAnkaSlave extends AbstractCloudSlave {
         this.template = template;
         this.vm = vm;
         this.taskExecuted = false;
+        this.saveImageSent = false;
         readResolve();
     }
 
@@ -100,9 +102,14 @@ public abstract class AbstractAnkaSlave extends AbstractCloudSlave {
             SaveImageParameters saveImageParams = template.getSaveImageParameters();
             if (taskExecuted && saveImageParams != null && saveImageParams.getSaveImage() && !hadProblemsInBuild) {
                 try {
-                    String cloudName = template.getCloudName();
-                    AnkaMgmtCloud cloud = (AnkaMgmtCloud) Jenkins.getInstance().getCloud(cloudName);
-                    ImageSaver.saveImage(cloud, this, vm, saveImageParams);
+                    synchronized (this) {
+                        if (!this.saveImageSent) { // allow to send save image request only once
+                            String cloudName = template.getCloudName();
+                            AnkaMgmtCloud cloud = (AnkaMgmtCloud) Jenkins.getInstance().getCloud(cloudName);
+                            ImageSaver.saveImage(cloud, this, vm, saveImageParams);
+                            this.saveImageSent = true;
+                        }
+                    }
                 } catch (AnkaMgmtException e) {
                     throw new IOException(e);
                 }
