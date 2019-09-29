@@ -17,10 +17,7 @@ import jenkins.model.Jenkins;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.logging.Level;
 
 import static com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials;
@@ -67,9 +64,19 @@ public class AnkaMgmtCloud extends Cloud {
         if (credentials != null && credentials.getClientCertificate() != null &&
                 !credentials.getClientCertificate().isEmpty() && credentials.getClientKey() != null &&
                 !credentials.getClientKey().isEmpty()) {
-            ankaAPI = new AnkaAPI(ankaMgmtUrl, skipTLSVerification, credentials.getClientCertificate() , credentials.getClientKey(), AuthType.CERTIFICATE, this.rootCA);
+            if (ankaMgmtUrl.contains(",")) {
+                String[] mgmtURLS = ankaMgmtUrl.split(",");
+                ankaAPI = new AnkaAPI(Arrays.asList(mgmtURLS), skipTLSVerification, credentials.getClientCertificate() , credentials.getClientKey(), AuthType.CERTIFICATE, this.rootCA);
+            } else {
+                ankaAPI = new AnkaAPI(ankaMgmtUrl, skipTLSVerification, credentials.getClientCertificate() , credentials.getClientKey(), AuthType.CERTIFICATE, this.rootCA);
+            }
         } else {
-            ankaAPI = new AnkaAPI(ankaMgmtUrl, skipTLSVerification, this.rootCA);
+            if (ankaMgmtUrl.contains(",")) {
+                String[] mgmtURLS = ankaMgmtUrl.split(",");
+                ankaAPI = new AnkaAPI(Arrays.asList(mgmtURLS), skipTLSVerification, this.rootCA);
+            } else {
+                ankaAPI = new AnkaAPI(ankaMgmtUrl, skipTLSVerification, this.rootCA);
+            }
         }
     }
 

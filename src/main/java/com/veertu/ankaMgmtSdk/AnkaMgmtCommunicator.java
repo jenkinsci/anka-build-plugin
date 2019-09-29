@@ -1,5 +1,6 @@
 package com.veertu.ankaMgmtSdk;
 
+import com.veertu.RoundRobin;
 import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
 import com.veertu.ankaMgmtSdk.exceptions.AnkaUnAuthenticatedRequestException;
 import com.veertu.ankaMgmtSdk.exceptions.AnkaUnauthorizedRequestException;
@@ -51,13 +52,13 @@ public class AnkaMgmtCommunicator {
 
     protected URL mgmtUrl;
     protected final int timeout = 30000;
-    protected final int maxRetries;
+    protected final int maxRetries = 10;
     protected boolean skipTLSVerification;
     protected String rootCA;
+    protected RoundRobin roundRobin;
 
 
     public AnkaMgmtCommunicator(String url) {
-        this.maxRetries = 10;
         try {
             URL tmpUrl = new URL(url);
             URIBuilder b = new URIBuilder();
@@ -88,9 +89,15 @@ public class AnkaMgmtCommunicator {
         this.rootCA = rootCA;
     }
 
+    public AnkaMgmtCommunicator(List<String> mgmtURLS, boolean skipTLSVerification, String rootCA) {
+        this.roundRobin = new RoundRobin(mgmtURLS);
+        this.skipTLSVerification = skipTLSVerification;
+        this.rootCA = rootCA;
+    }
+
     public List<AnkaVmTemplate> listTemplates() throws AnkaMgmtException {
         List<AnkaVmTemplate> templates = new ArrayList<AnkaVmTemplate>();
-        String url = String.format("%s/api/v1/registry/vm", mgmtUrl.toString());
+        String url = "/api/v1/registry/vm";
         try {
             JSONObject jsonResponse = this.doRequest(RequestMethod.GET, url);
             String logicalResult = jsonResponse.getString("status");
@@ -113,7 +120,7 @@ public class AnkaMgmtCommunicator {
 
     public List<String> getTemplateTags(String templateId) throws AnkaMgmtException {
         List<String> tags = new ArrayList<String>();
-        String url = String.format("%s/api/v1/registry/vm?id=%s", mgmtUrl.toString(), templateId);
+        String url = String.format("/api/v1/registry/vm?id=%s", templateId);
         try {
             JSONObject jsonResponse = this.doRequest(RequestMethod.GET, url);
             String logicalResult = jsonResponse.getString("status");
@@ -137,7 +144,7 @@ public class AnkaMgmtCommunicator {
 
     public List<NodeGroup> getNodeGroups() throws AnkaMgmtException {
         List<NodeGroup> groups = new ArrayList<>();
-        String url = String.format("%s/api/v1/group", mgmtUrl.toString());
+        String url = "/api/v1/group";
         try {
             JSONObject jsonResponse = this.doRequest(RequestMethod.GET, url);
             String logicalResponse = jsonResponse.getString("status");
@@ -161,7 +168,7 @@ public class AnkaMgmtCommunicator {
     }
 
     public String startVm(String templateId, String tag, String nameTemplate, String startUpScript, String groupId, int priority) throws AnkaMgmtException {
-        String url = String.format("%s/api/v1/vm", mgmtUrl.toString());
+        String url = "/api/v1/vm";
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("vmid", templateId);
         if (tag != null)
@@ -204,7 +211,7 @@ public class AnkaMgmtCommunicator {
     }
 
     public AnkaVmSession showVm(String sessionId) throws AnkaMgmtException {
-        String url = String.format("%s/api/v1/vm?id=%s", mgmtUrl.toString(), sessionId);
+        String url = String.format("/api/v1/vm?id=%s", sessionId);
         try {
             JSONObject jsonResponse = this.doRequest(RequestMethod.GET, url);
             String logicalResult = jsonResponse.getString("status");
@@ -220,7 +227,7 @@ public class AnkaMgmtCommunicator {
     }
 
     public boolean terminateVm(String sessionId) throws AnkaMgmtException {
-        String url = String.format("%s/api/v1/vm", mgmtUrl.toString());
+        String url = "%s/api/v1/vm";
         try {
             JSONObject jsonObject = new JSONObject();
             jsonObject.put("id", sessionId);
@@ -239,7 +246,7 @@ public class AnkaMgmtCommunicator {
 
     public List<AnkaVmSession> list() throws AnkaMgmtException {
         List<AnkaVmSession> vms = new ArrayList<>();
-        String url = String.format("%s/api/v1/vm", mgmtUrl.toString());
+        String url = "/api/v1/vm";
         try {
             JSONObject jsonResponse = this.doRequest(RequestMethod.GET, url);
             String logicalResult = jsonResponse.getString("status");
@@ -262,7 +269,7 @@ public class AnkaMgmtCommunicator {
     }
 
     public AnkaCloudStatus status() throws AnkaMgmtException {
-        String url = String.format("%s/api/v1/status", mgmtUrl.toString());
+        String url = "%s/api/v1/status";
         try {
             JSONObject jsonResponse = this.doRequest(RequestMethod.GET, url);
             String logicalResult = jsonResponse.getString("status");
@@ -282,7 +289,7 @@ public class AnkaMgmtCommunicator {
                           String revertTag,
                           Boolean doSuspendTest
     ) throws AnkaMgmtException {
-        String url = String.format("%s/api/v1/image", mgmtUrl.toString());
+        String url = "/api/v1/image";
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("id", instanceId);
         if (targetVMId != null) {
@@ -324,7 +331,7 @@ public class AnkaMgmtCommunicator {
     }
 
     public void revertRegistryVM(String templateID) throws AnkaMgmtException {
-        String url = String.format("%s/api/v1/registry/revert?id=%s", mgmtUrl.toString(), templateID);
+        String url = String.format("/api/v1/registry/revert?id=%s", templateID);
         JSONObject jsonResponse = null;
         try {
             jsonResponse = this.doRequest(RequestMethod.DELETE, url);
@@ -339,7 +346,7 @@ public class AnkaMgmtCommunicator {
     }
 
     public List<JSONObject> getImageRequests() throws AnkaMgmtException {
-        String url = String.format("%s/api/v1/image", mgmtUrl.toString());
+        String url = "/api/v1/image";
         List<JSONObject> imageRequests = new ArrayList<>();
         JSONObject jsonResponse = null;
         try {
@@ -372,7 +379,7 @@ public class AnkaMgmtCommunicator {
         return doRequest(method, url, null);
     }
 
-    protected JSONObject doRequest(RequestMethod method, String url, JSONObject requestBody) throws IOException, AnkaMgmtException {
+    protected JSONObject doRequest(RequestMethod method, String path, JSONObject requestBody) throws IOException, AnkaMgmtException {
         int retry = 0;
         while (true){
             try {
@@ -381,6 +388,14 @@ public class AnkaMgmtCommunicator {
                 CloseableHttpClient httpClient = makeHttpClient();
                 HttpRequestBase request;
                 try {
+                    String host = "";
+                    if (roundRobin != null) {
+                        host = roundRobin.next();
+                    } else {
+                        host = mgmtUrl.toString();
+                    }
+
+                    String url = host + path;
                     switch (method) {
                         case POST:
                             HttpPost postRequest = new HttpPost(url);
@@ -401,8 +416,20 @@ public class AnkaMgmtCommunicator {
                             request = new HttpGet(url);
                             break;
                     }
-
-                    HttpResponse response = httpClient.execute(request);
+                    HttpResponse response ;
+                    try {
+                        long startTime = System.currentTimeMillis();
+                        response = httpClient.execute(request);
+                        long elapsedTime = System.currentTimeMillis() - startTime;
+                        if (roundRobin != null) {
+                            roundRobin.update(host, (int) elapsedTime, false);
+                        }
+                    } catch (HttpHostConnectException | ConnectTimeoutException e) {
+                        if (roundRobin != null) {
+                            roundRobin.update(host, 0, true);
+                        }
+                        throw e;
+                    }
                     int responseCode = response.getStatusLine().getStatusCode();
                     if (responseCode == 401) {
                         throw new AnkaUnAuthenticatedRequestException("Authentication Required");

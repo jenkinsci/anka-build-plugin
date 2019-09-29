@@ -20,6 +20,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
+import java.util.List;
 
 public class AnkaMgmtOpenIdCommunicator extends AnkaMgmtCommunicator {
 
@@ -39,6 +40,11 @@ public class AnkaMgmtOpenIdCommunicator extends AnkaMgmtCommunicator {
     public AnkaMgmtOpenIdCommunicator(String mgmtUrl, boolean skipTLSVerification, String client, String key, String rootCA) {
         super(mgmtUrl, skipTLSVerification, rootCA);
         authenticator = new OpenIdConnectAuthenticator(mgmtUrl, client, key);
+    }
+
+    public AnkaMgmtOpenIdCommunicator(List<String> mgmtURLS, boolean skipTLSVerification, String client, String key, String rootCA) {
+        super(mgmtURLS, skipTLSVerification, rootCA);
+        authenticator = new OpenIdConnectAuthenticator(mgmtURLS.get(0), client, key);
     }
 
     protected JSONObject doRequest(AnkaMgmtCommunicator.RequestMethod method, String url, JSONObject requestBody) throws IOException, AnkaMgmtException {
