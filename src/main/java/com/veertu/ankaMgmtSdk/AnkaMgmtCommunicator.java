@@ -477,7 +477,7 @@ public class AnkaMgmtCommunicator {
                 // don't retry on client exception
                 throw new AnkaMgmtException(e);
             } catch (Exception e) {
-                if (retry >= maxRetries) {
+                if (retry < maxRetries) {
                     continue;
                 }
 
