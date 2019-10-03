@@ -243,11 +243,11 @@ public class ConcAnkaMgmtVm implements AnkaMgmtVm {
         }
     }
 
-    public void saveImage(String targetVMId, String tag, String description, Boolean suspend, String shutdownScript,
+    public String saveImage(String targetVMId, String tag, String description, Boolean suspend, String shutdownScript,
                           Boolean revertBeforePush,
                           String revertTag,
                           Boolean doSuspendTest) throws AnkaMgmtException {
-        this.communicator.saveImage(this.getId(), targetVMId, null, tag, description, suspend,
+        return this.communicator.saveImage(this.getId(), targetVMId, null, tag, description, suspend,
                 shutdownScript, revertBeforePush, revertTag, doSuspendTest);
     }
 

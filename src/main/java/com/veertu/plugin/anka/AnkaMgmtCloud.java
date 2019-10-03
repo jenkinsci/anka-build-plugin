@@ -41,6 +41,9 @@ public class AnkaMgmtCloud extends Cloud {
     private final String rootCA;
 
     private final boolean skipTLSVerification;
+
+    private transient ImageSaver saveImagesHandler;
+
     @DataBoundConstructor
     public AnkaMgmtCloud(String ankaMgmtUrl,
                      String cloudName,
@@ -71,6 +74,7 @@ public class AnkaMgmtCloud extends Cloud {
         } else {
             ankaAPI = new AnkaAPI(ankaMgmtUrl, skipTLSVerification, this.rootCA);
         }
+        this.saveImagesHandler = new ImageSaver();
     }
 
 
@@ -86,6 +90,27 @@ public class AnkaMgmtCloud extends Cloud {
 
     public String getCredentialsId() {
         return credentialsId;
+    }
+
+    public void addSaveImageReq(String buildId, String reqId) {
+        this.validateSaveImageHandlerExists();
+        this.saveImagesHandler.saveReqId(buildId, reqId);
+    }
+
+    public List<String> getSaveImageReqIds(String buildId) {
+        this.validateSaveImageHandlerExists();
+        return this.saveImagesHandler.getReqIdsByBuild(buildId);
+    }
+
+    public void removeSaveImageReqs(String buildId) {
+        this.validateSaveImageHandlerExists();
+        this.saveImagesHandler.removeSaveImageReqs(buildId);
+    }
+
+    private void validateSaveImageHandlerExists() {
+        if ( this.saveImagesHandler == null) {
+            this.saveImagesHandler = new ImageSaver();
+        }
     }
 
     public String getCloudName() {

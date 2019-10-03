@@ -4,6 +4,7 @@ import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
 import com.veertu.ankaMgmtSdk.exceptions.AnkaUnAuthenticatedRequestException;
 import com.veertu.ankaMgmtSdk.exceptions.AnkaUnauthorizedRequestException;
 import com.veertu.ankaMgmtSdk.exceptions.ClientException;
+import com.veertu.ankaMgmtSdk.exceptions.SaveImageRequestIdMissingException;
 import com.veertu.plugin.anka.AnkaMgmtCloud;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.HttpEntity;
@@ -276,12 +277,13 @@ public class AnkaMgmtCommunicator {
         }
     }
 
-    public void saveImage(String instanceId, String targetVMId, String newTemplateName, String tag,
+    public String saveImage(String instanceId, String targetVMId, String newTemplateName, String tag,
                           String description, Boolean suspend, String shutdownScript,
                           Boolean revertBeforePush,
                           String revertTag,
                           Boolean doSuspendTest
     ) throws AnkaMgmtException {
+
         String url = String.format("%s/api/v1/image", mgmtUrl.toString());
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("id", instanceId);
@@ -314,13 +316,45 @@ public class AnkaMgmtCommunicator {
             e.printStackTrace();
         }
         if (jsonResponse == null ) {
-            return;
+            throw new AnkaMgmtException("error sending save image request");
         }
         String logicalResult = jsonResponse.optString("status", "fail");
         if (!logicalResult.equals("OK")) {
             throw new AnkaMgmtException(jsonResponse.optString("message", "error saving image"));
         }
 
+        JSONObject bd = jsonResponse.optJSONObject("body");
+        return bd.optString("request_id", "");
+    }
+
+    public String getSaveImageStatus(String reqId) throws AnkaMgmtException {
+
+        String url = String.format("%s/api/v1/image?id=%s", mgmtUrl.toString(), reqId);
+        JSONObject jsonResponse = null;
+        try {
+            jsonResponse = this.doRequest(RequestMethod.GET, url);
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new AnkaMgmtException("error sending save image status request");
+        }
+        if (jsonResponse == null )
+            throw new AnkaMgmtException("error while trying to get save image status");
+
+        String logicalResult = jsonResponse.optString("status", "fail");
+        if (!logicalResult.equals("OK")) {
+            throw new AnkaMgmtException(jsonResponse.optString("message", "error saving image"));
+        }
+        try {
+            JSONObject bd = jsonResponse.getJSONObject("body");
+            if (bd == null) {
+                throw new SaveImageRequestIdMissingException(reqId);
+            }
+            String status = bd.getString("status");
+            return status;
+        } catch (JSONException e) {
+            e.printStackTrace();
+            throw new AnkaMgmtException(e.getMessage());
+        }
     }
 
     public void revertRegistryVM(String templateID) throws AnkaMgmtException {

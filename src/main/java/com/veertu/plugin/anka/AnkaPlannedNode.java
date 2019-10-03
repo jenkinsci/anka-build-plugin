@@ -84,7 +84,7 @@ public class AnkaPlannedNode extends NodeProvisioner.PlannedNode{
                     catch (ExecutionException e) {
                         if ((System.currentTimeMillis() - startTime) < slave.launchTimeout * 1000){
                             AnkaMgmtCloud.Log("caught ExecutionException when trying to start %s " +
-                                    "sleeping for 5 seconds to retry", slave.getNodeName());
+                                    "sleeping for 1 seconds to retry", slave.getNodeName());
                             Thread.sleep(1000);
                             continue;
                         }

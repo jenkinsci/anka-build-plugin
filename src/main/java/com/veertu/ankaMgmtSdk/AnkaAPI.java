@@ -72,4 +72,8 @@ public class AnkaAPI {
         return communicator.getImageRequests();
 
     }
+
+    public String getSaveImageStatus(String reqId) throws AnkaMgmtException {
+        return communicator.getSaveImageStatus(reqId);
+    }
 }
