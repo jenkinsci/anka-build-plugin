@@ -15,6 +15,7 @@ import java.io.StringReader;
 import java.security.*;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
+import java.util.List;
 
 public class AnkaMgmtClientCertAuthCommunicator extends AnkaMgmtCommunicator {
 
@@ -32,6 +33,11 @@ public class AnkaMgmtClientCertAuthCommunicator extends AnkaMgmtCommunicator {
 
     public AnkaMgmtClientCertAuthCommunicator(String mgmtUrl, boolean skipTLSVerification, String client, String key, String rootCA) {
         super(mgmtUrl, skipTLSVerification, rootCA);
+        this.authenticator = new ClientCertAuthenticator(client, key);
+    }
+
+    public AnkaMgmtClientCertAuthCommunicator(List<String> mgmtURLS, boolean skipTLSVerification, String client, String key, String rootCA) {
+        super(mgmtURLS, skipTLSVerification, rootCA);
         this.authenticator = new ClientCertAuthenticator(client, key);
     }
 
