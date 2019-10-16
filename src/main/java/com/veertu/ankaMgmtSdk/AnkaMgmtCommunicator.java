@@ -32,7 +32,6 @@ import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.ssl.TrustStrategy;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
-import org.bouncycastle.cert.ocsp.Req;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openssl.PEMParser;
 import org.json.JSONArray;
@@ -272,7 +271,7 @@ public class AnkaMgmtCommunicator {
     public AnkaCloudStatus status() throws AnkaMgmtException {
         String url = "/api/v1/status";
         try {
-            JSONObject jsonResponse = this.doRequest(RequestMethod.GET, url);
+            JSONObject jsonResponse = this.doRequest(RequestMethod.GET, url, 5000);
             String logicalResult = jsonResponse.getString("status");
             if (logicalResult.equals("OK")) {
                 JSONObject statusJson = jsonResponse.getJSONObject("body");
@@ -408,17 +407,27 @@ public class AnkaMgmtCommunicator {
         GET, POST, DELETE
     }
 
-    private JSONObject doRequest(RequestMethod method, String url) throws IOException, AnkaMgmtException {
-        return doRequest(method, url, null);
+    protected JSONObject doRequest(RequestMethod method, String path, JSONObject requestBody) throws IOException, AnkaMgmtException {
+        return doRequest(method, path, requestBody, timeout);
     }
 
-    protected JSONObject doRequest(RequestMethod method, String path, JSONObject requestBody) throws IOException, AnkaMgmtException {
+    private JSONObject doRequest(RequestMethod method, String url) throws IOException, AnkaMgmtException {
+        return doRequest(method, url, null, timeout);
+    }
+
+    private JSONObject doRequest(RequestMethod method, String url, int reqTimeout) throws IOException, AnkaMgmtException {
+        return doRequest(method, url, null, reqTimeout);
+    }
+
+
+
+    protected JSONObject doRequest(RequestMethod method, String path, JSONObject requestBody, int reqTimeout) throws IOException, AnkaMgmtException {
         int retry = 0;
         while (true){
             try {
                 retry++;
 
-                CloseableHttpClient httpClient = makeHttpClient();
+                CloseableHttpClient httpClient = makeHttpClient(reqTimeout);
                 HttpRequestBase request;
                 try {
                     String host = "";
@@ -520,11 +529,11 @@ public class AnkaMgmtCommunicator {
 
     }
 
-    protected CloseableHttpClient makeHttpClient() throws KeyStoreException, NoSuchAlgorithmException, KeyManagementException, CertificateException, IOException, UnrecoverableKeyException {
+    protected CloseableHttpClient makeHttpClient(int reqTimeout) throws KeyStoreException, NoSuchAlgorithmException, KeyManagementException, CertificateException, IOException, UnrecoverableKeyException {
         RequestConfig.Builder requestBuilder = RequestConfig.custom();
-        requestBuilder = requestBuilder.setConnectTimeout(timeout);
-        requestBuilder = requestBuilder.setConnectionRequestTimeout(timeout);
-        requestBuilder.setSocketTimeout(timeout);
+        requestBuilder = requestBuilder.setConnectTimeout(reqTimeout);
+        requestBuilder = requestBuilder.setConnectionRequestTimeout(reqTimeout);
+        requestBuilder.setSocketTimeout(reqTimeout);
 
         HttpClientBuilder builder = HttpClientBuilder.create();
         KeyStore keystore = null;

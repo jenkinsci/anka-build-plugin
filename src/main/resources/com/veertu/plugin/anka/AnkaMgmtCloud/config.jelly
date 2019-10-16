@@ -32,17 +32,24 @@
                     </b>
                 </j:if>
                 <j:if test="${cloud!=null}">
-                    <j:set var="cloudName" value="${instance.getCloudName()}"/>
-                    <f:optionalBlock inline="true" title="Show Templates" checked="true">
-                   <f:entry title ="${%Slave Templates}"  description="${%List of snapshot VMs to be cloned as slaves}">
-                    <f:repeatable  field="templates">
-                            <st:include page="config.jelly" class="${descriptor.clazz}"/>
-                        <div align="right" class="repeatable-delete show-if-only" style="margin-left: 1em;">
-                            <f:repeatableDeleteButton /><br/>
-                        </div>
-                    </f:repeatable>
-                   </f:entry>
-                    </f:optionalBlock>
+                    <j:if test="${instance.isOnline()}">
+                        <j:set var="cloudName" value="${instance.getCloudName()}"/>
+                        <f:optionalBlock inline="true" title="Show Templates" checked="true">
+                          <f:entry title ="${%Slave Templates}"  description="${%List of snapshot VMs to be cloned as slaves}">
+                            <f:repeatable  field="templates">
+                              <st:include page="config.jelly" class="${descriptor.clazz}"/>
+                              <div align="right" class="repeatable-delete show-if-only" style="margin-left: 1em;">
+                                <f:repeatableDeleteButton /><br/>
+                              </div>
+                            </f:repeatable>
+                          </f:entry>
+                        </f:optionalBlock>
+                     </j:if>
+                     <j:if test="${!instance.isOnline()}">
+                        <b>
+                           Cloud "${instance.getCloudName()}" is offline
+                        </b>
+                     </j:if>
                 </j:if>
 
         </f:block>

@@ -47,11 +47,11 @@ public class AnkaMgmtOpenIdCommunicator extends AnkaMgmtCommunicator {
         authenticator = new OpenIdConnectAuthenticator(mgmtURLS.get(0), client, key);
     }
 
-    protected JSONObject doRequest(AnkaMgmtCommunicator.RequestMethod method, String url, JSONObject requestBody) throws IOException, AnkaMgmtException {
+    protected JSONObject doRequest(AnkaMgmtCommunicator.RequestMethod method, String url, JSONObject requestBody, int reqTimeout) throws IOException, AnkaMgmtException {
         int retry = 0;
         while (true){
             try {
-                CloseableHttpClient httpClient = makeHttpClient();
+                CloseableHttpClient httpClient = makeHttpClient(reqTimeout);
                 HttpRequestBase request;
                 try {
                     switch (method) {

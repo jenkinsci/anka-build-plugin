@@ -307,6 +307,18 @@ public class AnkaMgmtCloud extends Cloud {
         return ankaAPI;
     }
 
+    public boolean isOnline() {
+        try {
+            AnkaCloudStatus status = ankaAPI.getStatus();
+            if (status.getStatus().toLowerCase().equals("running")) {
+                return true;
+            }
+            return false;
+        } catch (AnkaMgmtException e) {
+            return false;
+        }
+    }
+
     public Boolean isPushSupported() {
         try {
             this.getAnkaApi().getImageRequests();
