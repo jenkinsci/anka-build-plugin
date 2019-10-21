@@ -1,0 +1,88 @@
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form" xmlns:c="/lib/credentials">
+
+    <table wdith="100%">
+        <f:entry title="${%Template}" field="masterVmId" description="The snapshot to install jenkins slave on it.
+                                                                        java is assumed to be pre-installed">
+            <f:textbox clazz="required" default="/Users/jenkins/"/>
+        </f:entry>
+        <f:entry title="${%Template Version Tag}" field="tag" description="The tag to use for this vm template">
+            <f:textbox clazz="required" default="/Users/jenkins/"/>
+        </f:entry>
+
+        <f:entry title="${%# of Executors}" field="numberOfExecutors"
+                 description="This is the number of builds which can run on the same slave">
+            <f:textbox clazz="required number" default="1"/>
+        </f:entry>
+
+        <f:entry title="${%Remote FS Root}" field="remoteFS"
+                 description="Where jenkins files and job workspace will be place in the slave">
+            <f:textbox clazz="required" default="/Users/anka/"/>
+        </f:entry>
+
+        <f:entry title="${%Launch Method}" field="launchMethod" description="slave launch method">
+            <table width="100%">
+                <f:radioBlock  inline="true" name="launchMethod" value="ssh" title="SSH"
+                              checked="${instance.launchMethodString != 'jnlp'}">
+                    <f:entry title="${%Clone's user (SSH)}"
+                             description="The user and password to connect to chosen template" field="credentialsId">
+                        <c:select/>
+                    </f:entry>
+                    <f:entry title="${%Java options}" description="Additional java options" field="javaArgs">
+                        <f:textbox default=""/>
+                    </f:entry>
+                </f:radioBlock>
+                <f:radioBlock  inline="true" name="launchMethod" title="JNLP" value="jnlp"
+                              checked="${instance.launchMethodString == 'jnlp'}">
+                    <f:entry title="${%Extra JNLP arguments}" description="Arguments to append to JNLP command"
+                             field="extraArgs">
+                        <f:textbox default=""/>
+                    </f:entry>
+                    <f:entry title="${%Java options}" description="Additional java options" field="javaArgs">
+                        <f:textbox default=""/>
+                    </f:entry>
+                    <f:entry title="${%Override JNLP Url}" description="Specify a different url than jenkins root url "
+                             field="jnlpJenkinsOverrideUrl">
+                        <f:textbox default=""/>
+                    </f:entry>
+                    <f:entry title="${%Tunnel connection through}"
+                             description="Specify a tunnel if the agent needs it to connect to the master"
+                             field="jnlpTunnel">
+                        <f:textbox default=""/>
+                    </f:entry>
+
+                </f:radioBlock>
+            </table>
+        </f:entry>
+
+
+        <f:entry title="${%Slave name template}" field="nameTemplate" description="Name template for a created slave">
+            <f:textbox default=""/>
+        </f:entry>
+
+        <f:block>
+            <f:entry title="${%Environment variables}">
+                <f:repeatable field="environments">
+                    <table width="100%">
+                        <f:entry title="${%Name}" field="name">
+                            <f:textbox/>
+                        </f:entry>
+                        <f:entry title="${%Value}" field="value">
+                            <f:textbox/>
+                        </f:entry>
+                        <f:entry>
+                            <div align="right">
+                                <f:repeatableDeleteButton/>
+                            </div>
+                        </f:entry>
+                    </table>
+                </f:repeatable>
+            </f:entry>
+        </f:block>
+        <f:entry title="${%Node Group}" field="group" description="The node group the vm will run on (enterprise only)">
+            <f:select/>
+        </f:entry>
+
+
+    </table>
+
+</j:jelly>
