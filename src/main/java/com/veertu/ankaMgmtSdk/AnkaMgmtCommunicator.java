@@ -55,7 +55,7 @@ public class AnkaMgmtCommunicator {
     protected final int maxRetries = 10;
     protected boolean skipTLSVerification;
     protected String rootCA;
-    protected RoundRobin roundRobin;
+    protected transient RoundRobin roundRobin;
 
 
     public AnkaMgmtCommunicator(String url) {
