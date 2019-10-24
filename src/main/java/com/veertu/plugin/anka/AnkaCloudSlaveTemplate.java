@@ -3,28 +3,22 @@ package com.veertu.plugin.anka;
 import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernameListBoxModel;
 import com.cloudbees.plugins.credentials.domains.SchemeRequirement;
-import com.veertu.ankaMgmtSdk.AnkaNotFoundException;
 import com.veertu.ankaMgmtSdk.AnkaVmTemplate;
 import com.veertu.ankaMgmtSdk.NodeGroup;
-import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
 import com.veertu.plugin.anka.exceptions.AnkaHostException;
-import com.veertu.plugin.anka.exceptions.AnkaVmNotFoundException;
 import hudson.Extension;
 import hudson.model.*;
-import hudson.model.Node.Mode;
 import hudson.model.labels.LabelAtom;
 import hudson.security.ACL;
 import hudson.security.AccessControlled;
 import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
-import hudson.slaves.RetentionStrategy;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.DataBoundSetter;
-import javax.annotation.Nullable;
 
 import java.util.*;
 import java.util.logging.Logger;
@@ -34,95 +28,27 @@ import static com.cloudbees.plugins.credentials.CredentialsProvider.lookupCreden
 /**
  * Created by avia on 10/07/2016.
  */
-public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplate> {
+public class AnkaCloudSlaveTemplate extends AbstractSlaveTemplate implements Describable<AnkaCloudSlaveTemplate> {
 
-    protected static final SchemeRequirement HTTP_SCHEME = new SchemeRequirement("http");
-    protected static final SchemeRequirement HTTPS_SCHEME = new SchemeRequirement("https");
-    protected static final int DEFAULT_SCHEDULING_TIMEOUT = 180;
     public static final String BridgedNetwork = "bridge";
     public static String SharedNetwork = "shared";
     public static String HostNetwork = "host";
     private static final transient Logger LOGGER = Logger.getLogger(AnkaCloudSlaveTemplate.class.getName());
-    //private final List<String> masterImages;
-    private final String masterVmId;
-    private final String tag;
-    private final int launchDelay;
-    private final String remoteFS;
-    private final String labelString;
-    private final String templateDescription;
-    private final int numberOfExecutors;
-    private final Mode mode;
-    private final String credentialsId;
-    private final String group;
-
-    private final String extraArgs;
-
-    private LaunchMethod launchMethod = LaunchMethod.SSH;
-    private String launchMethodString = "ssh";
-    //    private final List<? extends NodeProperty<?>> nodeProperties;
-    private transient Set<LabelAtom> labelSet;
-    private final boolean keepAliveOnError;
-    private final int SSHPort;
-    private final String cloudName;
-    private List<EnvironmentEntry> environments;
-    private RetentionStrategy retentionStrategy = new RunOnceCloudRetentionStrategy(1);
-    private final String nameTemplate;
-    private String javaArgs;
-    private String jnlpJenkinsOverrideUrl;
-    private String jnlpTunnel;
-    private int priority;
     private int schedulingTimeout = DEFAULT_SCHEDULING_TIMEOUT;
-
-    private SaveImageParameters saveImageParameters;
+    private Set<LabelAtom> labelSet;
+    private String cloudName;
 
     @DataBoundConstructor
     public AnkaCloudSlaveTemplate(
-            final String cloudName, final String remoteFS, final String masterVmId,
-            final String tag, final String labelString, final String templateDescription,
-            final int numberOfExecutors, final int launchDelay,
-            boolean keepAliveOnError, JSONObject launchMethod, String group,
-            String nameTemplate, int priority, int schedulingTimeout,
-            @Nullable Boolean saveImage,@Nullable String templateId,@Nullable String pushTag,@Nullable Boolean deleteLatest,
-            @Nullable String description,@Nullable Boolean suspend, @Nullable Boolean waitForBuildToFinish,
-                    @Nullable List<EnvironmentEntry> environments) {
-        this.remoteFS = remoteFS;
-        this.labelString = labelString;
-        this.templateDescription = templateDescription;
-        this.numberOfExecutors = numberOfExecutors;
-        this.masterVmId = masterVmId;
-        this.tag = tag;
-        // this.selectedMasterImage=selectedMasterImage;
-        this.mode = Mode.EXCLUSIVE;
-        this.credentialsId = launchMethod.optString("credentialsId", null);
-        this.launchDelay = launchDelay;
-        this.keepAliveOnError = keepAliveOnError;
-        this.SSHPort = 22;
+            final String cloudName) {
         this.cloudName = cloudName;
-        this.environments = environments;
-        this.nameTemplate = nameTemplate;
-        this.group = group;
-        this.extraArgs = launchMethod.optString("extraArgs", null);
-        this.javaArgs = launchMethod.optString("javaArgs", null);
-        this.jnlpJenkinsOverrideUrl = launchMethod.optString("jnlpJenkinsOverrideUrl", null);
-        this.jnlpTunnel = launchMethod.optString("jnlpTunnel", null);
-        this.setLaunchMethod(launchMethod.getString("value"));
-        this.priority = priority;
-        if (schedulingTimeout <= 0)
-            this.schedulingTimeout = DEFAULT_SCHEDULING_TIMEOUT;
-        else
-            this.schedulingTimeout = schedulingTimeout;
-        if (saveImage != null && saveImage) {
-            this.saveImageParameters = new SaveImageParameters(saveImage, templateId, pushTag,
-                    deleteLatest, description, suspend, waitForBuildToFinish);
-        } else {
-            this.saveImageParameters = null;
-        }
+        nodeProperties = new AnkaNodeProperties();
+
         readResolve();
     }
 
-    protected Object readResolve() {
-        this.labelSet = Label.parse(labelString);
-
+    protected Object readResolve(){
+        labelSet = Label.parse(nodeProperties.getLabel());
         return this;
     }
 
@@ -139,211 +65,25 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
     }
 
 
-    public boolean isKeepAliveOnError() {
-        return keepAliveOnError;
-    }
-
-
-    public String getMasterVmId() {
-        return masterVmId;
-    }
-
-    public String getNameTemplate() {
-        return nameTemplate;
-    }
-
-    public String getTag() {
-        return tag;
-    }
-
-    public int getLaunchDelay() {
-        return launchDelay;
-    }
-
-    public String getRemoteFS() {
-
-        return remoteFS;
-    }
-
-    public String getLabelString() {
-        return labelString;
-    }
-
-    public String getTemplateDescription() {
-        return templateDescription;
-    }
-
-    public int getNumberOfExecutors() {
-        return numberOfExecutors;
-    }
-
-    public Mode getMode() {
-        return mode;
-    }
-
-    public String getCredentialsId() {
-        return credentialsId;
-    }
-
-    public Set<LabelAtom> getLabelSet() {
-        return this.labelSet;
-    }
-
-
-    public String getGroup() {
-        return group;
-    }
-
-
-    @Override
-    public Descriptor<AnkaCloudSlaveTemplate> getDescriptor() {
-        return Jenkins.getInstance().getDescriptor(getClass());
-
-    }
-
-    public boolean isNetworkBridged() {
-        return false;
-    }
-
-    public int getSSHPort() {
-        return SSHPort;
-    }
-
     public String getCloudName() {
         return cloudName;
     }
 
-    public RetentionStrategy getRetentionStrategy() { return retentionStrategy; }
-
-    public List<EnvironmentEntry> getEnvironments()
-    {
-        if (environments != null)
-            return environments;
-        return new ArrayList<EnvironmentEntry>();
+    @DataBoundSetter
+    public void setCloudName(String cloudName) {
+        this.cloudName = cloudName;
     }
 
-    public String getJnlpArgsString() {
-        return extraArgs;
+    public Set<LabelAtom> getLabelSet() {
+        return labelSet;
     }
-
-    public String getExtraArgs() {
-        return getJnlpArgsString();
-    }
-
-
-    public SaveImageParameters getSaveImageParameters() {
-        return saveImageParameters;
-    }
-
-    public Boolean getSuspend() {
-        if (saveImageParameters != null) {
-            return saveImageParameters.getSuspend();
-        }
-        return true;
-    }
-
-    public Boolean getSaveImage() {
-        if (saveImageParameters != null) {
-            return saveImageParameters.getSaveImage();
-        }
-        return false;
-    }
-
-    public String getTemplateId() {
-        if (saveImageParameters != null) {
-            String templateId = saveImageParameters.getTemplateID();
-            if (templateId != null) {
-                return templateId;
-            }
-        }
-        if (masterVmId != null) {
-            return masterVmId;
-        }
-        return null;
-    }
-
-    public String getPushTag() {
-        if (saveImageParameters != null) {
-            return saveImageParameters.getTag();
-        }
-        return null;
-    }
-
-    public boolean isDeleteLatest() {
-        if (saveImageParameters != null) {
-            return saveImageParameters.isDeleteLatest();
-        }
-        return true;
-    }
-
-    public boolean getWaitForBuildToFinish() {
-        if (saveImageParameters != null) {
-            return saveImageParameters.getWaitForBuildToFinish();
-        }
-        return false;
-    }
-
-    public String getDescription() {
-        if (saveImageParameters != null) {
-            return saveImageParameters.getDescription();
-        }
-        return null;
-    }
-    /*Collection<KeyValuePair> getEnvironmentKeyValuePairs() {
-        if (null == environments || environments.isEmpty()) {
-            return null;
-        }
-        Collection<KeyValuePair> items = new ArrayList<KeyValuePair>();
-        for (EnvironmentEntry environment : environments) {
-            String name = environment.name;
-            String value = environment.value;
-            if (StringUtils.isEmpty(name) || StringUtils.isEmpty(value)) {
-                continue;
-            }
-            items.add(new KeyValuePair().withName(name).withValue(value));
-        }
-        return items;
-    }*/
-
 
     @DataBoundSetter
-    public void setRetentionStrategy(RetentionStrategy retentionStrategy) {
-        this.retentionStrategy = retentionStrategy;
+    public void setLabelSet(Set<LabelAtom> labelSet) {
+        this.labelSet = labelSet;
     }
 
-    public void setLaunchMethod(String launchMethod) {
-        this.launchMethodString = launchMethod;
-        if (launchMethod.equals("ssh")) {
-            this.launchMethod = LaunchMethod.SSH;
-        } else {
-            this.launchMethod = LaunchMethod.JNLP;
-        }
-    }
 
-    public String getLaunchMethodString() {
-        return launchMethodString;
-    }
-
-    public LaunchMethod getLaunchMethod() {
-        return this.launchMethod;
-    }
-
-    public String getJavaArgs() {
-        return this.javaArgs;
-    }
-
-    public String getJnlpJenkinsOverrideUrl() {
-        return jnlpJenkinsOverrideUrl;
-    }
-    public String getJnlpTunnel() {
-        if (jnlpTunnel == null)
-            return "";
-        return jnlpTunnel;
-    }
-
-    public int getPriority() {
-        return this.priority;
-    }
 
     public int getSchedulingTimeout() {
         if (this.schedulingTimeout <= 0)
@@ -352,9 +92,25 @@ public class AnkaCloudSlaveTemplate implements Describable<AnkaCloudSlaveTemplat
             return this.schedulingTimeout;
     }
 
+    public void setNodeProperties(AnkaNodeProperties nodeProperties) {
+        this.nodeProperties = nodeProperties;
+    }
+
+    public void setSaveImageParameters(SaveImageParameters saveImageParameters) {
+        this.saveImageParameters = saveImageParameters;
+    }
+
     /**
      *  ui stuff
      */
+
+
+    @Override
+    public Descriptor<AnkaCloudSlaveTemplate> getDescriptor() {
+        return Jenkins.getInstance().getDescriptor(getClass());
+
+    }
+
 
     public static class EnvironmentEntry extends AbstractDescribableImpl<EnvironmentEntry> {
         public String name, value;

@@ -106,7 +106,7 @@ public abstract class AbstractAnkaSlave extends AbstractCloudSlave {
                         if (!this.saveImageSent) { // allow to send save image request only once
                             String cloudName = template.getCloudName();
                             AnkaMgmtCloud cloud = (AnkaMgmtCloud) Jenkins.getInstance().getCloud(cloudName);
-                            ImageSaver.saveImage(cloud, this, vm, saveImageParams);
+                            ImageSaver.saveImage(cloud, this, vm);
                             this.saveImageSent = true;
                         }
                     }

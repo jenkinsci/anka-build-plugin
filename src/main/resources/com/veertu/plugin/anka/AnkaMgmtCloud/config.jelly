@@ -31,7 +31,7 @@
                         <div>After configuring hosts click apply and refresh</div>
                     </b>
                 </j:if>
-                <j:if test="${cloud!=null}">
+                <j:if test="${instance!=null}">
                     <j:if test="${instance.isOnline()}">
                         <j:set var="cloudName" value="${instance.getCloudName()}"/>
                         <f:optionalBlock inline="true" title="Show Templates" checked="true">

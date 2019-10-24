@@ -12,23 +12,25 @@ public class SaveImageParameters {
     public static String suspendKey = "suspend";
     public static String waitForBuildToFinishKey = "wait_for_build_to_finish";
 
-    private final Boolean saveImage;
+    protected Boolean waitForBuildToFinish;
+    protected Boolean suspend;
+    protected String description;
 
-    private final String templateID;
-    private final String tag;
-    private final Boolean deleteLatest;
+    protected Boolean saveImage;
+
+    protected String templateID;
+    protected String tag;
+    protected Boolean deleteLatest;
+
+
 
     public Boolean getWaitForBuildToFinish() {
         return waitForBuildToFinish;
     }
 
-    private final Boolean waitForBuildToFinish;
-
     public Boolean getSuspend() {
         return suspend;
     }
-
-    private final Boolean suspend;
 
     public Boolean getSaveImage() {
         return saveImage;
@@ -50,7 +52,34 @@ public class SaveImageParameters {
         return description;
     }
 
-    private final String description;
+
+    public void setWaitForBuildToFinish(Boolean waitForBuildToFinish) {
+        this.waitForBuildToFinish = waitForBuildToFinish;
+    }
+
+    public void setSuspend(Boolean suspend) {
+        this.suspend = suspend;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public void setSaveImage(Boolean saveImage) {
+        this.saveImage = saveImage;
+    }
+
+    public void setTemplateID(String templateID) {
+        this.templateID = templateID;
+    }
+
+    public void setTag(String tag) {
+        this.tag = tag;
+    }
+
+    public void setDeleteLatest(Boolean deleteLatest) {
+        this.deleteLatest = deleteLatest;
+    }
 
     public SaveImageParameters(Boolean doSaveImage, String templateID, String tag,
                                Boolean deleteLatest, String description, Boolean suspend,
@@ -90,5 +119,5 @@ public class SaveImageParameters {
         jsonObject.put(waitForBuildToFinishKey, waitForBuildToFinish);
         return jsonObject;
     }
-
+    
 }

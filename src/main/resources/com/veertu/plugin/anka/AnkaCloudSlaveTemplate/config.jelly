@@ -1,5 +1,4 @@
-    <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
-             xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:c="/lib/credentials">
+    <j:jelly xmlns:j="jelly:core"  xmlns:f="/lib/form" xmlns:c="/lib/credentials">
 
     <table wdith="100%">
         <f:invisibleEntry >
@@ -38,21 +37,17 @@
 
         <f:entry title="${%Launch Method}" field="launchMethod" description="slave launch method">
             <table width="100%">
-                <f:radioBlock name="launchMethod" value="ssh" title="SSH" checked="${instance.launchMethodString != 'jnlp'}">
+                <f:radioBlock inline="true" name="launchMethod" value="ssh" title="SSH" checked="${instance.launchMethodString != 'jnlp'}">
                     <f:entry title="${%Clone's user (SSH)}" description="The user and password to connect to chosen template" field="credentialsId" >
                         <c:select/>
                     </f:entry>
-                    <f:entry title="${%Java options}" description="Additional java options" field="javaArgs" >
-                        <f:textbox default="" />
-                    </f:entry>
+
                 </f:radioBlock>
-                <f:radioBlock name="launchMethod" title="JNLP" value="jnlp" checked="${instance.launchMethodString == 'jnlp'}" >
+                <f:radioBlock inline="true" name="launchMethod" title="JNLP" value="jnlp" checked="${instance.launchMethodString == 'jnlp'}" >
                     <f:entry title="${%Extra JNLP arguments}" description="Arguments to append to JNLP command" field="extraArgs" >
                         <f:textbox default="" />
                     </f:entry>
-                    <f:entry title="${%Java options}" description="Additional java options" field="javaArgs" >
-                        <f:textbox default="" />
-                    </f:entry>
+
                     <f:entry title="${%Override JNLP Url}" description="Specify a different url than jenkins root url " field="jnlpJenkinsOverrideUrl" >
                         <f:textbox default="" />
                     </f:entry>
@@ -61,6 +56,9 @@
                     </f:entry>
 
                 </f:radioBlock>
+                <f:entry title="${%Java options}" description="Additional java options" field="javaArgs" >
+                    <f:textbox default="" />
+                </f:entry>
             </table>
         </f:entry>
 

@@ -32,7 +32,6 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
                 launcher, template.getRetentionStrategy(), nodeProperties, template, vm);
     }
 
-
     public static String generateName(AnkaCloudSlaveTemplate template){
         String randomString = RandomStringUtils.randomAlphanumeric(16);
         String nameTemplate = template.getNameTemplate();
@@ -54,9 +53,9 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
 
     public static AnkaOnDemandSlave createProvisionedSlave(AnkaAPI ankaAPI, AnkaCloudSlaveTemplate template, Label label)
             throws IOException, AnkaMgmtException, Descriptor.FormException, InterruptedException {
-        if (template.getLaunchMethod() == LaunchMethod.SSH) {
+        if (template.getLaunchMethod().equals(LaunchMethod.SSH)) {
             return createSSHSlave(ankaAPI, template, label);
-        } else if (template.getLaunchMethod() == LaunchMethod.JNLP) {
+        } else if (template.getLaunchMethod().equals(LaunchMethod.JNLP)) {
             return createJNLPSlave(ankaAPI, template, label);
         }
         return null;
@@ -65,7 +64,7 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
     private static AnkaOnDemandSlave createJNLPSlave(AnkaAPI ankaAPI, AnkaCloudSlaveTemplate template, Label label) throws InterruptedException, AnkaMgmtException, IOException, Descriptor.FormException {
 //        AnkaMgmtCloud.Log("vm %s is booting...", vm.getId());
         String nodeName = generateName(template);
-        String jnlpCommand = JnlpCommandBuilder.makeStartUpScript(nodeName, template.getJnlpArgsString(), template.getJavaArgs(), template.getJnlpJenkinsOverrideUrl());
+        String jnlpCommand = JnlpCommandBuilder.makeStartUpScript(nodeName, template.getExtraArgs(), template.getJavaArgs(), template.getJnlpJenkinsOverrideUrl());
 
         AnkaMgmtVm vm = ankaAPI.makeAnkaVm(
                 template.getMasterVmId(), template.getTag(), template.getNameTemplate(), template.getSSHPort(), jnlpCommand, template.getGroup(), template.getPriority());

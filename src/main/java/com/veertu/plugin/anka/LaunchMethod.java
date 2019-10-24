@@ -1,6 +1,6 @@
 package com.veertu.plugin.anka;
 
-public enum LaunchMethod {
-    SSH,
-    JNLP
+public class LaunchMethod {
+    public static final String SSH = "ssh";
+    public static final String JNLP = "jnlp";
 }

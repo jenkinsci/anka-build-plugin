@@ -43,17 +43,18 @@ public class ImageSaver {
         this.requestIds.remove(buildId);
     }
 
-    public static void saveImage(AnkaMgmtCloud cloud, AbstractAnkaSlave slave, AnkaMgmtVm vm, SaveImageParameters saveImageParams) throws AnkaMgmtException {
-        String tagToPush = saveImageParams.getTag();
+    public static void saveImage(AnkaMgmtCloud cloud, AbstractAnkaSlave slave, AnkaMgmtVm vm) throws AnkaMgmtException {
+        AnkaCloudSlaveTemplate template = slave.getTemplate();
+        String tagToPush = template.getTag();
         if (tagToPush == null || tagToPush.isEmpty()) {
             tagToPush = slave.getJobNameAndNumber();
         }
         tagToPush += "_" + new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
         boolean deleteLatest = false;
         String latestTag = null;
-        if (saveImageParams.isDeleteLatest()) {
+        if (template.isDeleteLatest()) {
             AnkaAPI api = cloud.getAnkaApi();
-            List<String> tags = api.listTemplateTags(saveImageParams.getTemplateID());
+            List<String> tags = api.listTemplateTags(template.getTemplateId());
 
             if (tags.size() > 1) {
                 latestTag = tags.get(tags.size()-1);
@@ -61,9 +62,9 @@ public class ImageSaver {
             }
         }
         String shutdownScript = shutdownScript();
-        String reqId = vm.saveImage(saveImageParams.getTemplateID(), tagToPush, saveImageParams.getDescription(),
-                saveImageParams.getSuspend(), shutdownScript, deleteLatest, latestTag, true );
-        if (reqId == "") {
+        String reqId = vm.saveImage(template.getTemplateId(), tagToPush, template.getDescription(),
+                template.getSuspend(), shutdownScript, deleteLatest, latestTag, true );
+        if (reqId.equals("")) {
             throw new AnkaMgmtException("missing save image request ID");
         }
         cloud.addSaveImageReq(slave.getJobNameAndNumber(), reqId);

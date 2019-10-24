@@ -17,7 +17,9 @@ import jenkins.model.Jenkins;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 
+import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
 
 import static com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials;
@@ -330,6 +332,37 @@ public class AnkaMgmtCloud extends Cloud {
             return false;
         }
     }
+
+    public static List<AnkaMgmtCloud> getAnkaClouds() {
+        List<AnkaMgmtCloud> clouds = new ArrayList<AnkaMgmtCloud>();
+        final Jenkins jenkins = Jenkins.getInstance();
+        for (Cloud cloud : jenkins.clouds) {
+            if (cloud instanceof AnkaMgmtCloud) {
+                AnkaMgmtCloud ankaCloud = (AnkaMgmtCloud) cloud;
+                clouds.add(ankaCloud);
+            }
+        }
+        return clouds;
+    }
+
+    public static AnkaMgmtCloud getCloudThatHasImage(String masterVMID) {
+        final Jenkins jenkins = Jenkins.getInstance();
+        for (Cloud cloud : jenkins.clouds) {
+            if (cloud instanceof AnkaMgmtCloud) {
+                AnkaMgmtCloud ankaCloud = (AnkaMgmtCloud) cloud;
+                if (ankaCloud.hasMasterVm(masterVMID)) {
+                    return ankaCloud;
+                }
+            }
+        }
+        return null;
+    }
+
+    public AnkaOnDemandSlave StartNewDynamicSlave(DynamicSlaveProperties properties, String label) throws InterruptedException, IOException, Descriptor.FormException, AnkaMgmtException, ExecutionException {
+        return DynamicSlave.createDynamicSlave(this, properties, label);
+    }
+
+
 
     @Extension
     public static final class DescriptorImpl extends Descriptor<Cloud> {
