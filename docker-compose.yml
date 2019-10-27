@@ -2,14 +2,17 @@
 version: '2'
 services:
   jenkins:
-    image: jenkins/jenkins:lts
+    image: jenkins/jenkins:2.200
     container_name: jenkins
     user: jenkins
     volumes:
       - /data/jenkins:/var/jenkins_home
     environment:
       JENKINS_HOST_HOME: "/data/jenkins"
+      JAVA_OPTS: "-Xdebug -Xrunjdwp:transport=dt_socket,server=y,address=5005,suspend=n"
+      CASC_JENKINS_CONFIG: /var/jenkins_home/jenkins.yaml
     ports:
       - "8080:8080"
       - "5000:5000"
       - "50000:50000"
+      - "5005:5005"

@@ -28,6 +28,7 @@ import java.util.Set;
 public class CreateDynamicAnkaNodeStep extends Step {
 
     private final DynamicSlaveProperties dynamicSlaveProperties;
+    private int timeout = 1200;
 
 
     public String getMasterVmId() {
@@ -67,12 +68,12 @@ public class CreateDynamicAnkaNodeStep extends Step {
     }
 
     public String getLabelString() {
-        return dynamicSlaveProperties.getLabelString();
+        return dynamicSlaveProperties.getLabel();
     }
 
     @DataBoundSetter
     public void setLabelString(String labelString) {
-        dynamicSlaveProperties.setLabelString(labelString);
+        dynamicSlaveProperties.setLabel(labelString);
     }
 
     public String getTemplateDescription() {
@@ -274,6 +275,14 @@ public class CreateDynamicAnkaNodeStep extends Step {
         dynamicSlaveProperties.setDescription(description);
     }
 
+    @DataBoundSetter
+    public void setTimeout(int timeout) {
+        this.timeout = timeout;
+    }
+
+    public int getTimeout() {
+        return timeout;
+    }
 
     @DataBoundConstructor
     public CreateDynamicAnkaNodeStep(String masterVmId) {
@@ -285,7 +294,7 @@ public class CreateDynamicAnkaNodeStep extends Step {
     }
 
     public StepExecution start(StepContext context) throws Exception {
-        return new DynamicSlaveStepExecution(this.dynamicSlaveProperties, context);
+        return new DynamicSlaveStepExecution(this, context);
     }
 
     @Extension

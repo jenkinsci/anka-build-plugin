@@ -106,8 +106,9 @@ public class ImageSaver {
                 Thread.currentThread().interrupt();
         }
         finally {
-            if (!keepReqId)
+            if (!keepReqId) {
                 cloud.removeSaveImageReqs(buildId);
+            }
         }
 
         return true;

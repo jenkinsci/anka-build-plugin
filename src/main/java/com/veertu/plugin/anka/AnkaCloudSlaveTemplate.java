@@ -20,6 +20,7 @@ import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.DataBoundSetter;
 
+import javax.annotation.Nullable;
 import java.util.*;
 import java.util.logging.Logger;
 
@@ -40,15 +41,55 @@ public class AnkaCloudSlaveTemplate extends AbstractSlaveTemplate implements Des
 
     @DataBoundConstructor
     public AnkaCloudSlaveTemplate(
+            final String cloudName, final String remoteFS, final String masterVmId,
+            final String tag, final String label, final String templateDescription,
+            final int numberOfExecutors, final int launchDelay,
+            boolean keepAliveOnError,
+            String launchMethod,
+            String group,
+            String nameTemplate, int priority, int schedulingTimeout,
+            @Nullable Boolean saveImage, @Nullable String templateId,
+            @Nullable String pushTag,
+            @Nullable Boolean deleteLatest,
+            @Nullable String description, @Nullable Boolean suspend, @Nullable Boolean waitForBuildToFinish,
+            @Nullable List<EnvironmentEntry> environments) {
+        saveImageParameters = new SaveImageParameters();
+        this.cloudName = cloudName;
+        setRemoteFS(remoteFS);
+        setMasterVmId(masterVmId);
+        setTag(tag);
+        setLabel(label);
+        setTemplateDescription(templateDescription);
+        setNumberOfExecutors(numberOfExecutors);
+        setLaunchDelay(launchDelay);
+        setKeepAliveOnError(keepAliveOnError);
+        setLaunchMethod(launchMethod);
+        setGroup(group);
+        setNameTemplate(nameTemplate);
+        setPriority(priority);
+        this.schedulingTimeout = schedulingTimeout;
+
+        setSaveImage(saveImage);
+        setTemplateId(templateId);
+        setPushTag(pushTag);
+        setDeleteLatest(deleteLatest);
+        setDescription(description);
+        setSuspend(suspend);
+        setWaitForBuildToFinish(waitForBuildToFinish);
+        setEnvironments(environments);
+        setMode(Node.Mode.EXCLUSIVE);
+        readResolve();
+    }
+
+    public AnkaCloudSlaveTemplate(
             final String cloudName) {
         this.cloudName = cloudName;
-        nodeProperties = new AnkaNodeProperties();
-
+        saveImageParameters = new SaveImageParameters();
         readResolve();
     }
 
     protected Object readResolve(){
-        labelSet = Label.parse(nodeProperties.getLabel());
+        labelSet = Label.parse(getLabel());
         return this;
     }
 
@@ -83,17 +124,22 @@ public class AnkaCloudSlaveTemplate extends AbstractSlaveTemplate implements Des
         this.labelSet = labelSet;
     }
 
+    @Deprecated
+    @DataBoundSetter
+    public void setLaunchMethodString(String method) {
+        setLaunchMethod(method);
+    }
 
+    @Deprecated
+    public String getLaunchMethodString() {
+        return getLaunchMethod();
+    }
 
     public int getSchedulingTimeout() {
         if (this.schedulingTimeout <= 0)
             return DEFAULT_SCHEDULING_TIMEOUT;
         else
             return this.schedulingTimeout;
-    }
-
-    public void setNodeProperties(AnkaNodeProperties nodeProperties) {
-        this.nodeProperties = nodeProperties;
     }
 
     public void setSaveImageParameters(SaveImageParameters saveImageParameters) {

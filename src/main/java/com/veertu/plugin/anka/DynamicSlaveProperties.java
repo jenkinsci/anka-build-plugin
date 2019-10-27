@@ -8,7 +8,7 @@ public class DynamicSlaveProperties extends AbstractSlaveTemplate {
     public AnkaCloudSlaveTemplate toSlaveTemplate() {
 
         AnkaCloudSlaveTemplate ankaCloudSlaveTemplate = new AnkaCloudSlaveTemplate("");
-        ankaCloudSlaveTemplate.setNodeProperties(this.nodeProperties);
+        ankaCloudSlaveTemplate.setProperties(this);
         ankaCloudSlaveTemplate.setRemoteFS("/Users/anka/");
         ankaCloudSlaveTemplate.setNumberOfExecutors(1);
         ankaCloudSlaveTemplate.setLaunchMethod(LaunchMethod.JNLP);
@@ -17,14 +17,13 @@ public class DynamicSlaveProperties extends AbstractSlaveTemplate {
     }
 
     public AnkaCloudSlaveTemplate toSlaveTemplate(String label) {
-        this.nodeProperties.setLabel(label);
+        this.setLabel(label);
         return toSlaveTemplate();
     }
 
     @DataBoundConstructor
     public DynamicSlaveProperties(String masterVmId) {
-        nodeProperties = new AnkaNodeProperties();
-        this.nodeProperties.setMasterVmId(masterVmId);
+        this.setMasterVmId(masterVmId);
         saveImageParameters = new SaveImageParameters(false, null, null,
                 false, null,false, false);
 

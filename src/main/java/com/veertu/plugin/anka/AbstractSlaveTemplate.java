@@ -5,6 +5,7 @@ import hudson.model.Node;
 import hudson.slaves.RetentionStrategy;
 import org.kohsuke.stapler.DataBoundSetter;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class AbstractSlaveTemplate {
@@ -12,198 +13,245 @@ public class AbstractSlaveTemplate {
     public static final SchemeRequirement HTTP_SCHEME = new SchemeRequirement("http");
     public static final SchemeRequirement HTTPS_SCHEME = new SchemeRequirement("https");
     protected static final int DEFAULT_SCHEDULING_TIMEOUT = 180;
-    protected AnkaNodeProperties nodeProperties;
+    protected String masterVmId;
+    protected String tag;
+    protected int launchDelay;
+    protected String remoteFS;
+    protected String labelString;
+    protected String templateDescription;
+    protected int numberOfExecutors;
+    protected Node.Mode mode;
+    protected String credentialsId;
+    protected String group;
+    protected String extraArgs;
+    protected String launchMethod;
+    protected boolean keepAliveOnError;
+    protected int SSHPort;
+    protected List<AnkaCloudSlaveTemplate.EnvironmentEntry> environments;
+    protected RetentionStrategy retentionStrategy = new RunOnceCloudRetentionStrategy(1);
+    protected String nameTemplate;
+    protected String javaArgs;
+    protected String jnlpJenkinsOverrideUrl;
+    protected String jnlpTunnel;
+    protected int priority;
     protected SaveImageParameters saveImageParameters;
 
 
 
     public String getMasterVmId() {
-        return nodeProperties.getMasterVmId();
+        return valOrNull(masterVmId);
     }
 
     @DataBoundSetter
     public void setMasterVmId(String masterVmId) {
-        this.nodeProperties.setMasterVmId(masterVmId);
+        this.masterVmId = masterVmId;
     }
 
     public String getTag() {
-        return nodeProperties.getTag();
+        return valOrNull(tag);
     }
 
     @DataBoundSetter
     public void setTag(String tag) {
-        nodeProperties.setTag(tag);
+        this.tag = tag;
     }
 
     public int getLaunchDelay() {
-        return nodeProperties.getLaunchDelay();
+        return launchDelay;
     }
 
     @DataBoundSetter
     public void setLaunchDelay(int launchDelay) {
-        nodeProperties.setLaunchDelay(launchDelay);
+        this.launchDelay = launchDelay;
     }
 
     public String getRemoteFS() {
-        return nodeProperties.getRemoteFS();
+        return valOrNull(remoteFS);
     }
 
     @DataBoundSetter
     public void setRemoteFS(String remoteFS) {
-        nodeProperties.setRemoteFS(remoteFS);
+        this.remoteFS = remoteFS;
+    }
+
+    public String getLabel() {
+        return valOrNull(labelString);
     }
 
     public String getLabelString() {
-        return nodeProperties.getLabel();
+        return getLabel();
     }
 
+
+
+    @DataBoundSetter
+    public void setLabel(String labelString) {
+        this.labelString = labelString;
+    }
+
+    @Deprecated
     @DataBoundSetter
     public void setLabelString(String labelString) {
-        nodeProperties.setLabel(labelString);
+        this.labelString = labelString;
     }
 
     public String getTemplateDescription() {
-        return nodeProperties.getTemplateDescription();
+        return valOrNull(templateDescription);
     }
 
     @DataBoundSetter
     public void setTemplateDescription(String templateDescription) {
-        nodeProperties.setTemplateDescription(templateDescription);
+        this.templateDescription = templateDescription;
     }
 
     public int getNumberOfExecutors() {
-        return nodeProperties.getNumberOfExecutors();
+        return numberOfExecutors;
     }
 
     @DataBoundSetter
     public void setNumberOfExecutors(int numberOfExecutors) {
-        nodeProperties.setNumberOfExecutors(numberOfExecutors);
+        this.numberOfExecutors = numberOfExecutors;
     }
 
     public Node.Mode getMode() {
-        return nodeProperties.getMode();
+        return mode;
     }
 
     @DataBoundSetter
     public void setMode(Node.Mode mode) {
-        this.nodeProperties.setMode(mode);
+        this.mode = mode;
     }
 
     public String getCredentialsId() {
-        return nodeProperties.getCredentialsId();
+        return valOrNull(credentialsId);
     }
 
     @DataBoundSetter
     public void setCredentialsId(String credentialsId) {
-        nodeProperties.setCredentialsId(credentialsId);
+        this.credentialsId = credentialsId;
     }
 
     public String getGroup() {
-        return nodeProperties.getGroup();
+        return valOrNull(group);
     }
 
     @DataBoundSetter
     public void setGroup(String group) {
-        nodeProperties.setGroup(group);
+        this.group = group;
     }
 
     public String getExtraArgs() {
-        return nodeProperties.getExtraArgs();
+        return valOrNull(extraArgs);
     }
 
     @DataBoundSetter
     public void setExtraArgs(String extraArgs) {
-        nodeProperties.setExtraArgs(extraArgs);
+        this.extraArgs = extraArgs;
     }
 
     public String getLaunchMethod() {
-        return nodeProperties.getLaunchMethod();
+        return valOrNull(launchMethod);
     }
 
     @DataBoundSetter
     public void setLaunchMethod(String launchMethod) {
-        nodeProperties.setLaunchMethod(launchMethod);
+        this.launchMethod = launchMethod;
     }
 
+
     public boolean isKeepAliveOnError() {
-        return nodeProperties.isKeepAliveOnError();
+        return keepAliveOnError;
+    }
+
+    public boolean getKeepAliveOnError() {
+        return keepAliveOnError;
     }
 
     @DataBoundSetter
     public void setKeepAliveOnError(boolean keepAliveOnError) {
-        nodeProperties.setKeepAliveOnError(keepAliveOnError);
+        this.keepAliveOnError = keepAliveOnError;
     }
 
     public int getSSHPort() {
-        return nodeProperties.getSSHPort();
+        return SSHPort;
     }
 
     @DataBoundSetter
     public void setSSHPort(int SSHPort) {
-        nodeProperties.setSSHPort(SSHPort);
+        this.SSHPort = SSHPort;
     }
 
     public List<AnkaCloudSlaveTemplate.EnvironmentEntry> getEnvironments() {
-        return nodeProperties.getEnvironments();
+        if (environments != null) {
+            return environments;
+        }
+        return new ArrayList<AnkaCloudSlaveTemplate.EnvironmentEntry>();
     }
 
     @DataBoundSetter
     public void setEnvironments(List<AnkaCloudSlaveTemplate.EnvironmentEntry> environments) {
-        nodeProperties.setEnvironments(environments);
+        this.environments = environments;
     }
 
     public RetentionStrategy getRetentionStrategy() {
-        return nodeProperties.getRetentionStrategy();
+        return retentionStrategy;
     }
 
     @DataBoundSetter
     public void setRetentionStrategy(RetentionStrategy retentionStrategy) {
-        nodeProperties.setRetentionStrategy(retentionStrategy);
+        this.retentionStrategy = retentionStrategy;
     }
 
     public String getNameTemplate() {
-        return nodeProperties.getNameTemplate();
+        return valOrNull(nameTemplate);
     }
 
     @DataBoundSetter
     public void setNameTemplate(String nameTemplate) {
-        nodeProperties.setNameTemplate(nameTemplate);
+        this.nameTemplate = nameTemplate;
     }
 
     public String getJavaArgs() {
-        return nodeProperties.getJavaArgs();
+        return valOrNull(javaArgs);
     }
 
     @DataBoundSetter
     public void setJavaArgs(String javaArgs) {
-        nodeProperties.setJavaArgs(javaArgs);
+        this.javaArgs = javaArgs;
     }
 
     public String getJnlpJenkinsOverrideUrl() {
-        return nodeProperties.getJnlpJenkinsOverrideUrl();
+        return valOrNull(jnlpJenkinsOverrideUrl);
     }
 
     @DataBoundSetter
     public void setJnlpJenkinsOverrideUrl(String jnlpJenkinsOverrideUrl) {
-        nodeProperties.setJnlpJenkinsOverrideUrl(jnlpJenkinsOverrideUrl);
+        this.jnlpJenkinsOverrideUrl = jnlpJenkinsOverrideUrl;
     }
 
     public String getJnlpTunnel() {
-        return nodeProperties.getJnlpTunnel();
+        return valOrNull(jnlpTunnel);
     }
 
     @DataBoundSetter
     public void setJnlpTunnel(String jnlpTunnel) {
-        nodeProperties.setJnlpTunnel(jnlpTunnel);
+        this.jnlpTunnel = jnlpTunnel;
     }
 
     public int getPriority() {
-        return nodeProperties.getPriority();
+        return priority;
     }
 
     @DataBoundSetter
     public void setPriority(int priority) {
-        nodeProperties.setPriority(priority);
+        this.priority = priority;
+    }
+
+    protected String valOrNull(String val) {
+        if (val == null || val.isEmpty()) {
+            return null;
+        }
+        return val;
     }
 
 
@@ -232,7 +280,7 @@ public class AbstractSlaveTemplate {
                 return templateId;
             }
         }
-        String masterVmId = nodeProperties.getMasterVmId();
+        String masterVmId = getMasterVmId();
         if (masterVmId != null) {
             return masterVmId;
         }
@@ -302,4 +350,50 @@ public class AbstractSlaveTemplate {
         }
     }
 
+    public Boolean getWaitForBuildToFinish() {
+        if (saveImageParameters != null) {
+            return saveImageParameters.getWaitForBuildToFinish();
+        }
+        return false;
+    }
+
+    @DataBoundSetter
+    public void setWaitForBuildToFinish(Boolean wait) {
+        if (saveImageParameters != null) {
+            saveImageParameters.setWaitForBuildToFinish(wait);
+        }
+    }
+
+
+    protected void setProperties(AbstractSlaveTemplate slave) {
+        setMasterVmId(slave.getMasterVmId());
+        setTag(slave.getTag());
+        setLaunchDelay(slave.getLaunchDelay());
+        setRemoteFS(slave.getRemoteFS());
+        setLabel(slave.getLabel());
+        setTemplateDescription(slave.getTemplateDescription());
+        setNumberOfExecutors(slave.getNumberOfExecutors());
+        setMode(slave.getMode());
+        setCredentialsId(slave.getCredentialsId());
+        setGroup(slave.getGroup());
+        setExtraArgs(slave.getExtraArgs());
+        setLaunchMethod(slave.getLaunchMethod());
+        setKeepAliveOnError(slave.getKeepAliveOnError());
+        setSSHPort(slave.getSSHPort());
+        setEnvironments(slave.getEnvironments());
+        setRetentionStrategy(slave.getRetentionStrategy());
+        setNameTemplate(slave.getNameTemplate());
+        setJavaArgs(slave.getJavaArgs());
+        setJnlpJenkinsOverrideUrl(slave.getJnlpJenkinsOverrideUrl());
+        setJnlpTunnel(slave.getJnlpTunnel());
+        setPriority(slave.getPriority());
+        setSuspend(slave.getSuspend());
+        setTemplateId(slave.getTemplateId());
+        setSaveImage(slave.getSaveImage());
+        setPushTag(slave.getPushTag());
+        setDeleteLatest(slave.isDeleteLatest());
+        setDescription(slave.getDescription());
+        setWaitForBuildToFinish(slave.getWaitForBuildToFinish());
+
+    }
 }

@@ -53,22 +53,27 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
 
     public static AnkaOnDemandSlave createProvisionedSlave(AnkaAPI ankaAPI, AnkaCloudSlaveTemplate template, Label label)
             throws IOException, AnkaMgmtException, Descriptor.FormException, InterruptedException {
-        if (template.getLaunchMethod().equals(LaunchMethod.SSH)) {
+        if (template.getLaunchMethod().toLowerCase().equals(LaunchMethod.SSH)) {
             return createSSHSlave(ankaAPI, template, label);
-        } else if (template.getLaunchMethod().equals(LaunchMethod.JNLP)) {
+        } else if (template.getLaunchMethod().toLowerCase().equals(LaunchMethod.JNLP)) {
             return createJNLPSlave(ankaAPI, template, label);
         }
         return null;
     }
 
-    private static AnkaOnDemandSlave createJNLPSlave(AnkaAPI ankaAPI, AnkaCloudSlaveTemplate template, Label label) throws InterruptedException, AnkaMgmtException, IOException, Descriptor.FormException {
+    private static AnkaOnDemandSlave createJNLPSlave(AnkaAPI ankaAPI, AnkaCloudSlaveTemplate template, Label label) throws AnkaMgmtException, IOException, Descriptor.FormException {
 //        AnkaMgmtCloud.Log("vm %s is booting...", vm.getId());
         String nodeName = generateName(template);
         String jnlpCommand = JnlpCommandBuilder.makeStartUpScript(nodeName, template.getExtraArgs(), template.getJavaArgs(), template.getJnlpJenkinsOverrideUrl());
 
         AnkaMgmtVm vm = ankaAPI.makeAnkaVm(
                 template.getMasterVmId(), template.getTag(), template.getNameTemplate(), template.getSSHPort(), jnlpCommand, template.getGroup(), template.getPriority());
-        vm.waitForBoot(template.getSchedulingTimeout());
+        try {
+            vm.waitForBoot(template.getSchedulingTimeout());
+        } catch (InterruptedException| IOException|AnkaMgmtException e) {
+            vm.terminate();
+            throw new AnkaMgmtException(e);
+        }
         AnkaMgmtCloud.Log("vm %s %s is booted, creating jnlp launcher", vm.getId(), vm.getName());
 
         String tunnel = "";
@@ -116,7 +121,12 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
                     null,
                     props, template, vm);
             AnkaMgmtCloud.Log("vm %s is booting...", vm.getId());
-            vm.waitForBoot(template.getSchedulingTimeout());
+            try {
+                vm.waitForBoot(template.getSchedulingTimeout());
+            } catch (InterruptedException| IOException|AnkaMgmtException e) {
+                vm.terminate();
+                throw new AnkaMgmtException(e);
+            }
             AnkaMgmtCloud.Log("vm %s %s is booted, creating ssh launcher", vm.getId(), vm.getName());
             SSHLauncher launcher = new SSHLauncher(vm.getConnectionIp(), vm.getConnectionPort(),
                     template.getCredentialsId(),

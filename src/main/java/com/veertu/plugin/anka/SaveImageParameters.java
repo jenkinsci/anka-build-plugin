@@ -1,6 +1,8 @@
 package com.veertu.plugin.anka;
 
 import net.sf.json.JSONObject;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
 
 public class SaveImageParameters {
 
@@ -57,34 +59,45 @@ public class SaveImageParameters {
         this.waitForBuildToFinish = waitForBuildToFinish;
     }
 
+    @DataBoundSetter
     public void setSuspend(Boolean suspend) {
         this.suspend = suspend;
     }
 
+    @DataBoundSetter
     public void setDescription(String description) {
         this.description = description;
     }
 
+    @DataBoundSetter
     public void setSaveImage(Boolean saveImage) {
         this.saveImage = saveImage;
     }
 
+    @DataBoundSetter
     public void setTemplateID(String templateID) {
         this.templateID = templateID;
     }
 
+    @DataBoundSetter
     public void setTag(String tag) {
         this.tag = tag;
     }
 
+    @DataBoundSetter
     public void setDeleteLatest(Boolean deleteLatest) {
         this.deleteLatest = deleteLatest;
     }
 
-    public SaveImageParameters(Boolean doSaveImage, String templateID, String tag,
+    public SaveImageParameters() {
+
+    }
+
+    @DataBoundConstructor
+    public SaveImageParameters(Boolean saveImage, String templateID, String tag,
                                Boolean deleteLatest, String description, Boolean suspend,
                                Boolean waitForBuildToFinish) {
-        this.saveImage = doSaveImage;
+        this.saveImage = saveImage;
         this.templateID = templateID;
         this.tag = tag;
         this.deleteLatest = deleteLatest;
@@ -119,5 +132,5 @@ public class SaveImageParameters {
         jsonObject.put(waitForBuildToFinishKey, waitForBuildToFinish);
         return jsonObject;
     }
-    
+
 }
