@@ -26,7 +26,7 @@ public class AbstractSlaveTemplate {
     protected String extraArgs;
     protected String launchMethod;
     protected boolean keepAliveOnError;
-    protected int SSHPort;
+    protected int SSHPort = 22;
     protected List<AnkaCloudSlaveTemplate.EnvironmentEntry> environments;
     protected RetentionStrategy retentionStrategy = new RunOnceCloudRetentionStrategy(1);
     protected String nameTemplate;

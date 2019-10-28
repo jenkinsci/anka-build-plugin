@@ -1,4 +1,5 @@
 package com.veertu.plugin.anka;
+import hudson.Extension;
 import hudson.model.*;
 import hudson.slaves.AbstractCloudComputer;
 import hudson.slaves.AbstractCloudSlave;
@@ -122,6 +123,7 @@ public class RunOnceCloudRetentionStrategy extends CloudRetentionStrategy implem
     @Restricted(NoExternalUse.class)
     public static final DescriptorImpl DESCRIPTOR = new DescriptorImpl();
 
+    @Extension
     public static final class DescriptorImpl extends Descriptor<RetentionStrategy<?>> {
         @Override
         public String getDisplayName() {
