@@ -1,7 +1,5 @@
 package com.veertu.plugin.anka;
 
-import com.cloudbees.plugins.credentials.CredentialsMatchers;
-import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardUsernameListBoxModel;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import com.veertu.ankaMgmtSdk.*;
@@ -41,7 +39,7 @@ public class AnkaMgmtCloud extends Cloud {
 
     private final boolean skipTLSVerification;
 
-    private transient ImageSaver saveImagesHandler;
+    private SaveImageRequestsHolder saveImageRequestsHolder = SaveImageRequestsHolder.getInstance();
 
     @DataBoundConstructor
     public AnkaMgmtCloud(String ankaMgmtUrl,
@@ -83,7 +81,6 @@ public class AnkaMgmtCloud extends Cloud {
                 ankaAPI = new AnkaAPI(ankaMgmtUrl, skipTLSVerification, this.rootCA);
             }
         }
-        this.saveImagesHandler = new ImageSaver();
     }
 
 
@@ -101,25 +98,12 @@ public class AnkaMgmtCloud extends Cloud {
         return credentialsId;
     }
 
-    public void addSaveImageReq(String buildId, String reqId) {
-        this.validateSaveImageHandlerExists();
-        this.saveImagesHandler.saveReqId(buildId, reqId);
+    public void setSaveImageRequest(String buildId, SaveImageRequest request) {
+        getSaveImageRequestsHolder().setRequest(buildId, request);
     }
 
-    public List<String> getSaveImageReqIds(String buildId) {
-        this.validateSaveImageHandlerExists();
-        return this.saveImagesHandler.getReqIdsByBuild(buildId);
-    }
-
-    public void removeSaveImageReqs(String buildId) {
-        this.validateSaveImageHandlerExists();
-        this.saveImagesHandler.removeSaveImageReqs(buildId);
-    }
-
-    private void validateSaveImageHandlerExists() {
-        if ( this.saveImagesHandler == null) {
-            this.saveImagesHandler = new ImageSaver();
-        }
+    public List<SaveImageRequest> getSaveImageRequests(String buildId) {
+        return getSaveImageRequestsHolder().getRequests(buildId);
     }
 
     public String getCloudName() {
@@ -228,6 +212,15 @@ public class AnkaMgmtCloud extends Cloud {
             }
         }
         return null;
+    }
+
+    private SaveImageRequestsHolder getSaveImageRequestsHolder() {
+        synchronized (this) {
+            if (saveImageRequestsHolder == null) {
+                saveImageRequestsHolder = SaveImageRequestsHolder.getInstance();
+            }
+            return saveImageRequestsHolder;
+        }
     }
 
     private boolean hasMasterVm(String templateId) {

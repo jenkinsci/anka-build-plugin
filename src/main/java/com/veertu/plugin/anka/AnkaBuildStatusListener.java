@@ -22,6 +22,7 @@ public class AnkaBuildStatusListener extends RunListener<Run<?, ?>> {
 
     @Override
     public void onFinalized(Run<?, ?> run) {
+        SaveImageRequestsHolder.getInstance().runFinished(run.getFullDisplayName());
         super.onFinalized(run);
     }
 

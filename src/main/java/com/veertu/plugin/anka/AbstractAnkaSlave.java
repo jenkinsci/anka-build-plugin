@@ -115,7 +115,6 @@ public abstract class AbstractAnkaSlave extends AbstractCloudSlave {
                 }
             } else {
                 vm.terminate();
-
             }
         }
     }

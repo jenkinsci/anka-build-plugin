@@ -61,7 +61,11 @@ public class DynamicSlaveStepExecution extends SynchronousStepExecution<String> 
                 if ((System.currentTimeMillis() - startTime) < slave.launchTimeout * 1000){
                     AnkaMgmtCloud.Log("caught ExecutionException when trying to start %s " +
                             "sleeping for 1 seconds to retry", slave.getNodeName());
-                    Thread.sleep(1000);
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException err) {
+                        continue; // prevent interrupted exceptions during slave init
+                    }
                     continue;
                 }
                 AnkaMgmtCloud.Log("Failed to connect to slave %s", slave.getNodeName());

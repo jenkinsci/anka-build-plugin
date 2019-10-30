@@ -2,8 +2,6 @@ package com.veertu.plugin.anka;
 
 import hudson.Extension;
 import hudson.model.*;
-import hudson.slaves.Cloud;
-import jenkins.model.Jenkins;
 import org.jenkinsci.plugins.workflow.steps.*;
 import org.kohsuke.stapler.DataBoundConstructor;
 
@@ -61,21 +59,18 @@ public class AnkaSaveImageBuildStep extends Step {
         protected Boolean run() throws Exception {
 
             Run<?, ?> run = context.get(Run.class);
+            if (run == null) {
+                return true;
+            }
+            String buildId = run.getFullDisplayName();
             TaskListener listener = context.get(TaskListener.class);
             boolean isSuccess = true;
 
-            listener.getLogger().printf("Checking save image status...");
+            assert listener != null;
+            listener.getLogger().print("Checking save image status...");
 
             try {
-                final Jenkins jenkins = Jenkins.getInstance();
-                for (Cloud cloud : jenkins.clouds) {
-                    if (cloud instanceof AnkaMgmtCloud) {
-                        isSuccess = ImageSaver.isSuccessful((AnkaMgmtCloud) cloud, run.getFullDisplayName(), timeoutMinutes);
-                        if (!isSuccess) {
-                            break;
-                        }
-                    }
-                }
+                isSuccess = ImageSaver.isSuccessful(buildId, timeoutMinutes);
                 listener.getLogger().println(isSuccess? "Done!" : "Failed!");
             } catch (SaveImageStatusTimeout e) {
                 listener.getLogger().println("TIMED OUT");

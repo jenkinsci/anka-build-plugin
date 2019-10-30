@@ -38,29 +38,27 @@ public class AnkaSaveImagePostBuildStep extends Recorder {
         boolean isSuccess = true;
 
         if (shouldFail) {
-            taskListener.getLogger().printf("Checking save image status...");
+            taskListener.getLogger().print("Checking save image status...");
             AbstractAnkaSlave slave = (AbstractAnkaSlave) (build.getBuiltOn());
             
             // Killing vm to manually initiate save image request
+            assert slave != null;
             slave.setTaskExecuted(true);
             slave.terminate();
 
-            String cloudName = slave.getTemplate().getCloudName();
-            AnkaMgmtCloud cloud = (AnkaMgmtCloud) Jenkins.getInstance().getCloud(cloudName);
-
             try {
-                isSuccess = ImageSaver.isSuccessful(cloud, slave.getJobNameAndNumber(), timeoutMinutes);
+                isSuccess = ImageSaver.isSuccessful(slave.getJobNameAndNumber(), timeoutMinutes);
                 taskListener.getLogger().println(isSuccess? "Done!" : "Failed!");
             } catch (SaveImageStatusTimeout e) {
                 taskListener.getLogger().println("TIMED OUT");
                 isSuccess = false;
             }
             catch (SaveImageRequestIdMissingException e) {
-                taskListener.getLogger().printf(e.getMessage());
+                taskListener.getLogger().print(e.getMessage());
                 isSuccess = false;
             }
             catch (AnkaMgmtException e) {
-                taskListener.getLogger().printf("error while checking if save image requess finished\n");
+                taskListener.getLogger().print("error while checking if save image requess finished\n");
                 e.printStackTrace();
                 isSuccess = false;
             }
