@@ -18,7 +18,7 @@ public class ImageSaver {
         try {
 
             AnkaCloudSlaveTemplate template = slave.getTemplate();
-            String tagToPush = template.getTag();
+            String tagToPush = template.getPushTag();
             if (tagToPush == null || tagToPush.isEmpty()) {
                 tagToPush = slave.getJobNameAndNumber();
             }
