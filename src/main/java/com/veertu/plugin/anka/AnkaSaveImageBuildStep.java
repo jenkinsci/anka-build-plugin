@@ -63,6 +63,7 @@ public class AnkaSaveImageBuildStep extends Step {
                 return true;
             }
             String buildId = run.getFullDisplayName();
+            buildId = buildId.replaceAll("\\P{Print}", "");
             TaskListener listener = context.get(TaskListener.class);
             boolean isSuccess = true;
 

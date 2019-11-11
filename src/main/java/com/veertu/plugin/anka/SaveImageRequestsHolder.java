@@ -7,12 +7,12 @@ import java.util.Map;
 
 public class SaveImageRequestsHolder {
 
-    private static SaveImageRequestsHolder instance = new SaveImageRequestsHolder();
+    private static final SaveImageRequestsHolder instance = new SaveImageRequestsHolder();
     //          job id , list of requests
     private Map<String, List<SaveImageRequest>> requests;
     private final Object mutex;
 
-    public SaveImageRequestsHolder() {
+    private SaveImageRequestsHolder() {
         requests = new HashMap<>();
         mutex = new Object();
     }

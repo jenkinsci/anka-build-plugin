@@ -37,7 +37,8 @@ public class ImageSaver {
             String shutdownScript = shutdownScript();
             String buildId = slave.getJobNameAndNumber();
             SaveImageRequest saveImageRequest = new SaveImageRequest(cloud, buildId);
-            cloud.setSaveImageRequest(buildId, saveImageRequest);
+            SaveImageRequestsHolder requestsHolder = SaveImageRequestsHolder.getInstance();
+            requestsHolder.setRequest(buildId, saveImageRequest);
             String reqId = vm.saveImage(template.getTemplateId(), tagToPush, template.getDescription(),
                     template.getSuspend(), shutdownScript, deleteLatest, latestTag, true);
             if (reqId.equals("")) {
