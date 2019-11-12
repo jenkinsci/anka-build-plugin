@@ -267,7 +267,7 @@ public class AbstractSlaveTemplate {
     }
 
     @DataBoundSetter
-    public void setSuspend(boolean suspend) {
+    public void setSuspend(Boolean suspend) {
         if (saveImageParameters != null) {
             saveImageParameters.setSuspend(suspend);
         }
@@ -330,7 +330,7 @@ public class AbstractSlaveTemplate {
     }
 
     @DataBoundSetter
-    public void setDeleteLatest(boolean deleteLatest) {
+    public void setDeleteLatest(Boolean deleteLatest) {
         if (saveImageParameters != null) {
             saveImageParameters.setDeleteLatest(deleteLatest);
         }
