@@ -175,7 +175,6 @@ public class AnkaMgmtCloud extends Cloud {
         }
 
         while (excessWorkload > 0) {
-
             // check that mgmt server has this template
             if (!hasMasterVm(t.getMasterVmId())) {
                 Log("no such template %s", t.getMasterVmId());
@@ -183,7 +182,7 @@ public class AnkaMgmtCloud extends Cloud {
             }
             try {
 
-                NodeProvisioner.PlannedNode newNode = AnkaPlannedNode.createInstance(ankaAPI, t, label);
+                NodeProvisioner.PlannedNode newNode = AnkaPlannedNode.createInstance(ankaAPI, t);
                 plannedNodes.add(newNode);
                 excessWorkload -= t.getNumberOfExecutors();
             }

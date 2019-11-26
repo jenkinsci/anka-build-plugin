@@ -33,13 +33,13 @@ public class DynamicSlave extends AnkaOnDemandSlave {
     public static AnkaOnDemandSlave createDynamicSlave(AnkaMgmtCloud cloud, DynamicSlaveProperties properties, String label) throws InterruptedException, Descriptor.FormException, AnkaMgmtException, IOException, ExecutionException {
         AnkaCloudSlaveTemplate template = properties.toSlaveTemplate(label);
         template.setCloudName(cloud.getCloudName());
-        Label objLabel;
-        try {
-            objLabel = Label.parseExpression(label);
-        } catch (ANTLRException e) {
-            e.printStackTrace();
-            throw new AnkaMgmtException(e);
-        }
-        return AnkaOnDemandSlave.createProvisionedSlave(cloud.getAnkaApi(), template, objLabel);
+        // Label objLabel;
+        // try {
+        //     objLabel = Label.parseExpression(label);
+        // } catch (ANTLRException e) {
+        //     e.printStackTrace();
+        //     throw new AnkaMgmtException(e);
+        // }
+        return AnkaOnDemandSlave.createProvisionedSlave(cloud.getAnkaApi(), template);
     }
 }

@@ -51,17 +51,17 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
         return template.getMasterVmId() + randomString;
     }
 
-    public static AnkaOnDemandSlave createProvisionedSlave(AnkaAPI ankaAPI, AnkaCloudSlaveTemplate template, Label label)
+    public static AnkaOnDemandSlave createProvisionedSlave(AnkaAPI ankaAPI, AnkaCloudSlaveTemplate template)
             throws IOException, AnkaMgmtException, Descriptor.FormException, InterruptedException {
         if (template.getLaunchMethod().toLowerCase().equals(LaunchMethod.SSH)) {
-            return createSSHSlave(ankaAPI, template, label);
+            return createSSHSlave(ankaAPI, template);
         } else if (template.getLaunchMethod().toLowerCase().equals(LaunchMethod.JNLP)) {
-            return createJNLPSlave(ankaAPI, template, label);
+            return createJNLPSlave(ankaAPI, template);
         }
         return null;
     }
 
-    private static AnkaOnDemandSlave createJNLPSlave(AnkaAPI ankaAPI, AnkaCloudSlaveTemplate template, Label label) throws AnkaMgmtException, IOException, Descriptor.FormException {
+    private static AnkaOnDemandSlave createJNLPSlave(AnkaAPI ankaAPI, AnkaCloudSlaveTemplate template) throws AnkaMgmtException, IOException, Descriptor.FormException {
 //        AnkaMgmtCloud.Log("vm %s is booting...", vm.getId());
         String nodeName = generateName(template);
         String jnlpCommand = JnlpCommandBuilder.makeStartUpScript(nodeName, template.getExtraArgs(), template.getJavaArgs(), template.getJnlpJenkinsOverrideUrl());
@@ -93,14 +93,14 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
         AnkaOnDemandSlave slave = new AnkaOnDemandSlave(nodeName, template.getTemplateDescription(), template.getRemoteFS(),
                 template.getNumberOfExecutors(),
                 template.getMode(),
-                label.toString(),
+                template.getLabelString(),
                 launcher,
                 props, template, vm);
         slave.setDisplayName(vm.getName());
         return slave;
     }
 
-    private static AnkaOnDemandSlave createSSHSlave(AnkaAPI ankaAPI, AnkaCloudSlaveTemplate template, Label label) throws InterruptedException, AnkaMgmtException, IOException, Descriptor.FormException {
+    private static AnkaOnDemandSlave createSSHSlave(AnkaAPI ankaAPI, AnkaCloudSlaveTemplate template) throws InterruptedException, AnkaMgmtException, IOException, Descriptor.FormException {
         AnkaMgmtVm vm = ankaAPI.makeAnkaVm(
                 template.getMasterVmId(), template.getTag(), template.getNameTemplate(), template.getSSHPort(), null, template.getGroup(), template.getPriority());
         try {
@@ -117,7 +117,7 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
             AnkaOnDemandSlave slave = new AnkaOnDemandSlave(vm.getId(), template.getTemplateDescription(), template.getRemoteFS(),
                     template.getNumberOfExecutors(),
                     template.getMode(),
-                    label.toString(),
+                    template.getLabelString(),
                     null,
                     props, template, vm);
             AnkaMgmtCloud.Log("vm %s is booting...", vm.getId());

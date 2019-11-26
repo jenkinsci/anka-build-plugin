@@ -46,15 +46,14 @@ public class AnkaPlannedNode extends NodeProvisioner.PlannedNode{
             return new AnkaPlannedNode(slave.getDisplayName(), f, numberOfExecutors);
     }
 
-    public static AnkaPlannedNode createInstance(final AnkaAPI ankaAPI, final AnkaCloudSlaveTemplate template,
-                                                 final Label label) throws AnkaHostException, IOException{
+    public static AnkaPlannedNode createInstance(final AnkaAPI ankaAPI, final AnkaCloudSlaveTemplate template) throws AnkaHostException, IOException{
         final int numberOfExecutors = template.getNumberOfExecutors();
         final String name = AnkaOnDemandSlave.generateName(template);
         final Callable<Node> provisionNodeCallable = new Callable<Node>() {
             public Node call() throws Exception {
                 AnkaOnDemandSlave slave = null;
                 try {
-                    slave = AnkaOnDemandSlave.createProvisionedSlave(ankaAPI, template, label);
+                    slave = AnkaOnDemandSlave.createProvisionedSlave(ankaAPI, template);
                 }
                 catch  (Exception e) {
                     AnkaMgmtCloud.Log("createProvisionedSlave() caught exception %s", e.getMessage());
@@ -62,7 +61,7 @@ public class AnkaPlannedNode extends NodeProvisioner.PlannedNode{
                     e.printStackTrace();
                     throw e;
                 }
-                if (template.getLaunchMethod() == LaunchMethod.SSH) {
+                if (template.getLaunchMethod().toLowerCase().equals(LaunchMethod.SSH)) {
                     return slave;
                 }
                 AnkaMgmtCloud.Log("got a slave adding it to jenkins");
