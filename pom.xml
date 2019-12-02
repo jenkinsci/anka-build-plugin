@@ -9,7 +9,7 @@
     <relativePath />
   </parent>
   <artifactId>anka-build</artifactId>
-  <version>1.22.2-SNAPSHOT</version>
+  <version>1.22.2</version>
   <packaging>hpi</packaging>
 
   <properties>
@@ -52,7 +52,7 @@
     <connection>scm:git:git@github.com:jenkinsci/anka-build-plugin.git</connection>
     <developerConnection>scm:git:git@github.com:jenkinsci/anka-build-plugin.git</developerConnection>
     <url>https://github.com/jenkinsci/anka-build-plugin</url>
-    <tag>minor bug fixes</tag>
+    <tag>anka-build-1.22.2</tag>
   </scm>
   <repositories>
     <repository>
