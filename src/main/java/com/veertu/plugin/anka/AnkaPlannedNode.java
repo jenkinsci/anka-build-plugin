@@ -51,27 +51,21 @@ public class AnkaPlannedNode extends NodeProvisioner.PlannedNode{
         final String name = AnkaOnDemandSlave.generateName(template);
         final Callable<Node> provisionNodeCallable = new Callable<Node>() {
             public Node call() throws Exception {
+
                 AnkaOnDemandSlave slave = null;
                 try {
                     slave = AnkaOnDemandSlave.createProvisionedSlave(ankaAPI, template);
                 }
                 catch  (Exception e) {
                     AnkaMgmtCloud.Log("createProvisionedSlave() caught exception %s", e.getMessage());
-                    //slave.terminate();
                     e.printStackTrace();
                     throw e;
                 }
                 if (template.getLaunchMethod().toLowerCase().equals(LaunchMethod.SSH)) {
                     return slave;
                 }
-                AnkaMgmtCloud.Log("got a slave adding it to jenkins");
-                try {
-                    Jenkins.getInstance().addNode(slave);
-                }
-                catch  (Exception e) {
-                    AnkaMgmtCloud.Log("Failed to add slave %s", slave.getDisplayName());
-                    slave.terminate();
-                    throw e;
+                if (slave == null) {
+                    return  null;
                 }
                 long startTime = System.currentTimeMillis(); // fetch starting time
                 while (true) {

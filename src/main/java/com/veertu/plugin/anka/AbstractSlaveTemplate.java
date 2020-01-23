@@ -2,6 +2,8 @@ package com.veertu.plugin.anka;
 
 import com.cloudbees.plugins.credentials.domains.SchemeRequirement;
 import hudson.model.Node;
+import hudson.slaves.EnvironmentVariablesNodeProperty;
+import hudson.slaves.NodeProperty;
 import hudson.slaves.RetentionStrategy;
 import org.kohsuke.stapler.DataBoundSetter;
 
@@ -364,6 +366,17 @@ public class AbstractSlaveTemplate {
         }
     }
 
+    public List<? extends NodeProperty<?>> getNodeProperties() {
+        ArrayList<EnvironmentVariablesNodeProperty.Entry> a = new ArrayList<EnvironmentVariablesNodeProperty.Entry>();
+        for (AnkaCloudSlaveTemplate.EnvironmentEntry e :this.getEnvironments()) {
+            a.add(new EnvironmentVariablesNodeProperty.Entry(e.name, e.value));
+        }
+
+        EnvironmentVariablesNodeProperty env = new EnvironmentVariablesNodeProperty(a);
+        ArrayList<NodeProperty<?>> props = new ArrayList<>();
+        props.add(env);
+        return props;
+    }
 
     protected void setProperties(AbstractSlaveTemplate slave) {
         setMasterVmId(slave.getMasterVmId());

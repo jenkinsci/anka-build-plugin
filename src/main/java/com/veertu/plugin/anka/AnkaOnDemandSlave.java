@@ -6,15 +6,15 @@ import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
 import hudson.Extension;
 import hudson.model.Computer;
 import hudson.model.Descriptor;
-import hudson.model.Label;
 import hudson.model.TaskListener;
 import hudson.plugins.sshslaves.SSHLauncher;
 import hudson.slaves.*;
+import jenkins.JenkinsHttpSessionListener;
+import jenkins.model.Jenkins;
 import jenkins.slaves.RemotingWorkDirSettings;
 import org.apache.commons.lang.RandomStringUtils;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -32,7 +32,8 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
                 launcher, template.getRetentionStrategy(), nodeProperties, template, vm);
     }
 
-    public static String generateName(AnkaCloudSlaveTemplate template){
+
+    public static String generateName(AnkaCloudSlaveTemplate template) {
         String randomString = RandomStringUtils.randomAlphanumeric(16);
         String nameTemplate = template.getNameTemplate();
         if (nameTemplate != null && !nameTemplate.isEmpty()) {
@@ -40,7 +41,12 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
             nameTemplate = nameTemplate.replace("$node_id", "");
             nameTemplate = nameTemplate.replace("$node_name", "");
             nameTemplate = nameTemplate.replace("$template_name", "");
+            nameTemplate = nameTemplate.replace("$cloud_name", template.getCloudName());
+            nameTemplate = nameTemplate.replace("$label", template.getLabelString());
             nameTemplate = nameTemplate.replace("$template_id", template.getMasterVmId());
+            if (template.getTag() != null && !template.getTag().isEmpty()) {
+                nameTemplate = nameTemplate.replace("$tag", template.getTag());
+            }
             if (nameTemplate.contains("$ts")) {
                 Long unixTime = System.currentTimeMillis() / 1000L;
                 nameTemplate = nameTemplate.replace("$ts", unixTime.toString());
@@ -48,8 +54,21 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
             }
             return nameTemplate + "_" + randomString;
         }
-        return template.getMasterVmId() + randomString;
+        StringBuilder nodeNameBuilder = new StringBuilder();
+        nodeNameBuilder.append(template.getCloudName());
+        nodeNameBuilder.append("-");
+        nodeNameBuilder.append(template.getLabelString());
+        nodeNameBuilder.append("-");
+        nodeNameBuilder.append(template.getMasterVmId());
+        nodeNameBuilder.append("-");
+        if (template.getTag() != null && !template.getTag().isEmpty()) {
+            nodeNameBuilder.append(template.getTag());
+            nodeNameBuilder.append("-");
+        }
+        nodeNameBuilder.append(randomString);
+        return nodeNameBuilder.toString().replaceAll(" ", "");
     }
+
 
     public static AnkaOnDemandSlave createProvisionedSlave(AnkaAPI ankaAPI, AnkaCloudSlaveTemplate template)
             throws IOException, AnkaMgmtException, Descriptor.FormException, InterruptedException {
@@ -61,87 +80,86 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
         return null;
     }
 
-    private static AnkaOnDemandSlave createJNLPSlave(AnkaAPI ankaAPI, AnkaCloudSlaveTemplate template) throws AnkaMgmtException, IOException, Descriptor.FormException {
+    private static AnkaOnDemandSlave createJNLPSlave(AnkaAPI ankaAPI, final AnkaCloudSlaveTemplate template) throws AnkaMgmtException, IOException, Descriptor.FormException {
 //        AnkaMgmtCloud.Log("vm %s is booting...", vm.getId());
         String nodeName = generateName(template);
         String jnlpCommand = JnlpCommandBuilder.makeStartUpScript(nodeName, template.getExtraArgs(), template.getJavaArgs(), template.getJnlpJenkinsOverrideUrl());
 
-        AnkaMgmtVm vm = ankaAPI.makeAnkaVm(
+        final AnkaMgmtVm vm = ankaAPI.makeAnkaVm(
                 template.getMasterVmId(), template.getTag(), template.getNameTemplate(), template.getSSHPort(), jnlpCommand, template.getGroup(), template.getPriority());
-        try {
-            vm.waitForBoot(template.getSchedulingTimeout());
-        } catch (InterruptedException| IOException|AnkaMgmtException e) {
-            vm.terminate();
-            throw new AnkaMgmtException(e);
-        }
         AnkaMgmtCloud.Log("vm %s %s is booted, creating jnlp launcher", vm.getId(), vm.getName());
 
         String tunnel = "";
         JNLPLauncher launcher = new JNLPLauncher(template.getJnlpTunnel(),
                 "",
                 RemotingWorkDirSettings.getEnabledDefaults());
-        ArrayList<EnvironmentVariablesNodeProperty.Entry> a = new ArrayList<EnvironmentVariablesNodeProperty.Entry>();
-        for (AnkaCloudSlaveTemplate.EnvironmentEntry e :template.getEnvironments()) {
-            a.add(new EnvironmentVariablesNodeProperty.Entry(e.name, e.value));
-        }
-
-        EnvironmentVariablesNodeProperty env = new EnvironmentVariablesNodeProperty(a);
-        ArrayList<NodeProperty<?>> props = new ArrayList<>();
-        props.add(env);
-
         AnkaMgmtCloud.Log("launcher created for vm %s %s", vm.getId(), vm.getName());
         AnkaOnDemandSlave slave = new AnkaOnDemandSlave(nodeName, template.getTemplateDescription(), template.getRemoteFS(),
                 template.getNumberOfExecutors(),
                 template.getMode(),
                 template.getLabelString(),
                 launcher,
-                props, template, vm);
+                template.getNodeProperties(), template, vm);
+        Jenkins.getInstance().addNode(slave);
+        new Thread(new Runnable() {
+
+            @Override
+            public void run() {
+                try {
+                    vm.waitForBoot(template.getSchedulingTimeout());
+                } catch (InterruptedException | IOException | AnkaMgmtException e) {
+                    vm.terminate();
+                    throw new RuntimeException(new AnkaMgmtException(e));
+                }
+
+
+
+            }
+        }).run();
+
+
         slave.setDisplayName(vm.getName());
         return slave;
     }
 
-    private static AnkaOnDemandSlave createSSHSlave(AnkaAPI ankaAPI, AnkaCloudSlaveTemplate template) throws InterruptedException, AnkaMgmtException, IOException, Descriptor.FormException {
-        AnkaMgmtVm vm = ankaAPI.makeAnkaVm(
+    private static AnkaOnDemandSlave createSSHSlave(AnkaAPI ankaAPI, final AnkaCloudSlaveTemplate template) throws InterruptedException, AnkaMgmtException, IOException, Descriptor.FormException {
+        final AnkaMgmtVm vm = ankaAPI.makeAnkaVm(
                 template.getMasterVmId(), template.getTag(), template.getNameTemplate(), template.getSSHPort(), null, template.getGroup(), template.getPriority());
         try {
-
-            ArrayList<EnvironmentVariablesNodeProperty.Entry> a = new ArrayList<EnvironmentVariablesNodeProperty.Entry>();
-            for (AnkaCloudSlaveTemplate.EnvironmentEntry e : template.getEnvironments()) {
-                a.add(new EnvironmentVariablesNodeProperty.Entry(e.name, e.value));
-            }
-
-            EnvironmentVariablesNodeProperty env = new EnvironmentVariablesNodeProperty(a);
-            ArrayList<NodeProperty<?>> props = new ArrayList<>();
-            props.add(env);
-
-            AnkaOnDemandSlave slave = new AnkaOnDemandSlave(vm.getId(), template.getTemplateDescription(), template.getRemoteFS(),
+            AnkaOnDemandSlave slave = new AnkaOnDemandSlave(generateName(template), template.getTemplateDescription(), template.getRemoteFS(),
                     template.getNumberOfExecutors(),
                     template.getMode(),
                     template.getLabelString(),
                     null,
-                    props, template, vm);
-            AnkaMgmtCloud.Log("vm %s is booting...", vm.getId());
-            try {
-                vm.waitForBoot(template.getSchedulingTimeout());
-            } catch (InterruptedException| IOException|AnkaMgmtException e) {
-                vm.terminate();
-                throw new AnkaMgmtException(e);
-            }
-            AnkaMgmtCloud.Log("vm %s %s is booted, creating ssh launcher", vm.getId(), vm.getName());
-            SSHLauncher launcher = new SSHLauncher(vm.getConnectionIp(), vm.getConnectionPort(),
-                    template.getCredentialsId(),
-                    template.getJavaArgs(), null, null, null, launchTimeoutSeconds, maxNumRetries, retryWaitTime, null);
+                    template.getNodeProperties(), template, vm);
 
+            final AnkaOnDemandSlave finalSlave = slave;
+            new Thread(new Runnable() {
 
+                @Override
+                public void run() {
+                    AnkaMgmtCloud.Log("vm %s is booting...", vm.getId());
+                    try {
+                        vm.waitForBoot(template.getSchedulingTimeout());
+                    } catch (InterruptedException | IOException | AnkaMgmtException e) {
+                        vm.terminate();
+                        throw new RuntimeException(new AnkaMgmtException(e));
+                    }
+                    AnkaMgmtCloud.Log("vm %s %s is booted, creating ssh launcher", vm.getId(), vm.getName());
+                    SSHLauncher launcher = new SSHLauncher(vm.getConnectionIp(), vm.getConnectionPort(),
+                            template.getCredentialsId(),
+                            template.getJavaArgs(), null, null, null, launchTimeoutSeconds, maxNumRetries, retryWaitTime, null);
 
-            slave.setLauncher(launcher);
+                    finalSlave.setLauncher(launcher);
 
-            AnkaMgmtCloud.Log("launcher created for vm %s %s", vm.getId(), vm.getName());
-            String name = vm.getName();
-            slave.setNodeName(name);
+                    AnkaMgmtCloud.Log("launcher created for vm %s %s", vm.getId(), vm.getName());
+                    String name = vm.getName();
+                    finalSlave.setDisplayName(name);
+                }
+            }).run();
+
             return slave;
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
             vm.terminate();
             throw e;
@@ -157,20 +175,20 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
     }
 
 
-    public boolean isKeepAliveOnError(){
+    public boolean isKeepAliveOnError() {
         return this.template.isKeepAliveOnError();
     }
 
-    public boolean canTerminate(){
-        if(hadProblemsInBuild) {
-            if(isKeepAliveOnError()){
+    public boolean canTerminate() {
+        if (hadProblemsInBuild) {
+            if (isKeepAliveOnError()) {
                 return false;
             }
         }
         return true;
     }
 
-    public void setHadErrorsOnBuild(boolean value){
+    public void setHadErrorsOnBuild(boolean value) {
         this.hadProblemsInBuild = value;
     }
 

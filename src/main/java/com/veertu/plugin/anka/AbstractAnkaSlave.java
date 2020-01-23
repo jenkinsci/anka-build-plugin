@@ -123,6 +123,10 @@ public abstract class AbstractAnkaSlave extends AbstractCloudSlave {
         this.taskExecuted = didExec;
     }
 
+    protected void setVM(AnkaMgmtVm vm) {
+        this.vm = vm;
+    }
+
 
     @Extension
     public static class VeertuCloudComputerListener extends ComputerListener {
@@ -137,13 +141,21 @@ public abstract class AbstractAnkaSlave extends AbstractCloudSlave {
         }
 
         public void onOffline(@Nonnull Computer c, @CheckForNull OfflineCause cause) {
-            AnkaMgmtCloud.Log("computer %s started onOffline hook", c.getName());
             try {
                 AnkaOnDemandSlave node = (AnkaOnDemandSlave) c.getNode();
+                // if we got here - that means this is an Anka node
+                AnkaMgmtCloud.Log("computer %s started onOffline hook", c.getName());
                 if (node == null) {
                     AnkaMgmtCloud.Log("computer %s node is null returning", c.getName());
                     return;
                 }
+
+                if (cause == null) {
+                    // assume that this is a restart
+                    AnkaMgmtCloud.Log("computer %s not disconnecting, restart assumed", c.getName());
+                    return;
+                }
+
 
                 AnkaMgmtCloud.Log("node %s is still alive, handling", node.getNodeName());
                 int maxRetries = 20;
