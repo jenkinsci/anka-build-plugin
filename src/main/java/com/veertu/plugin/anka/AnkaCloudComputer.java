@@ -3,7 +3,6 @@ package com.veertu.plugin.anka;
 import hudson.model.*;
 import hudson.slaves.AbstractCloudComputer;
 import hudson.slaves.AbstractCloudSlave;
-import org.apache.tools.ant.taskdefs.Sleep;
 import org.jenkinsci.plugins.workflow.support.steps.ExecutorStepExecution;
 
 

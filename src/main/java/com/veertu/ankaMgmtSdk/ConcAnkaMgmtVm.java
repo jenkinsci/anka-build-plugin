@@ -81,6 +81,15 @@ public class ConcAnkaMgmtVm implements AnkaMgmtVm {
         }
     }
 
+    private boolean isPulling() throws AnkaMgmtException {
+        String status = getStatus();
+        if (status.equals("Pulling")) {
+            return true;
+        }
+        return false;
+    }
+
+
     private boolean isStarting() throws AnkaMgmtException {
         AnkaVmSession sessionInfoCache = getSessionInfoCache();
         if (sessionInfoCache == null) {
@@ -160,13 +169,21 @@ public class ConcAnkaMgmtVm implements AnkaMgmtVm {
 
         while (isStarting()) {
             // wait for the vm to spin up
-            Thread.sleep(waitUnit);
-            timeWaited += waitUnit;
-            logger.info(String.format("waiting for vm %s %d to boot", this.sessionId, timeWaited));
-            if (timeWaited > maxRunningTimeout) {
-                this.terminate();
-                throw new IOException("could not start vm");
+            try {
+                Thread.sleep(waitUnit);
+                timeWaited += waitUnit;
+                logger.info(String.format("waiting for vm %s %d to boot", this.sessionId, timeWaited));
+                if (timeWaited > maxRunningTimeout) {
+                    this.terminate();
+                    throw new IOException("could not start vm");
 
+                }
+            } catch (InterruptedException e) {
+                if (isPulling()) {  // Don't let jenkins interrupt us while we are pulling
+                    logger.info(String.format("vm %s is pulling, ignoring InterruptedException", this.sessionId));
+                } else {
+                    throw e;
+                }
             }
         }
 
@@ -190,6 +207,7 @@ public class ConcAnkaMgmtVm implements AnkaMgmtVm {
         // now that we have a running vm we should be able to create a launcher
         return ip;
     }
+
 
     public String getId() {
         return sessionId;
