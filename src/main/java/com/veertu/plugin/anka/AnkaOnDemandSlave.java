@@ -1,15 +1,17 @@
 package com.veertu.plugin.anka;
 
-import com.veertu.ankaMgmtSdk.AnkaMgmtVm;
 import com.veertu.ankaMgmtSdk.AnkaAPI;
+import com.veertu.ankaMgmtSdk.AnkaMgmtVm;
 import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
 import hudson.Extension;
 import hudson.model.Computer;
 import hudson.model.Descriptor;
 import hudson.model.TaskListener;
 import hudson.plugins.sshslaves.SSHLauncher;
-import hudson.slaves.*;
-import jenkins.JenkinsHttpSessionListener;
+import hudson.slaves.ComputerLauncher;
+import hudson.slaves.ComputerListener;
+import hudson.slaves.JNLPLauncher;
+import hudson.slaves.NodeProperty;
 import jenkins.model.Jenkins;
 import jenkins.slaves.RemotingWorkDirSettings;
 import org.apache.commons.lang.RandomStringUtils;
@@ -199,5 +201,10 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
         public void preLaunch(Computer c, TaskListener taskListener) throws IOException, InterruptedException {
             super.preLaunch(c, taskListener);
         }
+    }
+
+    @Override
+    public SlaveDescriptor getDescriptor() {
+        return super.getDescriptor();
     }
 }

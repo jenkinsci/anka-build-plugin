@@ -3,15 +3,14 @@ package com.veertu.plugin.anka;
 import com.veertu.ankaMgmtSdk.AnkaAPI;
 import com.veertu.plugin.anka.exceptions.AnkaHostException;
 import hudson.model.Computer;
-import hudson.model.Label;
 import hudson.model.Node;
 import hudson.slaves.Cloud;
 import hudson.slaves.NodeProvisioner;
+
 import java.io.IOException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import jenkins.model.Jenkins;
 
 /**
  * Created by asafgur on 16/11/2016.
@@ -61,6 +60,10 @@ public class AnkaPlannedNode extends NodeProvisioner.PlannedNode{
                     e.printStackTrace();
                     throw e;
                 }
+                if (slave != null ) {
+                    VmStartedEvent.vmStarted(slave.getNodeName(), slave.getVM().getId());
+                }
+
                 if (template.getLaunchMethod().toLowerCase().equals(LaunchMethod.SSH)) {
                     return slave;
                 }

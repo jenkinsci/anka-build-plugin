@@ -11,7 +11,6 @@ import jenkins.model.Jenkins;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
-import java.awt.*;
 import java.io.IOException;
 import java.util.List;
 
@@ -114,6 +113,7 @@ public abstract class AbstractAnkaSlave extends AbstractCloudSlave {
                     throw new IOException(e);
                 }
             } else {
+                NodeTerminatedEvent.nodeTerminated(this.getNodeName());
                 vm.terminate();
             }
         }
@@ -144,17 +144,21 @@ public abstract class AbstractAnkaSlave extends AbstractCloudSlave {
             try {
                 AnkaOnDemandSlave node = (AnkaOnDemandSlave) c.getNode();
                 // if we got here - that means this is an Anka node
-                AnkaMgmtCloud.Log("computer %s started onOffline hook", c.getName());
-                if (node == null) {
-                    AnkaMgmtCloud.Log("computer %s node is null returning", c.getName());
-                    return;
-                }
 
                 if (cause == null) {
                     // assume that this is a restart
                     AnkaMgmtCloud.Log("computer %s not disconnecting, restart assumed", c.getName());
                     return;
                 }
+
+                AnkaMgmtCloud.Log("computer %s started onOffline hook", c.getName());
+                if (node == null) {
+                    AnkaMgmtCloud.Log("computer %s node is null returning", c.getName());
+                    NodeTerminatedEvent.nodeTerminated(c.getName());
+                    return;
+                }
+
+
 
 
                 AnkaMgmtCloud.Log("node %s is still alive, handling", node.getNodeName());
@@ -201,6 +205,19 @@ public abstract class AbstractAnkaSlave extends AbstractCloudSlave {
             } catch (ClassCastException e) {
                 return;
             }
+        }
+    }
+
+    public SlaveDescriptor getDescriptor() {
+        return new AnkaOnDemandSlave.DescriptorImpl();
+    }
+
+    @Extension
+    public static final class DescriptorImpl extends SlaveDescriptor {
+
+        @Override
+        public String getDisplayName() {
+            return "AnkaSlave";
         }
 
     }

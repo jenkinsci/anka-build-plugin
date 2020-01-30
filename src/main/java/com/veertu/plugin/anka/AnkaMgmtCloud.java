@@ -34,12 +34,14 @@ public class AnkaMgmtCloud extends Cloud {
     private final String ankaMgmtUrl;
     private final AnkaAPI ankaAPI;
     private final String credentialsId;
+    private transient boolean eventsInit;
 
     private final String rootCA;
 
     private final boolean skipTLSVerification;
 
     private SaveImageRequestsHolder saveImageRequestsHolder = SaveImageRequestsHolder.getInstance();
+    private KillConfirmer killConfirmer;
 
     @DataBoundConstructor
     public AnkaMgmtCloud(String ankaMgmtUrl,
@@ -81,8 +83,19 @@ public class AnkaMgmtCloud extends Cloud {
                 ankaAPI = new AnkaAPI(ankaMgmtUrl, skipTLSVerification, this.rootCA);
             }
         }
+        initEvents();
     }
 
+    private void initEvents() {
+        if (!eventsInit) {
+            if (ankaAPI != null) {
+                killConfirmer = new KillConfirmer(ankaAPI);
+                VmStartedEvent.addListener(killConfirmer);
+                NodeTerminatedEvent.addListener(killConfirmer);
+                eventsInit = true;
+            }
+        }
+    }
 
     private CertCredentials lookUpCredentials(String credentialsId) {
         List<CertCredentials> credentials = lookupCredentials(CertCredentials.class, Jenkins.getInstance(), null, new ArrayList<DomainRequirement>());
@@ -165,6 +178,7 @@ public class AnkaMgmtCloud extends Cloud {
 
     @Override
     public Collection<NodeProvisioner.PlannedNode> provision(Label label, int excessWorkload) {
+        initEvents();
         List<NodeProvisioner.PlannedNode> plannedNodes = new ArrayList<>();
 
         final AnkaCloudSlaveTemplate t = getTemplate(label);
@@ -351,7 +365,11 @@ public class AnkaMgmtCloud extends Cloud {
     }
 
     public AnkaOnDemandSlave StartNewDynamicSlave(DynamicSlaveProperties properties, String label) throws InterruptedException, IOException, Descriptor.FormException, AnkaMgmtException, ExecutionException {
-        return DynamicSlave.createDynamicSlave(this, properties, label);
+        AnkaOnDemandSlave dynamicSlave = DynamicSlave.createDynamicSlave(this, properties, label);
+        if (dynamicSlave != null ){
+            VmStartedEvent.vmStarted(dynamicSlave.getNodeName(), dynamicSlave.getVM().getId());
+        }
+        return dynamicSlave;
     }
 
 

@@ -91,4 +91,8 @@ public class AnkaAPI {
     public AnkaCloudStatus getStatus() throws AnkaMgmtException {
         return communicator.status();
     }
+
+    public boolean terminateInstance(String vmId) throws AnkaMgmtException {
+        return communicator.terminateVm(vmId);
+    }
 }
