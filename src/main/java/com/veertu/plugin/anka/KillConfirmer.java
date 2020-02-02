@@ -3,7 +3,7 @@ package com.veertu.plugin.anka;
 import com.veertu.ankaMgmtSdk.AnkaAPI;
 import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
 
-public class KillConfirmer implements VmStartedListener, NodeTerminatedListener{
+public class KillConfirmer implements VmStartedListener, NodeTerminatedListener, SaveImageSentListener{
 
     public static int waitTime = 10 * 1000; // 10 seconds
     private VmIdToNode vmIdToNode;
@@ -19,6 +19,8 @@ public class KillConfirmer implements VmStartedListener, NodeTerminatedListener{
     public void vmStarted(String nodeName, String vmId) {
         vmIdToNode.add(vmId, nodeName);
     }
+
+
 
     @Override
     public void nodeTerminated(String nodeName) {
@@ -39,5 +41,10 @@ public class KillConfirmer implements VmStartedListener, NodeTerminatedListener{
         } finally {
             vmIdToNode.remove(nodeName);
         }
+    }
+
+    @Override
+    public void saveImageSent(String nodeName) {
+        vmIdToNode.remove(nodeName);
     }
 }

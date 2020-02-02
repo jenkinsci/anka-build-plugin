@@ -50,3 +50,30 @@ class NodeTerminatedEvent {
         }
     }
 }
+
+
+interface SaveImageSentListener {
+    void saveImageSent(String nodeName);
+}
+
+
+class SaveImageSentEvent {
+    private static List<SaveImageSentListener> listeners = new ArrayList<>();
+
+    public static void addListener(SaveImageSentListener toAdd) {
+        listeners.add(toAdd);
+    }
+
+    public static void saveImageSent(final String nodeName) {
+        for (final SaveImageSentListener hl : listeners) {
+            new Thread(new Runnable() {
+
+                @Override
+                public void run() {
+                    hl.saveImageSent(nodeName);
+                }
+            }).run();
+        }
+    }
+
+}

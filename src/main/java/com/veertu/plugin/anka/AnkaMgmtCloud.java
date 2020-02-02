@@ -92,6 +92,7 @@ public class AnkaMgmtCloud extends Cloud {
                 killConfirmer = new KillConfirmer(ankaAPI);
                 VmStartedEvent.addListener(killConfirmer);
                 NodeTerminatedEvent.addListener(killConfirmer);
+                SaveImageSentEvent.addListener(killConfirmer);
                 eventsInit = true;
             }
         }
