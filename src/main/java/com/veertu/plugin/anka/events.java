@@ -1,79 +1,71 @@
 package com.veertu.plugin.anka;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-interface VmStartedListener {
-    void vmStarted(String nodeName, String vmId);
+
+class AnkaEvent {
 }
 
-class VmStartedEvent {
-    private static List<VmStartedListener> listeners = new ArrayList<>();
+class VMStarted extends AnkaEvent {
 
-    public static void addListener(VmStartedListener toAdd) {
-        listeners.add(toAdd);
+    private String vmID;
+
+    public VMStarted(String vmID) {
+
+        this.vmID = vmID;
     }
 
-    public static void vmStarted(final String nodeName, final String vmId) {
-        for (final VmStartedListener hl : listeners) {
-            new Thread(new Runnable() {
+    public String getVMId() {
+        return vmID;
+    }
+}
 
-                @Override
-                public void run() {
-                    hl.vmStarted(nodeName, vmId);
-                }
-            }).run();
+class NodeTerminated extends AnkaEvent {
+
+    private String nodeName;
+
+    NodeTerminated(String nodeName) {
+        this.nodeName = nodeName;
+    }
+
+    public String getNodeName() {
+        return nodeName;
+    }
+}
+
+class AnkaEvents {
+    private static final Object mutex = new Object();
+    private static Map<String, List<EventHandler>> listeners = new HashMap<>();
+
+    public static void addListener(String event, EventHandler handler) {
+        synchronized (mutex) {
+            List<EventHandler> eventHandlers = listeners.get(event);
+            if (eventHandlers == null) {
+                eventHandlers = new ArrayList<>();
+            }
+            eventHandlers.add(handler);
+            listeners.put(event, eventHandlers);
         }
     }
-}
 
-interface NodeTerminatedListener {
-    void nodeTerminated(String nodeName);
-}
-
-class NodeTerminatedEvent {
-    private static List<NodeTerminatedListener> listeners = new ArrayList<>();
-
-    public static void addListener(NodeTerminatedListener toAdd) {
-        listeners.add(toAdd);
-    }
-
-    public static void nodeTerminated(final String nodeName) {
-        for (final NodeTerminatedListener hl : listeners) {
+    public static void fire(String event, final AnkaEvent e) {
+        List<EventHandler> eventHandlers = listeners.get(event);
+        for (final EventHandler hl : eventHandlers) {
             new Thread(new Runnable() {
 
                 @Override
                 public void run() {
-                    hl.nodeTerminated(nodeName);
-                }
-            }).run();
-        }
-    }
-}
-
-
-interface SaveImageSentListener {
-    void saveImageSent(String nodeName);
-}
-
-
-class SaveImageSentEvent {
-    private static List<SaveImageSentListener> listeners = new ArrayList<>();
-
-    public static void addListener(SaveImageSentListener toAdd) {
-        listeners.add(toAdd);
-    }
-
-    public static void saveImageSent(final String nodeName) {
-        for (final SaveImageSentListener hl : listeners) {
-            new Thread(new Runnable() {
-
-                @Override
-                public void run() {
-                    hl.saveImageSent(nodeName);
+                    hl.handle(e);
                 }
             }).run();
         }
     }
 
+}
+
+interface EventHandler {
+    void handle(AnkaEvent e);
 }

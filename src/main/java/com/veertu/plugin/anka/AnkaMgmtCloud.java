@@ -90,9 +90,6 @@ public class AnkaMgmtCloud extends Cloud {
         if (!eventsInit) {
             if (ankaAPI != null) {
                 killConfirmer = new KillConfirmer(ankaAPI);
-                VmStartedEvent.addListener(killConfirmer);
-                NodeTerminatedEvent.addListener(killConfirmer);
-                SaveImageSentEvent.addListener(killConfirmer);
                 eventsInit = true;
             }
         }
@@ -367,12 +364,25 @@ public class AnkaMgmtCloud extends Cloud {
 
     public AnkaOnDemandSlave StartNewDynamicSlave(DynamicSlaveProperties properties, String label) throws InterruptedException, IOException, Descriptor.FormException, AnkaMgmtException, ExecutionException {
         AnkaOnDemandSlave dynamicSlave = DynamicSlave.createDynamicSlave(this, properties, label);
-        if (dynamicSlave != null ){
-            VmStartedEvent.vmStarted(dynamicSlave.getNodeName(), dynamicSlave.getVM().getId());
-        }
         return dynamicSlave;
     }
 
+    public AnkaMgmtVm startVMInstance(String templateId,
+                                      String tag, String nameTemplate, int sshPort, String startUpScript, String groupId, int priority) throws AnkaMgmtException {
+        try {
+            AnkaMgmtVm vm = ankaAPI.makeAnkaVm(templateId, tag, nameTemplate, sshPort, startUpScript, groupId, priority);
+            AnkaEvents.fire("VMStarted", new VMStarted(vm.getId()));
+            return vm;
+        } catch (AnkaMgmtException e) {
+            e.printStackTrace();
+            throw e;
+        }
+
+    }
+
+    public void nodeTerminated(String nodeName){
+        AnkaEvents.fire("NodeTerminated", new NodeTerminated(nodeName));
+    }
 
 
     @Extension
