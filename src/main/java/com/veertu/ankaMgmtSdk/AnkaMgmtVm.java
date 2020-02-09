@@ -17,7 +17,7 @@ public interface AnkaMgmtVm {
     void terminate();
     boolean isRunning();
     String getInfo();
-
+    String getStatus() throws AnkaMgmtException;
     String saveImage(String targetVMId, String tag,
                    String description, Boolean suspend,
                    String shutdownScript,

@@ -1,6 +1,5 @@
 package com.veertu.plugin.anka;
 
-import com.veertu.ankaMgmtSdk.AnkaAPI;
 import com.veertu.ankaMgmtSdk.AnkaMgmtVm;
 import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
 import hudson.model.Descriptor;
@@ -44,20 +43,20 @@ public class DynamicSlave extends AnkaOnDemandSlave {
         //     throw new AnkaMgmtException(e);
         // }
         if (template.getLaunchMethod().toLowerCase().equals(LaunchMethod.SSH)) {
-            return createSSHSlave(cloud.getAnkaApi(), template);
+            return createSSHSlave(cloud, template);
         } else if (template.getLaunchMethod().toLowerCase().equals(LaunchMethod.JNLP)) {
-            return createJNLPSlave(cloud.getAnkaApi(), template);
+            return createJNLPSlave(cloud, template);
         }
         return null;
     }
 
 
-    protected static AnkaOnDemandSlave createJNLPSlave(AnkaAPI ankaAPI, AnkaCloudSlaveTemplate template) throws AnkaMgmtException, IOException, Descriptor.FormException {
+    protected static AnkaOnDemandSlave createJNLPSlave(AnkaMgmtCloud cloud, AnkaCloudSlaveTemplate template) throws AnkaMgmtException, IOException, Descriptor.FormException {
 //        AnkaMgmtCloud.Log("vm %s is booting...", vm.getId());
         String nodeName = generateName(template);
         String jnlpCommand = JnlpCommandBuilder.makeStartUpScript(nodeName, template.getExtraArgs(), template.getJavaArgs(), template.getJnlpJenkinsOverrideUrl());
 
-        AnkaMgmtVm vm = ankaAPI.makeAnkaVm(
+        AnkaMgmtVm vm = cloud.startVMInstance(
                 template.getMasterVmId(), template.getTag(), template.getNameTemplate(), template.getSSHPort(), jnlpCommand, template.getGroup(), template.getPriority());
         try {
             vm.waitForBoot(template.getSchedulingTimeout());
@@ -91,8 +90,8 @@ public class DynamicSlave extends AnkaOnDemandSlave {
         return slave;
     }
 
-    protected static AnkaOnDemandSlave createSSHSlave(AnkaAPI ankaAPI, AnkaCloudSlaveTemplate template) throws InterruptedException, AnkaMgmtException, IOException, Descriptor.FormException {
-        AnkaMgmtVm vm = ankaAPI.makeAnkaVm(
+    protected static AnkaOnDemandSlave createSSHSlave(AnkaMgmtCloud cloud, AnkaCloudSlaveTemplate template) throws InterruptedException, AnkaMgmtException, IOException, Descriptor.FormException {
+        AnkaMgmtVm vm = cloud.startVMInstance(
                 template.getMasterVmId(), template.getTag(), template.getNameTemplate(), template.getSSHPort(), null, template.getGroup(), template.getPriority());
         try {
 

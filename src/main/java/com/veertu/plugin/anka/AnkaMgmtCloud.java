@@ -41,7 +41,7 @@ public class AnkaMgmtCloud extends Cloud {
     private final boolean skipTLSVerification;
 
     private SaveImageRequestsHolder saveImageRequestsHolder = SaveImageRequestsHolder.getInstance();
-    private KillConfirmer killConfirmer;
+    private InstanceDaemon daemon;
 
     @DataBoundConstructor
     public AnkaMgmtCloud(String ankaMgmtUrl,
@@ -89,7 +89,12 @@ public class AnkaMgmtCloud extends Cloud {
     private void initEvents() {
         if (!eventsInit) {
             if (ankaAPI != null) {
-                killConfirmer = new KillConfirmer(ankaAPI);
+                daemon = new InstanceDaemon();
+                AnkaEvents.addListener(Event.nodeStarted, daemon );
+                AnkaEvents.addListener(Event.VMStarted, daemon );
+                AnkaEvents.addListener(Event.nodeTerminated, daemon );
+                AnkaEvents.addListener(Event.saveImage, daemon );
+                new Thread(daemon).run();
                 eventsInit = true;
             }
         }
@@ -107,14 +112,6 @@ public class AnkaMgmtCloud extends Cloud {
 
     public String getCredentialsId() {
         return credentialsId;
-    }
-
-    public void setSaveImageRequest(String buildId, SaveImageRequest request) {
-        getSaveImageRequestsHolder().setRequest(buildId, request);
-    }
-
-    public List<SaveImageRequest> getSaveImageRequests(String buildId) {
-        return getSaveImageRequestsHolder().getRequests(buildId);
     }
 
     public String getCloudName() {
@@ -194,7 +191,7 @@ public class AnkaMgmtCloud extends Cloud {
             }
             try {
 
-                NodeProvisioner.PlannedNode newNode = AnkaPlannedNode.createInstance(ankaAPI, t);
+                NodeProvisioner.PlannedNode newNode = AnkaPlannedNode.createInstance(this, t);
                 plannedNodes.add(newNode);
                 excessWorkload -= t.getNumberOfExecutors();
             }
@@ -225,14 +222,6 @@ public class AnkaMgmtCloud extends Cloud {
         return null;
     }
 
-    private SaveImageRequestsHolder getSaveImageRequestsHolder() {
-        synchronized (this) {
-            if (saveImageRequestsHolder == null) {
-                saveImageRequestsHolder = SaveImageRequestsHolder.getInstance();
-            }
-            return saveImageRequestsHolder;
-        }
-    }
 
     private boolean hasMasterVm(String templateId) {
         for (AnkaVmTemplate t: this.listVmTemplates()){
@@ -371,17 +360,25 @@ public class AnkaMgmtCloud extends Cloud {
                                       String tag, String nameTemplate, int sshPort, String startUpScript, String groupId, int priority) throws AnkaMgmtException {
         try {
             AnkaMgmtVm vm = ankaAPI.makeAnkaVm(templateId, tag, nameTemplate, sshPort, startUpScript, groupId, priority);
-            AnkaEvents.fire("VMStarted", new VMStarted(vm.getId()));
+            AnkaEvents.fire(Event.VMStarted, new VMStarted(vm));
             return vm;
         } catch (AnkaMgmtException e) {
             e.printStackTrace();
             throw e;
         }
-
     }
 
-    public void nodeTerminated(String nodeName){
-        AnkaEvents.fire("NodeTerminated", new NodeTerminated(nodeName));
+    public void nodeStarted(AbstractAnkaSlave node) {
+        AnkaEvents.fire(Event.nodeStarted, new NodeStarted(node));
+    }
+
+    public void saveImage(AbstractAnkaSlave node) throws AnkaMgmtException {
+        AnkaEvents.fire(Event.saveImage, new SaveImageEvent(node));
+        ImageSaver.saveImage(this, node, node.getVM());
+    }
+
+    public void nodeTerminated(AbstractAnkaSlave node){
+        AnkaEvents.fire(Event.nodeTerminated, new NodeTerminated(node));
     }
 
 

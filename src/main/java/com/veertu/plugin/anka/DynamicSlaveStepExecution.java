@@ -3,7 +3,6 @@ package com.veertu.plugin.anka;
 import com.veertu.ankaMgmtSdk.AnkaNotFoundException;
 import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
 import hudson.model.Node;
-import jenkins.model.Jenkins;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jenkinsci.plugins.workflow.steps.SynchronousNonBlockingStepExecution;
 
@@ -51,7 +50,7 @@ public class DynamicSlaveStepExecution extends SynchronousNonBlockingStepExecuti
 
         }
         slave.setMode(Node.Mode.EXCLUSIVE);
-        Jenkins.getInstance().addNode(slave);
+        slave.register();
         startTime = System.currentTimeMillis(); // fetch starting time
         while (true) {
             try {

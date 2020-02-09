@@ -30,7 +30,7 @@ public class ConcAnkaMgmtVm implements AnkaMgmtVm {
         logger.info(String.format("init VM %s", sessionId));
     }
 
-    private String getStatus() throws AnkaMgmtException {
+    public String getStatus() throws AnkaMgmtException {
         AnkaVmSession session = this.communicator.showVm(this.sessionId);
         return session.getSessionState();
     }

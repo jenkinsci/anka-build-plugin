@@ -9,8 +9,6 @@ import hudson.model.TaskListener;
 import hudson.slaves.*;
 import jenkins.model.Jenkins;
 
-import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.util.List;
 
@@ -97,28 +95,24 @@ public abstract class AbstractAnkaSlave extends AbstractCloudSlave {
 
     @Override
     protected void _terminate(TaskListener listener) throws IOException, InterruptedException {
+        String cloudName = template.getCloudName();
+        AnkaMgmtCloud cloud = (AnkaMgmtCloud) Jenkins.getInstance().getCloud(cloudName);
         if (vm != null) {
             SaveImageParameters saveImageParams = template.getSaveImageParameters();
             if (taskExecuted && saveImageParams != null && saveImageParams.getSaveImage() && !hadProblemsInBuild) {
                 try {
                     synchronized (this) {
                         if (!this.saveImageSent) { // allow to send save image request only once
-                            String cloudName = template.getCloudName();
-                            AnkaMgmtCloud cloud = (AnkaMgmtCloud) Jenkins.getInstance().getCloud(cloudName);
-
-                            ImageSaver.saveImage(cloud, this, vm);
-                            SaveImageSentEvent.saveImageSent(this.getNodeName());
+                            cloud.saveImage(this);
                             this.saveImageSent = true;
                         }
                     }
                 } catch (AnkaMgmtException e) {
                     throw new IOException(e);
                 }
-            } else {
-                NodeTerminatedEvent.nodeTerminated(this.getNodeName());
-                vm.terminate();
             }
         }
+        cloud.nodeTerminated(this);
     }
 
     public void setTaskExecuted(boolean didExec) {
@@ -129,6 +123,12 @@ public abstract class AbstractAnkaSlave extends AbstractCloudSlave {
         this.vm = vm;
     }
 
+    public void register() throws IOException {
+        Jenkins.getInstance().addNode(this);
+        String cloudName = template.getCloudName();
+        AnkaMgmtCloud cloud = (AnkaMgmtCloud) Jenkins.getInstance().getCloud(cloudName);
+        cloud.nodeStarted(this);
+    }
 
     @Extension
     public static class VeertuCloudComputerListener extends ComputerListener {
@@ -142,72 +142,6 @@ public abstract class AbstractAnkaSlave extends AbstractCloudSlave {
             AnkaMgmtCloud.Log("temp off");
         }
 
-        public void onOffline(@Nonnull Computer c, @CheckForNull OfflineCause cause) {
-            try {
-                AnkaOnDemandSlave node = (AnkaOnDemandSlave) c.getNode();
-                // if we got here - that means this is an Anka node
-
-                if (cause == null) {
-                    // assume that this is a restart
-                    AnkaMgmtCloud.Log("computer %s not disconnecting, restart assumed", c.getName());
-                    return;
-                }
-
-                AnkaMgmtCloud.Log("computer %s started onOffline hook", c.getName());
-                if (node == null) {
-                    AnkaMgmtCloud.Log("computer %s node is null returning", c.getName());
-                    NodeTerminatedEvent.nodeTerminated(c.getName());
-                    return;
-                }
-
-
-
-
-                AnkaMgmtCloud.Log("node %s is still alive, handling", node.getNodeName());
-                int maxRetries = 20;
-                int sleepTime = 200000;
-                int retries = 0;
-
-                while (true) {
-                    try {
-                        if (node.getVM().isRunning()) {
-
-                            AnkaMgmtCloud.Log("node %s vm exists, terminating", node.getNodeName());
-                            if (node.canTerminate()) {
-                                node.terminate();
-                            }
-                            break;
-                        } else {
-                            AnkaMgmtCloud.Log("node %s vm does not exist, removing node from jenkins", node.getNodeName());
-                            Jenkins.getInstance().removeNode(node);
-                            break;
-                        }
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                        AnkaMgmtCloud.Log("node %s got %s exception while terminating",
-                                node.getNodeName(), e.getClass().toString());
-                        if (retries < maxRetries) {
-                            AnkaMgmtCloud.Log("node %s retries %d", node.getNodeName(), retries);
-                            retries++;
-                            try {
-                                Thread.sleep(sleepTime);
-                            } catch (InterruptedException e1) {
-                                e1.printStackTrace();
-                                continue;
-                            }
-                            continue;
-                        }
-                        AnkaMgmtCloud.Log("node %s retries exhausted", node.getNodeName());
-                        break;
-                    } catch (InterruptedException e) {
-                        AnkaMgmtCloud.Log("node %s termination interrupted", node.getNodeName());
-                        e.printStackTrace();
-                    }
-                }
-            } catch (ClassCastException e) {
-                return;
-            }
-        }
     }
 
     public SlaveDescriptor getDescriptor() {

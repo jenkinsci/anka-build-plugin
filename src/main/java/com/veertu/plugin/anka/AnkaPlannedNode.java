@@ -1,6 +1,5 @@
 package com.veertu.plugin.anka;
 
-import com.veertu.ankaMgmtSdk.AnkaAPI;
 import com.veertu.plugin.anka.exceptions.AnkaHostException;
 import hudson.model.Computer;
 import hudson.model.Node;
@@ -45,7 +44,7 @@ public class AnkaPlannedNode extends NodeProvisioner.PlannedNode{
             return new AnkaPlannedNode(slave.getDisplayName(), f, numberOfExecutors);
     }
 
-    public static AnkaPlannedNode createInstance(final AnkaAPI ankaAPI, final AnkaCloudSlaveTemplate template) throws AnkaHostException, IOException{
+    public static AnkaPlannedNode createInstance(final AnkaMgmtCloud cloud, final AnkaCloudSlaveTemplate template) throws AnkaHostException, IOException{
         final int numberOfExecutors = template.getNumberOfExecutors();
         final String name = AnkaOnDemandSlave.generateName(template);
         final Callable<Node> provisionNodeCallable = new Callable<Node>() {
@@ -53,15 +52,12 @@ public class AnkaPlannedNode extends NodeProvisioner.PlannedNode{
 
                 AnkaOnDemandSlave slave = null;
                 try {
-                    slave = AnkaOnDemandSlave.createProvisionedSlave(ankaAPI, template);
+                    slave = AnkaOnDemandSlave.createProvisionedSlave(cloud, template);
                 }
                 catch  (Exception e) {
                     AnkaMgmtCloud.Log("createProvisionedSlave() caught exception %s", e.getMessage());
                     e.printStackTrace();
                     throw e;
-                }
-                if (slave != null ) {
-                    VmStartedEvent.vmStarted(slave.getNodeName(), slave.getVM().getId());
                 }
 
                 if (template.getLaunchMethod().toLowerCase().equals(LaunchMethod.SSH)) {

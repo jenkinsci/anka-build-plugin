@@ -1,46 +1,79 @@
 package com.veertu.plugin.anka;
 
+import com.veertu.ankaMgmtSdk.AnkaMgmtVm;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 
+enum Event {
+    VMStarted,
+    nodeStarted,
+    saveImage,
+    nodeTerminated
+}
+
 class AnkaEvent {
 }
 
 class VMStarted extends AnkaEvent {
 
-    private String vmID;
+    private AnkaMgmtVm vm;
 
-    public VMStarted(String vmID) {
+    public VMStarted(AnkaMgmtVm vm) {
 
-        this.vmID = vmID;
+        this.vm = vm;
     }
 
-    public String getVMId() {
-        return vmID;
+    public AnkaMgmtVm getVm() {
+        return vm;
     }
 }
 
 class NodeTerminated extends AnkaEvent {
 
-    private String nodeName;
+    private AbstractAnkaSlave node;
 
-    NodeTerminated(String nodeName) {
-        this.nodeName = nodeName;
+    NodeTerminated(AbstractAnkaSlave node) {
+        this.node = node;
     }
 
-    public String getNodeName() {
-        return nodeName;
+    public AbstractAnkaSlave getNode() {
+        return node;
+    }
+}
+
+class SaveImageEvent extends AnkaEvent {
+    private AbstractAnkaSlave node;
+
+    public SaveImageEvent(AbstractAnkaSlave node) {
+        this.node = node;
+    }
+
+    public AbstractAnkaSlave getNode() {
+        return node;
+    }
+}
+
+class NodeStarted extends AnkaEvent {
+    private AbstractAnkaSlave node;
+
+    public NodeStarted(AbstractAnkaSlave node) {
+        this.node = node;
+    }
+
+    public AbstractAnkaSlave getNode() {
+        return node;
     }
 }
 
 class AnkaEvents {
     private static final Object mutex = new Object();
-    private static Map<String, List<EventHandler>> listeners = new HashMap<>();
+    private static Map<Event, List<EventHandler>> listeners = new HashMap<>();
 
-    public static void addListener(String event, EventHandler handler) {
+    public static void addListener(Event event, EventHandler handler) {
         synchronized (mutex) {
             List<EventHandler> eventHandlers = listeners.get(event);
             if (eventHandlers == null) {
@@ -51,7 +84,7 @@ class AnkaEvents {
         }
     }
 
-    public static void fire(String event, final AnkaEvent e) {
+    public static void fire(Event event, final AnkaEvent e) {
         List<EventHandler> eventHandlers = listeners.get(event);
         for (final EventHandler hl : eventHandlers) {
             new Thread(new Runnable() {

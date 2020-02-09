@@ -1,6 +1,5 @@
 package com.veertu.plugin.anka;
 
-import com.veertu.ankaMgmtSdk.AnkaAPI;
 import com.veertu.ankaMgmtSdk.AnkaMgmtVm;
 import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
 import hudson.Extension;
@@ -12,7 +11,6 @@ import hudson.slaves.ComputerLauncher;
 import hudson.slaves.ComputerListener;
 import hudson.slaves.JNLPLauncher;
 import hudson.slaves.NodeProperty;
-import jenkins.model.Jenkins;
 import jenkins.slaves.RemotingWorkDirSettings;
 import org.apache.commons.lang.RandomStringUtils;
 
@@ -72,22 +70,22 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
     }
 
 
-    public static AnkaOnDemandSlave createProvisionedSlave(AnkaAPI ankaAPI, AnkaCloudSlaveTemplate template)
+    public static AnkaOnDemandSlave createProvisionedSlave(AnkaMgmtCloud cloud, AnkaCloudSlaveTemplate template)
             throws IOException, AnkaMgmtException, Descriptor.FormException, InterruptedException {
         if (template.getLaunchMethod().toLowerCase().equals(LaunchMethod.SSH)) {
-            return createSSHSlave(ankaAPI, template);
+            return createSSHSlave(cloud, template);
         } else if (template.getLaunchMethod().toLowerCase().equals(LaunchMethod.JNLP)) {
-            return createJNLPSlave(ankaAPI, template);
+            return createJNLPSlave(cloud, template);
         }
         return null;
     }
 
-    private static AnkaOnDemandSlave createJNLPSlave(AnkaAPI ankaAPI, final AnkaCloudSlaveTemplate template) throws AnkaMgmtException, IOException, Descriptor.FormException {
+    private static AnkaOnDemandSlave createJNLPSlave(AnkaMgmtCloud cloud, final AnkaCloudSlaveTemplate template) throws AnkaMgmtException, IOException, Descriptor.FormException {
 //        AnkaMgmtCloud.Log("vm %s is booting...", vm.getId());
         String nodeName = generateName(template);
         String jnlpCommand = JnlpCommandBuilder.makeStartUpScript(nodeName, template.getExtraArgs(), template.getJavaArgs(), template.getJnlpJenkinsOverrideUrl());
 
-        final AnkaMgmtVm vm = ankaAPI.makeAnkaVm(
+        final AnkaMgmtVm vm = cloud.startVMInstance(
                 template.getMasterVmId(), template.getTag(), template.getNameTemplate(), template.getSSHPort(), jnlpCommand, template.getGroup(), template.getPriority());
         AnkaMgmtCloud.Log("vm %s %s is booted, creating jnlp launcher", vm.getId(), vm.getName());
 
@@ -102,7 +100,7 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
                 template.getLabelString(),
                 launcher,
                 template.getNodeProperties(), template, vm);
-        Jenkins.getInstance().addNode(slave);
+
         new Thread(new Runnable() {
 
             @Override
@@ -124,8 +122,8 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
         return slave;
     }
 
-    private static AnkaOnDemandSlave createSSHSlave(AnkaAPI ankaAPI, final AnkaCloudSlaveTemplate template) throws InterruptedException, AnkaMgmtException, IOException, Descriptor.FormException {
-        final AnkaMgmtVm vm = ankaAPI.makeAnkaVm(
+    private static AnkaOnDemandSlave createSSHSlave(AnkaMgmtCloud cloud, final AnkaCloudSlaveTemplate template) throws InterruptedException, AnkaMgmtException, IOException, Descriptor.FormException {
+        final AnkaMgmtVm vm = cloud.startVMInstance(
                 template.getMasterVmId(), template.getTag(), template.getNameTemplate(), template.getSSHPort(), null, template.getGroup(), template.getPriority());
         try {
             AnkaOnDemandSlave slave = new AnkaOnDemandSlave(generateName(template), template.getTemplateDescription(), template.getRemoteFS(),
