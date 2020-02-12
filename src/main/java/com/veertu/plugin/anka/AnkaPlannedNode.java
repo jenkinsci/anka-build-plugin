@@ -59,12 +59,14 @@ public class AnkaPlannedNode extends NodeProvisioner.PlannedNode{
                     e.printStackTrace();
                     throw e;
                 }
+                if (slave == null) {
+                    return  null;
+                }
+                
+                slave.register();
 
                 if (template.getLaunchMethod().toLowerCase().equals(LaunchMethod.SSH)) {
                     return slave;
-                }
-                if (slave == null) {
-                    return  null;
                 }
                 long startTime = System.currentTimeMillis(); // fetch starting time
                 while (true) {

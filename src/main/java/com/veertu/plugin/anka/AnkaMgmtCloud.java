@@ -42,6 +42,7 @@ public class AnkaMgmtCloud extends Cloud {
 
     private SaveImageRequestsHolder saveImageRequestsHolder = SaveImageRequestsHolder.getInstance();
     private InstanceDaemon daemon;
+    public static Map<String, InstanceDaemon> cloudToDaemonMap;
 
     @DataBoundConstructor
     public AnkaMgmtCloud(String ankaMgmtUrl,
@@ -86,16 +87,25 @@ public class AnkaMgmtCloud extends Cloud {
         initEvents();
     }
 
-    private void initEvents() {
+    public void initEvents() {
         if (!eventsInit) {
             if (ankaAPI != null) {
-                daemon = new InstanceDaemon();
-                AnkaEvents.addListener(Event.nodeStarted, daemon );
-                AnkaEvents.addListener(Event.VMStarted, daemon );
-                AnkaEvents.addListener(Event.nodeTerminated, daemon );
-                AnkaEvents.addListener(Event.saveImage, daemon );
-                new Thread(daemon).run();
+                if (cloudToDaemonMap == null)
+                    cloudToDaemonMap = new HashMap<>();
+                InstanceDaemon runningDaemon = cloudToDaemonMap.get(getCloudName());
+                if (runningDaemon != null) {
+                    daemon = runningDaemon;
+                }
+                else {
+                    daemon = new InstanceDaemon();
+                    AnkaEvents.addListener(Event.nodeStarted, daemon );
+                    AnkaEvents.addListener(Event.VMStarted, daemon );
+                    AnkaEvents.addListener(Event.nodeTerminated, daemon );
+                    AnkaEvents.addListener(Event.saveImage, daemon );
+                    new Thread(daemon).start();
+                }
                 eventsInit = true;
+                cloudToDaemonMap.put(getCloudName(), daemon);
             }
         }
     }
@@ -190,7 +200,6 @@ public class AnkaMgmtCloud extends Cloud {
                 break;
             }
             try {
-
                 NodeProvisioner.PlannedNode newNode = AnkaPlannedNode.createInstance(this, t);
                 plannedNodes.add(newNode);
                 excessWorkload -= t.getNumberOfExecutors();

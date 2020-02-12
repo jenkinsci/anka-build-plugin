@@ -93,7 +93,7 @@ class AnkaEvents {
                 public void run() {
                     hl.handle(e);
                 }
-            }).run();
+            }).start();
         }
     }
 
