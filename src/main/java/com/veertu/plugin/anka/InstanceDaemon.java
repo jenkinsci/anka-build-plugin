@@ -2,23 +2,39 @@ package com.veertu.plugin.anka;
 
 import com.veertu.ankaMgmtSdk.AnkaMgmtVm;
 import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
+import jenkins.model.Jenkins;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
+import static com.veertu.plugin.anka.AnkaMgmtCloud.Log;
+
 public class InstanceDaemon implements EventHandler, Runnable {
 
-    private final Object mutex = new Object();
+    private Object mutex = new Object();
     private Map<String, VMNodeWrapper> instanceMap = new HashMap<>();
     private Map<String, VMNodeWrapper> nodeMap = new HashMap<>();
+
+    private void saveChanges() {
+        try {
+            Jenkins.getInstance().save();
+        }
+        catch (IOException e) {
+            Log("Anka build plugin is not able to save cloud object to file. This could raise issues with ability to withstand Jenkins restarts");
+            e.printStackTrace();
+        }
+    }
 
     public void vmStarted(AnkaMgmtVm vm) {
         synchronized (mutex) {
             VMNodeWrapper instance = new VMNodeWrapper();
             instance.vm = vm;
             instance.state = State.started;
+            instance.noNodeCounter = 0;
             instanceMap.put(vm.getId(), instance);
+            saveChanges();
         }
     }
 
@@ -26,7 +42,9 @@ public class InstanceDaemon implements EventHandler, Runnable {
         synchronized (mutex) {
             VMNodeWrapper instance = instanceMap.get(node.getVM().getId());
             instance.node = node;
+            instance.noNodeCounter = -1;
             nodeMap.put(node.getNodeName(), instance);
+            saveChanges();
         }
     }
 
@@ -36,6 +54,7 @@ public class InstanceDaemon implements EventHandler, Runnable {
             if (instance.state != State.pushing) {
                 instance.state = State.shouldTerminate;
                 nodeMap.remove(node.getNodeName());
+                saveChanges();
             }
         }
     }
@@ -55,64 +74,79 @@ public class InstanceDaemon implements EventHandler, Runnable {
                     Iterator<VMNodeWrapper> it = instanceMap.values().iterator();
                     while (it.hasNext()) {
                         VMNodeWrapper instance = it.next();
-                        if (removeInstance(instance)) {
+                        if (shouldRemoveInstance(instance)) {
                             it.remove();
+                            saveChanges();
                         }
                         Thread.sleep(100); // 100 ms between each request
                     }
                 } catch (Exception e) {
-                    AnkaMgmtCloud.Log("Got exception running anka daemon instance loop");
+                    Log("Got exception running anka daemon instance loop");
                     e.printStackTrace();
                 }
             } catch (Exception e) {
-                AnkaMgmtCloud.Log("Got exception while waiting between anka daemon instance loop executions");
+                Log("Got exception while waiting between anka daemon instance loop executions");
                 e.printStackTrace();
             }
         }
     }
 
-    private boolean removeInstance(VMNodeWrapper instance) throws AnkaMgmtException {
+    private boolean shouldRemoveInstance(VMNodeWrapper instance) throws AnkaMgmtException {
+        int NO_NODE_COUNT_LIMIT = 120;  // 10 mins approx
         try {
             String status = instance.vm.getStatus();
             if (status != null) {
                 switch (instance.state) {
-                    case started:
-                        switch (status) {
-                            case "Scheduling":
-                            case "Pulling":
-                            case "Started":
-                                return false;
-                            case "Terminated":
-                            case "Terminating":
-                                AnkaMgmtCloud.Log("VM %s is in unexpected state %s (jenkins instance state: started)", instance.vm.getId(), status);
-                                return true;
-                        }
-                        AnkaMgmtCloud.Log("VM %s is in unexpected state %s (jenkins instance state: started)", instance.vm.getId(), status);
-                        break;
-                    case pushing:
-                        switch (status) {
-                            case "Pushing":
-                                return false;
-                        }
-                        AnkaMgmtCloud.Log("VM %s is in unexpected state: %s (jenkins instance state: pushing)", instance.vm.getId(), status);
-                        break;
-                    case shouldTerminate:
-                        switch (status) {
-                            case "Terminating":
-                            case "Terminated":
-                                return false;
-                            default:
-                                AnkaMgmtCloud.Log("VM %s is in unexpected state %s (jenkins instance state: shouldTerminate)", instance.vm.getId(), status);
-                                AnkaMgmtCloud.Log("Terminating VM %s", instance.vm.getId());
+                case started:
+                    switch (status) {
+                    case "Started":
+                        if (instance.node == null) {
+                            Log("VM " + instance.vm.getId() + " is started but no related slave exists");
+                            instance.noNodeCounter++;
+                            if (instance.noNodeCounter > NO_NODE_COUNT_LIMIT) {
+                                Log("Terminating VM " + instance.vm.getId() + " since no related slave found");
                                 instance.vm.terminate();
                                 return true;
+                            }
                         }
+                    case "Scheduling":
+                    case "Pulling":
+                        return false;
+                    case "Terminated":
+                    case "Terminating":
+                        Log("VM %s is in unexpected state %s (jenkins instance state: started)",
+                                instance.vm.getId(), status);
+                        return true;
+                    }
+                    Log("VM %s is in unexpected state %s (jenkins instance state: started)",
+                            instance.vm.getId(), status);
+                    break;
+                case pushing:
+                    if (status.equals("Pushing"))
+                        return false;
+                    Log("VM %s is in unexpected state: %s (jenkins instance state: pushing)",
+                            instance.vm.getId(), status);
+                    break;
+                case shouldTerminate:
+                    switch (status) {
+                    case "Terminating":
+                    case "Terminated":
+                        return false;
+                    default:
+                        Log("VM %s is in unexpected state %s (jenkins instance state: shouldTerminate)",
+                                instance.vm.getId(), status);
+                        Log("Terminating VM %s", instance.vm.getId());
+                        instance.vm.terminate();
+                        return true;
+                    }
                 }
             }
         } catch (NullPointerException e) {
-            AnkaMgmtCloud.Log("VM %s does not exist in controller", instance.vm.getId());
-            if (instance.node != null)
+            Log("VM %s does not exist in controller", instance.vm.getId());
+            if (instance.node != null) {
                 nodeMap.remove(instance.node.getNodeName());
+                saveChanges();
+            }
             return true;
         }
         return false;
@@ -122,25 +156,25 @@ public class InstanceDaemon implements EventHandler, Runnable {
     public void handle(AnkaEvent e) {
         String eventName = e.getClass().getCanonicalName();
         switch (eventName) {
-            case "com.veertu.plugin.anka.NodeStarted":
-                NodeStarted event = (NodeStarted) e;
-                this.vmAttachedToNode(event.getNode());
-                break;
-            case "com.veertu.plugin.anka.VMStarted":
-                VMStarted startEvent = (VMStarted) e;
-                this.vmStarted(startEvent.getVm());
-                break;
-            case "com.veertu.plugin.anka.SaveImageEvent":
-                SaveImageEvent saveEvent = (SaveImageEvent) e;
-                this.saveImageSent(saveEvent.getNode());
-                break;
-            case "com.veertu.plugin.anka.NodeTerminated":
-                NodeTerminated nodeTerminatedEvent = (NodeTerminated) e;
-                this.nodeTerminated(nodeTerminatedEvent.getNode());
-                break;
-            default:
-                AnkaMgmtCloud.Log("Could not identify event name. Got: %s ", eventName);
-                break;
+        case "com.veertu.plugin.anka.NodeStarted":
+            NodeStarted event = (NodeStarted) e;
+            this.vmAttachedToNode(event.getNode());
+            break;
+        case "com.veertu.plugin.anka.VMStarted":
+            VMStarted startEvent = (VMStarted) e;
+            this.vmStarted(startEvent.getVm());
+            break;
+        case "com.veertu.plugin.anka.SaveImageEvent":
+            SaveImageEvent saveEvent = (SaveImageEvent) e;
+            this.saveImageSent(saveEvent.getNode());
+            break;
+        case "com.veertu.plugin.anka.NodeTerminated":
+            NodeTerminated nodeTerminatedEvent = (NodeTerminated) e;
+            this.nodeTerminated(nodeTerminatedEvent.getNode());
+            break;
+        default:
+            Log("Could not identify event name. Got: %s ", eventName);
+            break;
         }
 
     }
@@ -148,10 +182,12 @@ public class InstanceDaemon implements EventHandler, Runnable {
     private enum State {
         started, shouldTerminate, pushing
     }
+
     private class VMNodeWrapper {
         public State state;
         public AnkaMgmtVm vm;
         public AbstractAnkaSlave node; // i ♥ java
+        public int noNodeCounter;
     }
 
 }

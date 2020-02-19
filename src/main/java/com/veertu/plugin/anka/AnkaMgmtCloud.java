@@ -92,20 +92,22 @@ public class AnkaMgmtCloud extends Cloud {
             if (ankaAPI != null) {
                 if (cloudToDaemonMap == null)
                     cloudToDaemonMap = new HashMap<>();
+
                 InstanceDaemon runningDaemon = cloudToDaemonMap.get(getCloudName());
-                if (runningDaemon != null) {
-                    daemon = runningDaemon;
-                }
-                else {
-                    daemon = new InstanceDaemon();
+                if (runningDaemon == null) {
+                    if (daemon == null) {
+                        daemon = new InstanceDaemon();
+                    }
                     AnkaEvents.addListener(Event.nodeStarted, daemon );
                     AnkaEvents.addListener(Event.VMStarted, daemon );
                     AnkaEvents.addListener(Event.nodeTerminated, daemon );
                     AnkaEvents.addListener(Event.saveImage, daemon );
                     new Thread(daemon).start();
                 }
-                eventsInit = true;
+                else if (daemon == null)
+                    daemon = runningDaemon;
                 cloudToDaemonMap.put(getCloudName(), daemon);
+                eventsInit = true;
             }
         }
     }
@@ -243,6 +245,7 @@ public class AnkaMgmtCloud extends Cloud {
 
     @Override
     public boolean canProvision(Label label) {
+        initEvents();
         AnkaCloudSlaveTemplate template = getTemplateFromLabel(label);
         if (template == null){
             return false;
@@ -411,6 +414,7 @@ public class AnkaMgmtCloud extends Cloud {
             }
             return listBox;
         }
+
     }
 
 }
