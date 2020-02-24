@@ -99,7 +99,7 @@ public abstract class AbstractAnkaSlave extends AbstractCloudSlave {
         AnkaMgmtCloud cloud = (AnkaMgmtCloud) Jenkins.getInstance().getCloud(cloudName);
         if (vm != null) {
             SaveImageParameters saveImageParams = template.getSaveImageParameters();
-            if (taskExecuted && saveImageParams != null && saveImageParams.getSaveImage() && !hadProblemsInBuild) {
+            if (taskExecuted && saveImageParams != null && this.template.getSaveImageParameters().getSaveImage() && saveImageParams.getSaveImage() && !hadProblemsInBuild) {
                 try {
                     synchronized (this) {
                         if (!this.saveImageSent) { // allow to send save image request only once

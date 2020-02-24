@@ -75,7 +75,7 @@ public class AnkaCloudComputer extends AbstractCloudComputer {
 
         if (this.run != null) {
             Result result = this.run.getResult();
-            if (result == null && this.template.getSaveImageParameters() != null && this.template.getSaveImageParameters().getWaitForBuildToFinish()) {
+            if (result == null && this.template.getSaveImageParameters() != null && this.template.getSaveImageParameters().getSaveImage() && this.template.getSaveImageParameters().getWaitForBuildToFinish()) {
                 while (run.isBuilding()) {
                     try {
                         Thread.sleep(1000);

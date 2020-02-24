@@ -35,6 +35,8 @@ public class SaveImageParameters {
     }
 
     public Boolean getSaveImage() {
+        if (saveImage == null)
+            return false;
         return saveImage;
     }
 
