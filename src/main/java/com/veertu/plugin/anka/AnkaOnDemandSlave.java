@@ -101,15 +101,21 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
                 launcher,
                 template.getNodeProperties(), template, vm);
 
+        final AnkaOnDemandSlave finalSlave = slave;
+        new Thread(new Runnable() {
 
-        try {
-            vm.waitForBoot(template.getSchedulingTimeout());
-        } catch (InterruptedException | IOException | AnkaMgmtException e) {
-            vm.terminate();
-            throw new RuntimeException(new AnkaMgmtException(e));
-        }
+            @Override
+            public void run() {
+                try {
+                    vm.waitForBoot(template.getSchedulingTimeout());
+                } catch (InterruptedException | IOException | AnkaMgmtException e) {
+                    vm.terminate();
+                    throw new RuntimeException(new AnkaMgmtException(e));
+                }
+                finalSlave.setDisplayName(vm.getName());
+            }
+        }).start();
 
-        slave.setDisplayName(vm.getName());
         return slave;
     }
 
@@ -125,26 +131,29 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
                     template.getNodeProperties(), template, vm);
 
             final AnkaOnDemandSlave finalSlave = slave;
-            
-            
-            
-            
-            AnkaMgmtCloud.Log("vm %s is booting...", vm.getId());
-            try {
-                vm.waitForBoot(template.getSchedulingTimeout());
-            } catch (InterruptedException | IOException | AnkaMgmtException e) {
-                vm.terminate();
-                throw new RuntimeException(new AnkaMgmtException(e));
-            }
-            AnkaMgmtCloud.Log("vm %s %s is booted, creating ssh launcher", vm.getId(), vm.getName());
-            SSHLauncher launcher = new SSHLauncher(vm.getConnectionIp(), vm.getConnectionPort(),
-                    template.getCredentialsId(),
-                    template.getJavaArgs(), null, null, null, launchTimeoutSeconds, maxNumRetries, retryWaitTime, null);
-            finalSlave.setLauncher(launcher);
 
-            AnkaMgmtCloud.Log("launcher created for vm %s %s", vm.getId(), vm.getName());
-            String name = vm.getName();
-            finalSlave.setDisplayName(name);
+            new Thread(new Runnable() {
+
+                @Override
+                public void run() {
+                    AnkaMgmtCloud.Log("vm %s is booting...", vm.getId());
+                    try {
+                        vm.waitForBoot(template.getSchedulingTimeout());
+                    } catch (InterruptedException | IOException | AnkaMgmtException e) {
+                        vm.terminate();
+                        throw new RuntimeException(new AnkaMgmtException(e));
+                    }
+                    AnkaMgmtCloud.Log("vm %s %s is booted, creating ssh launcher", vm.getId(), vm.getName());
+                    SSHLauncher launcher = new SSHLauncher(vm.getConnectionIp(), vm.getConnectionPort(),
+                            template.getCredentialsId(),
+                            template.getJavaArgs(), null, null, null, launchTimeoutSeconds, maxNumRetries, retryWaitTime, null);
+                    finalSlave.setLauncher(launcher);
+
+                    AnkaMgmtCloud.Log("launcher created for vm %s %s", vm.getId(), vm.getName());
+                    String name = vm.getName();
+                    finalSlave.setDisplayName(name);
+                }
+            }).start();
 
             return slave;
         } catch (Exception e) {
