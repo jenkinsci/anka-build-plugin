@@ -63,7 +63,7 @@ public class AnkaPlannedNode extends NodeProvisioner.PlannedNode{
                     return  null;
                 }
                 
-//                slave.register();
+                slave.register();
 
                 if (template.getLaunchMethod().toLowerCase().equals(LaunchMethod.SSH)) {
                     return slave;
