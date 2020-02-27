@@ -66,6 +66,7 @@ public class AnkaMgmtClientCertAuthCommunicator extends AnkaMgmtCommunicator {
         builder.setSSLContext(sslContext);
 
         setTLSVerificationIfDefined(sslContext, builder);
+        builder.disableAutomaticRetries();
         CloseableHttpClient httpClient = builder.setDefaultRequestConfig(requestBuilder.build()).build();
         return httpClient;
     }

@@ -1,17 +1,14 @@
 package com.veertu.ankaMgmtSdk;
 
 import com.veertu.RoundRobin;
-import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
-import com.veertu.ankaMgmtSdk.exceptions.AnkaUnAuthenticatedRequestException;
-import com.veertu.ankaMgmtSdk.exceptions.AnkaUnauthorizedRequestException;
-import com.veertu.ankaMgmtSdk.exceptions.ClientException;
-import com.veertu.ankaMgmtSdk.exceptions.SaveImageRequestIdMissingException;
+import com.veertu.ankaMgmtSdk.exceptions.*;
 import com.veertu.plugin.anka.AnkaMgmtCloud;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.*;
+import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.http.conn.HttpHostConnectException;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
@@ -19,15 +16,6 @@ import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.client.utils.URIBuilder;
-
-import java.io.*;
-import java.net.URISyntaxException;
-import java.security.*;
-import java.security.cert.Certificate;
-import java.security.cert.CertificateException;
-import javax.net.ssl.SSLContext;
-
 import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.ssl.TrustStrategy;
 import org.bouncycastle.cert.X509CertificateHolder;
@@ -38,9 +26,16 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
+import java.io.*;
+import java.net.NoRouteToHostException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
+import java.security.*;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -500,7 +495,7 @@ public class AnkaMgmtCommunicator {
                         return jsonResponse;
                     }
 
-                } catch (ClientException | SSLException e) {
+                } catch (ClientException | SSLException | NoRouteToHostException e) {
                     // don't retry on client exception
                     throw e;
                 } catch (HttpHostConnectException | ConnectTimeoutException e) {
@@ -515,7 +510,7 @@ public class AnkaMgmtCommunicator {
                     httpClient.close();
                 }
                 return null;
-            } catch (ClientException e) {
+            } catch (ClientException | SSLException | NoRouteToHostException e) {
                 // don't retry on client exception
                 throw new AnkaMgmtException(e);
             } catch (Exception e) {
@@ -552,6 +547,7 @@ public class AnkaMgmtCommunicator {
                 .loadTrustMaterial(keystore, getTrustStartegy()).build();
         builder.setSSLContext(sslContext);
         setTLSVerificationIfDefined(sslContext, builder);
+        builder.disableAutomaticRetries();
         CloseableHttpClient httpClient = builder.setDefaultRequestConfig(requestBuilder.build()).build();
         return httpClient;
 
