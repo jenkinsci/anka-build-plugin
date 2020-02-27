@@ -44,7 +44,7 @@ public class AnkaPlannedNode extends NodeProvisioner.PlannedNode{
             return new AnkaPlannedNode(slave.getDisplayName(), f, numberOfExecutors);
     }
 
-    public static AnkaPlannedNode createInstance(final AnkaMgmtCloud cloud, final AnkaCloudSlaveTemplate template) throws AnkaHostException, IOException{
+    public static NodeProvisioner.PlannedNode createInstance(final AnkaMgmtCloud cloud, final AnkaCloudSlaveTemplate template) throws AnkaHostException, IOException{
         final int numberOfExecutors = template.getNumberOfExecutors();
         final String name = AnkaOnDemandSlave.generateName(template);
         final Callable<Node> provisionNodeCallable = new Callable<Node>() {
@@ -62,9 +62,8 @@ public class AnkaPlannedNode extends NodeProvisioner.PlannedNode{
                 if (slave == null) {
                     return  null;
                 }
-                
-                slave.register();
 
+                slave.register();
                 if (template.getLaunchMethod().toLowerCase().equals(LaunchMethod.SSH)) {
                     return slave;
                 }
@@ -97,7 +96,7 @@ public class AnkaPlannedNode extends NodeProvisioner.PlannedNode{
 
         };
         Future<Node> f = Computer.threadPoolForRemoting.submit(provisionNodeCallable);
-        return new AnkaPlannedNode(name, f, numberOfExecutors);
+        return new NodeProvisioner.PlannedNode(name, f, numberOfExecutors);
 
     }
 

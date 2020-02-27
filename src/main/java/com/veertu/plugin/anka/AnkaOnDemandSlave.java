@@ -100,6 +100,7 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
                 template.getLabelString(),
                 launcher,
                 template.getNodeProperties(), template, vm);
+//        slave.register();
 
         new Thread(new Runnable() {
 
@@ -132,7 +133,7 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
                     template.getLabelString(),
                     null,
                     template.getNodeProperties(), template, vm);
-
+//            slave.register();
             final AnkaOnDemandSlave finalSlave = slave;
             new Thread(new Runnable() {
 
@@ -154,7 +155,7 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
 
                     AnkaMgmtCloud.Log("launcher created for vm %s %s", vm.getId(), vm.getName());
                     String name = vm.getName();
-                    finalSlave.setDisplayName(name);
+//                    finalSlave.setDisplayName(name);
                 }
             }).run();
 
