@@ -101,7 +101,6 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
                 launcher,
                 template.getNodeProperties(), template, vm);
 
-        final AnkaOnDemandSlave finalSlave = slave;
         new Thread(new Runnable() {
 
             @Override
@@ -112,10 +111,14 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
                     vm.terminate();
                     throw new RuntimeException(new AnkaMgmtException(e));
                 }
-                finalSlave.setDisplayName(vm.getName());
-            }
-        }).start();
 
+
+
+            }
+        }).run();
+
+
+        slave.setDisplayName(vm.getName());
         return slave;
     }
 
@@ -131,7 +134,6 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
                     template.getNodeProperties(), template, vm);
 
             final AnkaOnDemandSlave finalSlave = slave;
-
             new Thread(new Runnable() {
 
                 @Override
@@ -147,13 +149,14 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
                     SSHLauncher launcher = new SSHLauncher(vm.getConnectionIp(), vm.getConnectionPort(),
                             template.getCredentialsId(),
                             template.getJavaArgs(), null, null, null, launchTimeoutSeconds, maxNumRetries, retryWaitTime, null);
+
                     finalSlave.setLauncher(launcher);
 
                     AnkaMgmtCloud.Log("launcher created for vm %s %s", vm.getId(), vm.getName());
                     String name = vm.getName();
                     finalSlave.setDisplayName(name);
                 }
-            }).start();
+            }).run();
 
             return slave;
         } catch (Exception e) {
