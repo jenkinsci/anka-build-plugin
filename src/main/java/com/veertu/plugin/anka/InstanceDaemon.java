@@ -101,10 +101,10 @@ public class InstanceDaemon implements EventHandler, Runnable {
                     switch (status) {
                     case "Started":
                         if (instance.node == null) {
-                            Log("VM " + instance.vm.getId() + " is started but no related slave exists");
+                            Log("VM " + instance.vm.getId() + " is started and waiting for a node");
                             instance.noNodeCounter++;
                             if (instance.noNodeCounter > NO_NODE_COUNT_LIMIT) {
-                                Log("Terminating VM " + instance.vm.getId() + " since no related slave found");
+                                Log("Terminating VM " + instance.vm.getId() + " , gave up on getting a node");
                                 instance.vm.terminate();
                                 return true;
                             }
@@ -133,10 +133,17 @@ public class InstanceDaemon implements EventHandler, Runnable {
                     case "Terminated":
                         return false;
                     default:
-                        Log("VM %s is in unexpected state %s (jenkins instance state: shouldTerminate)",
-                                instance.vm.getId(), status);
-                        Log("Terminating VM %s", instance.vm.getId());
+                        String vmID = instance.vm.getId();
+                        Log("VM %s is in state %s (jenkins instance state: shouldTerminate)",
+                                vmID, status);
+                        Log("Terminating VM %s in 10 seconds", vmID);
+                        try {
+                            Thread.sleep(10000);
+                        } catch (InterruptedException e) {
+                            Log("Sleep interrupted for vm %s, terminating now", vmID);
+                        }
                         instance.vm.terminate();
+                        Log("VM %s terminated", vmID);
                         return true;
                     }
                 }
