@@ -133,7 +133,6 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
                     template.getLabelString(),
                     null,
                     template.getNodeProperties(), template, vm);
-            slave.register();
             AnkaMgmtCloud.Log("vm %s is booting...", vm.getId());
             try {
                 vm.waitForBoot(template.getSchedulingTimeout());
@@ -147,7 +146,7 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
                     template.getJavaArgs(), null, null, null, launchTimeoutSeconds, maxNumRetries, retryWaitTime, null);
 
             slave.setLauncher(launcher);
-
+            slave.register();
             AnkaMgmtCloud.Log("launcher created for vm %s %s", vm.getId(), vm.getName());
             return slave;
         } catch (Exception e) {

@@ -41,17 +41,19 @@ public class InstanceDaemon implements EventHandler, Runnable {
     public void vmAttachedToNode(AbstractAnkaSlave node) {
         synchronized (mutex) {
             VMNodeWrapper instance = instanceMap.get(node.getVM().getId());
-            instance.node = node;
-            instance.noNodeCounter = -1;
-            nodeMap.put(node.getNodeName(), instance);
-            saveChanges();
+            if (instance != null ){
+                instance.node = node;
+                instance.noNodeCounter = -1;
+                nodeMap.put(node.getNodeName(), instance);
+                saveChanges();
+            }
         }
     }
 
     public void nodeTerminated(AbstractAnkaSlave node) {
         synchronized (mutex) {
             VMNodeWrapper instance = nodeMap.get(node.getNodeName());
-            if (instance.state != State.pushing) {
+            if (instance != null && instance.state != State.pushing) {
                 instance.state = State.shouldTerminate;
                 nodeMap.remove(node.getNodeName());
                 saveChanges();
@@ -62,7 +64,9 @@ public class InstanceDaemon implements EventHandler, Runnable {
     public void saveImageSent(AbstractAnkaSlave node) {
         synchronized (mutex) {
             VMNodeWrapper instance = nodeMap.get(node.getNodeName());
-            instance.state = State.pushing;
+            if (instance != null ) {
+                instance.state = State.pushing;
+            }
         }
     }
 
@@ -71,14 +75,16 @@ public class InstanceDaemon implements EventHandler, Runnable {
             try {
                 Thread.sleep(5000);
                 try {
-                    Iterator<VMNodeWrapper> it = instanceMap.values().iterator();
-                    while (it.hasNext()) {
-                        VMNodeWrapper instance = it.next();
-                        if (shouldRemoveInstance(instance)) {
-                            it.remove();
-                            saveChanges();
+                    synchronized (mutex) {
+                        Iterator<VMNodeWrapper> it = instanceMap.values().iterator();
+                        while (it.hasNext()) {
+                            VMNodeWrapper instance = it.next();
+                            if (shouldRemoveInstance(instance)) {
+                                it.remove();
+                                saveChanges();
+                            }
+                            Thread.sleep(100); // 100 ms between each request
                         }
-                        Thread.sleep(100); // 100 ms between each request
                     }
                 } catch (Exception e) {
                     Log("Got exception running anka daemon instance loop");

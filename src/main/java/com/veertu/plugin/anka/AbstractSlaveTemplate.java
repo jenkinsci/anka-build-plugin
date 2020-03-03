@@ -14,7 +14,7 @@ public class AbstractSlaveTemplate {
 
     public static final SchemeRequirement HTTP_SCHEME = new SchemeRequirement("http");
     public static final SchemeRequirement HTTPS_SCHEME = new SchemeRequirement("https");
-    protected static final int DEFAULT_SCHEDULING_TIMEOUT = 180;
+    protected static final int DEFAULT_SCHEDULING_TIMEOUT = 1800;
     protected String masterVmId;
     protected String tag;
     protected int launchDelay;
