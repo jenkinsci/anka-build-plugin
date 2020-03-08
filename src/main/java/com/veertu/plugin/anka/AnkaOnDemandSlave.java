@@ -146,6 +146,10 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
                     template.getJavaArgs(), null, null, null, launchTimeoutSeconds, maxNumRetries, retryWaitTime, null);
 
             slave.setLauncher(launcher);
+            String name = vm.getName();
+            if (name != null){
+                slave.setNodeName(name);
+            }
             slave.register();
             AnkaMgmtCloud.Log("launcher created for vm %s %s", vm.getId(), vm.getName());
             return slave;
