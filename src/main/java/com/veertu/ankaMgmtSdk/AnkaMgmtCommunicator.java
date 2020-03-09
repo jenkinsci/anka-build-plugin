@@ -406,8 +406,31 @@ public class AnkaMgmtCommunicator {
         return imageRequests;
     }
 
+    public void updateVM(String id, String name, String jenkinsNodeLink) throws AnkaMgmtException {
+        String url = String.format("/api/v1/vm?id=%s", id);
+        JSONObject jsonResponse = null;
+        JSONObject jsonObject = new JSONObject();
+        if (jenkinsNodeLink != null) {
+            jsonObject.put("external_id", jenkinsNodeLink);
+        }
+        if (name != null) {
+            jsonObject.put("name", name);
+        }
+        try {
+            jsonResponse = this.doRequest(RequestMethod.PUT, url, jsonObject);
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new AnkaMgmtException(e);
+        }
+        String logicalResult = jsonResponse.getString("status");
+        if (!logicalResult.equals("OK")) {
+            throw new AnkaMgmtException(jsonResponse.optString("message"));
+        }
+
+    }
+
     protected enum RequestMethod {
-        GET, POST, DELETE
+        GET, POST, DELETE, PUT
     }
 
     protected JSONObject doRequest(RequestMethod method, String path, JSONObject requestBody) throws IOException, AnkaMgmtException {
@@ -445,6 +468,10 @@ public class AnkaMgmtCommunicator {
                         case POST:
                             HttpPost postRequest = new HttpPost(url);
                             request = setBody(postRequest, requestBody);
+                            break;
+                        case PUT:
+                            HttpPut putRequest = new HttpPut(url);
+                            request = setBody(putRequest, requestBody);
                             break;
                         case DELETE:
                             if (requestBody != null) {
