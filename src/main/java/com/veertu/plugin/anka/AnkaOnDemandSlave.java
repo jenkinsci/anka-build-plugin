@@ -86,7 +86,8 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
         String jnlpCommand = JnlpCommandBuilder.makeStartUpScript(nodeName, template.getExtraArgs(), template.getJavaArgs(), template.getJnlpJenkinsOverrideUrl());
 
         final AnkaMgmtVm vm = cloud.startVMInstance(
-                template.getMasterVmId(), template.getTag(), template.getNameTemplate(), template.getSSHPort(), jnlpCommand, template.getGroup(), template.getPriority());
+                template.getMasterVmId(), template.getTag(), template.getNameTemplate(),
+                template.getSSHPort(), jnlpCommand, template.getGroup(), template.getPriority(), nodeName, );
         AnkaMgmtCloud.Log("vm %s %s is booted, creating jnlp launcher", vm.getId(), vm.getName());
 
         String tunnel = "";
