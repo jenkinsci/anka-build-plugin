@@ -530,11 +530,11 @@ public class AnkaMgmtCommunicator {
                         return jsonResponse;
                     }
 
-                } catch (ClientException | SSLException | NoRouteToHostException e) {
-                    // don't retry on client exception
+                } catch (HttpHostConnectException | ConnectTimeoutException | ClientException | SSLException | NoRouteToHostException e) {
+                    AnkaMgmtCloud.Log("Got client exception: %s", e.getMessage());
+
+                    // don't retry on client exception, timeouts or host exceptions
                     throw e;
-                } catch (HttpHostConnectException | ConnectTimeoutException e) {
-                    throw new AnkaMgmtException(e);
                 } catch (UnsupportedEncodingException e) {
                     e.printStackTrace();
                     throw new RuntimeException(e);
@@ -545,10 +545,14 @@ public class AnkaMgmtCommunicator {
                     httpClient.close();
                 }
                 return null;
-            } catch (ClientException | SSLException | NoRouteToHostException e) {
+            } catch (HttpHostConnectException | ConnectTimeoutException | ClientException | SSLException | NoRouteToHostException e) {
                 // don't retry on client exception
+                AnkaMgmtCloud.Log("Got exception: %s %s", e.getClass().getName(), e.getMessage());
+
                 throw new AnkaMgmtException(e);
             } catch (Exception e) {
+                AnkaMgmtCloud.Log("Got exception: %s %s", e.getClass().getName(), e.getMessage());
+
                 if (retry < maxRetries) {
                     continue;
                 }
