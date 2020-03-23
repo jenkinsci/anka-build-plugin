@@ -369,9 +369,11 @@ public class AnkaMgmtCloud extends Cloud {
     }
 
     public AnkaMgmtVm startVMInstance(String templateId,
-                                      String tag, String nameTemplate, int sshPort, String startUpScript, String groupId, int priority) throws AnkaMgmtException {
+                                      String tag, String nameTemplate, int sshPort, String startUpScript,
+                                      String groupId, int priority, String name, String externalId) throws AnkaMgmtException {
         try {
-            AnkaMgmtVm vm = ankaAPI.makeAnkaVm(templateId, tag, nameTemplate, sshPort, startUpScript, groupId, priority);
+            AnkaMgmtVm vm = ankaAPI.makeAnkaVm(templateId, tag, nameTemplate, sshPort,
+                    startUpScript, groupId, priority, name, externalId);
             AnkaEvents.fire(Event.VMStarted, new VMStarted(vm));
             return vm;
         } catch (AnkaMgmtException e) {
@@ -391,6 +393,10 @@ public class AnkaMgmtCloud extends Cloud {
 
     public void nodeTerminated(AbstractAnkaSlave node){
         AnkaEvents.fire(Event.nodeTerminated, new NodeTerminated(node));
+    }
+
+    public void updateInstance(AnkaMgmtVm vm, String name, String jenkinsNodeLink) throws AnkaMgmtException {
+        ankaAPI.updateInstance(vm, name, jenkinsNodeLink);
     }
 
 

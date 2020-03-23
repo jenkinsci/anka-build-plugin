@@ -162,7 +162,9 @@ public class AnkaMgmtCommunicator {
         return groups;
     }
 
-    public String startVm(String templateId, String tag, String nameTemplate, String startUpScript, String groupId, int priority) throws AnkaMgmtException {
+
+    public String startVm(String templateId, String tag, String nameTemplate, String startUpScript, String groupId, int priority,
+                          String name, String externalId) throws AnkaMgmtException {
         String url = "/api/v1/vm";
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("vmid", templateId);
@@ -179,6 +181,12 @@ public class AnkaMgmtCommunicator {
         }
         if (priority > 0) {
             jsonObject.put("priority", priority);
+        }
+        if (name != null) {
+            jsonObject.put("name", name);
+        }
+        if (externalId != null) {
+            jsonObject.put("external_id", externalId);
         }
         JSONObject jsonResponse = null;
         try {
@@ -198,7 +206,7 @@ public class AnkaMgmtCommunicator {
             String message = jsonResponse.getString("message");
             if (message.equals("No such tag "+ tag)) {
                 AnkaMgmtCloud.Log("Tag " + tag + " not found. starting vm with latest tag");
-                return startVm(templateId, null, nameTemplate, startUpScript, groupId, priority);
+                return startVm(templateId, null, nameTemplate, startUpScript, groupId, priority, name, externalId);
             }
         }
 
@@ -398,8 +406,31 @@ public class AnkaMgmtCommunicator {
         return imageRequests;
     }
 
+    public void updateVM(String id, String name, String jenkinsNodeLink) throws AnkaMgmtException {
+        String url = String.format("/api/v1/vm?id=%s", id);
+        JSONObject jsonResponse = null;
+        JSONObject jsonObject = new JSONObject();
+        if (jenkinsNodeLink != null) {
+            jsonObject.put("external_id", jenkinsNodeLink);
+        }
+        if (name != null) {
+            jsonObject.put("name", name);
+        }
+        try {
+            jsonResponse = this.doRequest(RequestMethod.PUT, url, jsonObject);
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new AnkaMgmtException(e);
+        }
+        String logicalResult = jsonResponse.getString("status");
+        if (!logicalResult.equals("OK")) {
+            throw new AnkaMgmtException(jsonResponse.optString("message"));
+        }
+
+    }
+
     protected enum RequestMethod {
-        GET, POST, DELETE
+        GET, POST, DELETE, PUT
     }
 
     protected JSONObject doRequest(RequestMethod method, String path, JSONObject requestBody) throws IOException, AnkaMgmtException {
@@ -437,6 +468,10 @@ public class AnkaMgmtCommunicator {
                         case POST:
                             HttpPost postRequest = new HttpPost(url);
                             request = setBody(postRequest, requestBody);
+                            break;
+                        case PUT:
+                            HttpPut putRequest = new HttpPut(url);
+                            request = setBody(putRequest, requestBody);
                             break;
                         case DELETE:
                             if (requestBody != null) {
@@ -495,11 +530,11 @@ public class AnkaMgmtCommunicator {
                         return jsonResponse;
                     }
 
-                } catch (ClientException | SSLException | NoRouteToHostException e) {
-                    // don't retry on client exception
+                } catch (HttpHostConnectException | ConnectTimeoutException | ClientException | SSLException | NoRouteToHostException e) {
+                    AnkaMgmtCloud.Log("Got client exception: %s", e.getMessage());
+
+                    // don't retry on client exception, timeouts or host exceptions
                     throw e;
-                } catch (HttpHostConnectException | ConnectTimeoutException e) {
-                    throw new AnkaMgmtException(e);
                 } catch (UnsupportedEncodingException e) {
                     e.printStackTrace();
                     throw new RuntimeException(e);
@@ -510,10 +545,14 @@ public class AnkaMgmtCommunicator {
                     httpClient.close();
                 }
                 return null;
-            } catch (ClientException | SSLException | NoRouteToHostException e) {
+            } catch (HttpHostConnectException | ConnectTimeoutException | ClientException | SSLException | NoRouteToHostException e) {
                 // don't retry on client exception
+                AnkaMgmtCloud.Log("Got exception: %s %s", e.getClass().getName(), e.getMessage());
+
                 throw new AnkaMgmtException(e);
             } catch (Exception e) {
+                AnkaMgmtCloud.Log("Got exception: %s %s", e.getClass().getName(), e.getMessage());
+
                 if (retry < maxRetries) {
                     continue;
                 }

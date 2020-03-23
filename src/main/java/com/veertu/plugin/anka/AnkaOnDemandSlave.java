@@ -11,6 +11,7 @@ import hudson.slaves.ComputerLauncher;
 import hudson.slaves.ComputerListener;
 import hudson.slaves.JNLPLauncher;
 import hudson.slaves.NodeProperty;
+import jenkins.model.Jenkins;
 import jenkins.slaves.RemotingWorkDirSettings;
 import org.apache.commons.lang.RandomStringUtils;
 
@@ -32,6 +33,18 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
                 launcher, template.getRetentionStrategy(), nodeProperties, template, vm);
     }
 
+    public static String getJenkinsNodeLink(String nodeName) {
+        String effectiveJenkinsUrl = Jenkins.getInstance().getRootUrl();
+        if (effectiveJenkinsUrl == null) {
+            return String.format("/computer/%s", nodeName);
+        }
+        String nodeFormat = "%s/computer/%s";
+        if (effectiveJenkinsUrl.endsWith("/")) {
+            nodeFormat = "%scomputer/%s";
+        }
+        return String.format(nodeFormat, effectiveJenkinsUrl, nodeName);
+
+    }
 
     public static String generateName(AnkaCloudSlaveTemplate template) {
         String randomString = RandomStringUtils.randomAlphanumeric(16);
@@ -80,13 +93,14 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
         return null;
     }
 
-    private static AnkaOnDemandSlave createJNLPSlave(AnkaMgmtCloud cloud, final AnkaCloudSlaveTemplate template) throws AnkaMgmtException, IOException, Descriptor.FormException {
+    protected static AnkaOnDemandSlave createJNLPSlave(AnkaMgmtCloud cloud, final AnkaCloudSlaveTemplate template) throws AnkaMgmtException, IOException, Descriptor.FormException {
 //        AnkaMgmtCloud.Log("vm %s is booting...", vm.getId());
         String nodeName = generateName(template);
         String jnlpCommand = JnlpCommandBuilder.makeStartUpScript(nodeName, template.getExtraArgs(), template.getJavaArgs(), template.getJnlpJenkinsOverrideUrl());
 
         final AnkaMgmtVm vm = cloud.startVMInstance(
-                template.getMasterVmId(), template.getTag(), template.getNameTemplate(), template.getSSHPort(), jnlpCommand, template.getGroup(), template.getPriority());
+                template.getMasterVmId(), template.getTag(), template.getNameTemplate(),
+                template.getSSHPort(), jnlpCommand, template.getGroup(), template.getPriority(), nodeName, getJenkinsNodeLink(nodeName));
         AnkaMgmtCloud.Log("vm %s %s is booted, creating jnlp launcher", vm.getId(), vm.getName());
 
         String tunnel = "";
@@ -123,9 +137,11 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
         return slave;
     }
 
-    private static AnkaOnDemandSlave createSSHSlave(AnkaMgmtCloud cloud, final AnkaCloudSlaveTemplate template) throws InterruptedException, AnkaMgmtException, IOException, Descriptor.FormException {
+    protected static AnkaOnDemandSlave createSSHSlave(AnkaMgmtCloud cloud, final AnkaCloudSlaveTemplate template) throws InterruptedException, AnkaMgmtException, IOException, Descriptor.FormException {
+        String nodeName = generateName(template);
+
         final AnkaMgmtVm vm = cloud.startVMInstance(
-                template.getMasterVmId(), template.getTag(), template.getNameTemplate(), template.getSSHPort(), null, template.getGroup(), template.getPriority());
+                template.getMasterVmId(), template.getTag(), template.getNameTemplate(), template.getSSHPort(), null, template.getGroup(), template.getPriority(), null, null );
         try {
             AnkaOnDemandSlave slave = new AnkaOnDemandSlave(generateName(template), template.getTemplateDescription(), template.getRemoteFS(),
                     template.getNumberOfExecutors(),
@@ -149,6 +165,12 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
             String name = vm.getName();
             if (name != null){
                 slave.setNodeName(name);
+                try {
+                    cloud.updateInstance(vm, name, getJenkinsNodeLink(name));
+                } catch (AnkaMgmtException e) {
+                    AnkaMgmtCloud.Log("Name update failed: ", e.getMessage());
+                    e.printStackTrace();
+                }
             }
             slave.register();
             AnkaMgmtCloud.Log("launcher created for vm %s %s", vm.getId(), vm.getName());

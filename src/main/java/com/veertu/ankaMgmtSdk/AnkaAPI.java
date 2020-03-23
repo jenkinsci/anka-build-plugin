@@ -48,7 +48,8 @@ public class AnkaAPI {
 
 
     public AnkaMgmtVm makeAnkaVm(String templateId,
-                                 String tag, String nameTemplate, int sshPort, String startUpScript, String groupId, int priority) throws AnkaMgmtException {
+                                 String tag, String nameTemplate, int sshPort, String startUpScript, String groupId,
+                                 int priority, String name, String externalId) throws AnkaMgmtException {
 
         logger.info(String.format("making anka vm," +
                 "templateId: %s, sshPort: %d", templateId, sshPort));
@@ -57,7 +58,7 @@ public class AnkaAPI {
         else if (!nameTemplate.contains("$ts"))
             nameTemplate = String.format("%s-%d", nameTemplate, vmCounter++);
 
-        String sessionId = communicator.startVm(templateId, tag, nameTemplate, startUpScript, groupId, priority);
+        String sessionId = communicator.startVm(templateId, tag, nameTemplate, startUpScript, groupId, priority, name, externalId);
         AnkaMgmtVm vm = new ConcAnkaMgmtVm(sessionId, communicator, sshPort);
         return vm;
 
@@ -94,5 +95,9 @@ public class AnkaAPI {
 
     public boolean terminateInstance(String vmId) throws AnkaMgmtException {
         return communicator.terminateVm(vmId);
+    }
+
+    public void updateInstance(AnkaMgmtVm vm, String name, String jenkinsNodeLink) throws AnkaMgmtException {
+        communicator.updateVM(vm.getId(), name, jenkinsNodeLink);
     }
 }
