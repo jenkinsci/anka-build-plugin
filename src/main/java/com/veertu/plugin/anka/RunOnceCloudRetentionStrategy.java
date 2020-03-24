@@ -23,6 +23,7 @@ public class RunOnceCloudRetentionStrategy extends CloudRetentionStrategy implem
 
     private int idleMinutes = 1;
     private transient boolean terminating;
+    private transient boolean taskRunning;
 
     @DataBoundConstructor
     public RunOnceCloudRetentionStrategy(int idleMinutes) {
@@ -36,7 +37,7 @@ public class RunOnceCloudRetentionStrategy extends CloudRetentionStrategy implem
 
     @Override
     public long check(final AbstractCloudComputer c) {
-        if(c.isIdle() && !disabled) {
+        if(c.isIdle() && !disabled && taskRunning) {
             final long idleMilliseconds = System.currentTimeMillis() - c.getIdleStartMilliseconds();
             if(idleMilliseconds > TimeUnit2.MINUTES.toMillis(idleMinutes)) {
                 logger.log(Level.FINE, "Disconnecting {0}", c.getName());
@@ -49,7 +50,7 @@ public class RunOnceCloudRetentionStrategy extends CloudRetentionStrategy implem
 
     @Override
     public void taskAccepted(Executor executor, Queue.Task task) {
-
+        taskRunning = true;
     }
 
     @Override
