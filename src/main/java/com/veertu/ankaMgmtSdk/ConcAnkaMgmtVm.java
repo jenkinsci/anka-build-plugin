@@ -1,6 +1,8 @@
 package com.veertu.ankaMgmtSdk;
 
 import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
+import com.veertu.ankaMgmtSdk.exceptions.VMDoesNotExistException;
+import com.veertu.ankaMgmtSdk.exceptions.VmAlreadyTerminatedException;
 
 import java.io.IOException;
 
@@ -19,19 +21,20 @@ public class ConcAnkaMgmtVm implements AnkaMgmtVm {
     private final int cacheTime = 5; // 5 seconds
     private int lastCached = 0;
     private static transient java.util.logging.Logger logger = java.util.logging.Logger.getLogger("anka-sdk");
-    private boolean terminated;
 
 
     public ConcAnkaMgmtVm(String sessionId, AnkaMgmtCommunicator communicator, int sshConnectionPort) {
         this.communicator = communicator;
         this.sessionId = sessionId;
         this.sshConnectionPort = sshConnectionPort;
-        this.terminated = false;
         logger.info(String.format("init VM %s", sessionId));
     }
 
     public String getStatus() throws AnkaMgmtException {
         AnkaVmSession session = this.communicator.showVm(this.sessionId);
+        if (session == null) {
+            throw new VMDoesNotExistException(this.sessionId);
+        }
         return session.getSessionState();
     }
 
@@ -160,6 +163,7 @@ public class ConcAnkaMgmtVm implements AnkaMgmtVm {
             timeWaited += waitUnit;
             logger.info(String.format("waiting for vm %s %d to stop scheduling", this.sessionId, timeWaited));
             if (timeWaited > schedulingTimeout * waitUnit) {
+                logger.info(String.format("Timed out while waiting for %s to stop scheduling. Terminating VM", this.sessionId));
                 this.terminate();
                 throw new IOException("vm scheduling too long");
             }
@@ -250,14 +254,11 @@ public class ConcAnkaMgmtVm implements AnkaMgmtVm {
         return 0;
     }
 
-    public void terminate() {
-        if (terminated)
-            return;
+    public void terminate() throws AnkaMgmtException {
         try {
             this.communicator.terminateVm(this.sessionId);
-            terminated = true;
-        } catch (AnkaMgmtException e) {
-            e.printStackTrace();
+        } catch (VmAlreadyTerminatedException e) {
+            logger.info(String.format("VM %s already terminated", this.sessionId));
         }
     }
 

@@ -14,7 +14,7 @@ public interface AnkaMgmtVm {
     String getName();
     String getConnectionIp();
     int getConnectionPort();
-    void terminate();
+    void terminate() throws AnkaMgmtException;
     boolean isRunning();
     String getInfo();
     String getStatus() throws AnkaMgmtException;

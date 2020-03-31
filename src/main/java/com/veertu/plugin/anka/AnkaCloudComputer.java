@@ -5,6 +5,8 @@ import hudson.slaves.AbstractCloudComputer;
 import hudson.slaves.AbstractCloudSlave;
 import org.jenkinsci.plugins.workflow.support.steps.ExecutorStepExecution;
 
+import java.io.IOException;
+
 
 /**
  * Created by asafgur on 16/11/2016.
@@ -119,5 +121,12 @@ public class AnkaCloudComputer extends AbstractCloudComputer {
         }
     }
 
-
+    @Override
+    protected void onRemoved() {
+        try {
+            slave.terminate();
+        } catch (InterruptedException | IOException e) {
+            AnkaMgmtCloud.Log("anka slave termination error: %s", e.getMessage());
+        }
+    }
 }

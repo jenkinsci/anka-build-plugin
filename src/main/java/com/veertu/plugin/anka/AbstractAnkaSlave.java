@@ -54,7 +54,6 @@ public abstract class AbstractAnkaSlave extends AbstractCloudSlave {
         this.vm = vm;
         this.taskExecuted = false;
         this.saveImageSent = false;
-        readResolve();
     }
 
     public AbstractAnkaSlave(String name, String nodeDescription, String remoteFS, String numExecutors,
@@ -99,7 +98,8 @@ public abstract class AbstractAnkaSlave extends AbstractCloudSlave {
         AnkaMgmtCloud cloud = (AnkaMgmtCloud) Jenkins.getInstance().getCloud(cloudName);
         if (vm != null) {
             SaveImageParameters saveImageParams = template.getSaveImageParameters();
-            if (taskExecuted && saveImageParams != null && this.template.getSaveImageParameters().getSaveImage() && saveImageParams.getSaveImage() && !hadProblemsInBuild) {
+            if (taskExecuted && saveImageParams != null && this.template.getSaveImageParameters().getSaveImage() &&
+                    saveImageParams.getSaveImage() && !hadProblemsInBuild) {
                 try {
                     synchronized (this) {
                         if (!this.saveImageSent) { // allow to send save image request only once
@@ -108,8 +108,14 @@ public abstract class AbstractAnkaSlave extends AbstractCloudSlave {
                         }
                     }
                 } catch (AnkaMgmtException e) {
-                    throw new IOException(e);
+                    AnkaMgmtCloud.Log("Failed sending save image request. Terminating VM. Error: %s", e.getMessage());
                 }
+            }
+            try {
+                if (!this.saveImageSent)
+                    vm.terminate();
+            } catch (AnkaMgmtException e) {
+                AnkaMgmtCloud.Log("Failed terminating vm %s. Error: %s", vm.getId(), e.getMessage());
             }
         }
         cloud.nodeTerminated(this);

@@ -28,21 +28,16 @@ import static com.cloudbees.plugins.credentials.CredentialsProvider.lookupCreden
  */
 public class AnkaMgmtCloud extends Cloud {
 
-
     private final List<AnkaCloudSlaveTemplate> templates;
     private static final transient java.util.logging.Logger MgmtLogger = java.util.logging.Logger.getLogger("anka-host");
+    private static transient Map<String, InstanceDaemon> cloudToDaemonMap = new HashMap<>();
     private final String ankaMgmtUrl;
     private final AnkaAPI ankaAPI;
     private final String credentialsId;
-    private transient boolean eventsInit;
-
     private final String rootCA;
-
     private final boolean skipTLSVerification;
-
     private SaveImageRequestsHolder saveImageRequestsHolder = SaveImageRequestsHolder.getInstance();
     private InstanceDaemon daemon;
-    public static Map<String, InstanceDaemon> cloudToDaemonMap;
 
     @DataBoundConstructor
     public AnkaMgmtCloud(String ankaMgmtUrl,
@@ -84,32 +79,23 @@ public class AnkaMgmtCloud extends Cloud {
                 ankaAPI = new AnkaAPI(ankaMgmtUrl, skipTLSVerification, this.rootCA);
             }
         }
-        initEvents();
+
+        InstanceDaemon runningDaemon = cloudToDaemonMap.get(cloudName);
+        if (runningDaemon != null)  // If configuration changed, do NOT create a new daemon
+            daemon = runningDaemon;
+        else {
+            daemon = new InstanceDaemon();
+            cloudToDaemonMap.put(cloudName, daemon);
+            new Thread(daemon).start();
+            registerDaemonEvents();
+        }
     }
 
-    public void initEvents() {
-        if (!eventsInit) {
-            if (ankaAPI != null) {
-                if (cloudToDaemonMap == null)
-                    cloudToDaemonMap = new HashMap<>();
-
-                InstanceDaemon runningDaemon = cloudToDaemonMap.get(getCloudName());
-                if (runningDaemon == null) {
-                    if (daemon == null) {
-                        daemon = new InstanceDaemon();
-                    }
-                    AnkaEvents.addListener(Event.nodeStarted, daemon );
-                    AnkaEvents.addListener(Event.VMStarted, daemon );
-                    AnkaEvents.addListener(Event.nodeTerminated, daemon );
-                    AnkaEvents.addListener(Event.saveImage, daemon );
-                    new Thread(daemon).start();
-                }
-                else if (daemon == null)
-                    daemon = runningDaemon;
-                cloudToDaemonMap.put(getCloudName(), daemon);
-                eventsInit = true;
-            }
-        }
+    private void registerDaemonEvents() {
+        AnkaEvents.addListener(Event.nodeStarted, daemon );
+        AnkaEvents.addListener(Event.VMStarted, daemon );
+        AnkaEvents.addListener(Event.nodeTerminated, daemon );
+        AnkaEvents.addListener(Event.saveImage, daemon );
     }
 
     private CertCredentials lookUpCredentials(String credentialsId) {
@@ -185,7 +171,6 @@ public class AnkaMgmtCloud extends Cloud {
 
     @Override
     public Collection<NodeProvisioner.PlannedNode> provision(Label label, int excessWorkload) {
-        initEvents();
         List<NodeProvisioner.PlannedNode> plannedNodes = new ArrayList<>();
 
         final AnkaCloudSlaveTemplate t = getTemplate(label);
@@ -233,7 +218,6 @@ public class AnkaMgmtCloud extends Cloud {
         return null;
     }
 
-
     private boolean hasMasterVm(String templateId) {
         for (AnkaVmTemplate t: this.listVmTemplates()){
             if (t.getId().equals(templateId)) {
@@ -245,14 +229,12 @@ public class AnkaMgmtCloud extends Cloud {
 
     @Override
     public boolean canProvision(Label label) {
-        initEvents();
         AnkaCloudSlaveTemplate template = getTemplateFromLabel(label);
         if (template == null){
             return false;
         }
         return true;
     }
-
 
     public AnkaCloudSlaveTemplate getTemplateFromLabel(final Label label) {
 
@@ -273,11 +255,6 @@ public class AnkaMgmtCloud extends Cloud {
         return null;
     }
 
-//    private AnkaMgmtCommunicator GetAnkaMgmtCommunicator() {
-//
-//    }
-
-
     private static void InternalLog(Slave slave, SlaveComputer slaveComputer, TaskListener listener, String format, Object... args) {
         String s = "";
         if (slave != null)
@@ -291,8 +268,6 @@ public class AnkaMgmtCloud extends Cloud {
         MgmtLogger.log(Level.INFO, s);
     }
 
-
-
     public static void Log(String msg) {
         InternalLog(null, null, null, msg, null);
     }
@@ -300,7 +275,6 @@ public class AnkaMgmtCloud extends Cloud {
     public static void Log(String format, Object... args) {
         InternalLog(null, null, null, format, args);
     }
-
 
     public static void Log(Slave slave, TaskListener listener, String msg) {
         InternalLog(slave, null, listener, msg, null);
@@ -421,6 +395,16 @@ public class AnkaMgmtCloud extends Cloud {
             return listBox;
         }
 
+    }
+
+    public Object readResolve() {
+        if (daemon == null) {  // When upgrading from versions without daemon in them
+            daemon = new InstanceDaemon();
+        }
+        cloudToDaemonMap.put(getCloudName(), daemon);
+        new Thread(daemon).start();
+        registerDaemonEvents();
+        return this;
     }
 
 }

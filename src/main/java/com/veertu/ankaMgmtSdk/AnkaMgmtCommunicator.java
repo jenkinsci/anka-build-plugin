@@ -229,23 +229,24 @@ public class AnkaMgmtCommunicator {
         }
     }
 
-    public boolean terminateVm(String sessionId) throws AnkaMgmtException {
+    public void terminateVm(String sessionId) throws AnkaMgmtException {
         String url = "/api/v1/vm";
         try {
             JSONObject jsonObject = new JSONObject();
             jsonObject.put("id", sessionId);
             JSONObject jsonResponse = this.doRequest(RequestMethod.DELETE, url, jsonObject);
             String logicalResult = jsonResponse.getString("status");
-            if (logicalResult.equals("OK")) {
-                return true;
-            }
-            return false;
+            if (logicalResult.equals("OK"))
+                return;
+            String errorMsg = jsonResponse.getString("message");
+            if (errorMsg.equals("Not found"))
+                throw new VmAlreadyTerminatedException(sessionId);
+            throw new AnkaMgmtException(String.format("Controller failed terminating vm %s. Error message: %s", sessionId, errorMsg));
         } catch (IOException e) {
             e.printStackTrace();
-            return false;
+            throw new AnkaMgmtException(String.format("Failed sending terminate request to controller due to IOException. Error msg: %s", e.getMessage()));
         }
     }
-
 
     public List<AnkaVmSession> list() throws AnkaMgmtException {
         List<AnkaVmSession> vms = new ArrayList<>();
