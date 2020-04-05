@@ -1,6 +1,7 @@
 package com.veertu.ankaMgmtSdk;
 
 import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
+import com.veertu.ankaMgmtSdk.exceptions.VMDoesNotExistException;
 import org.json.JSONObject;
 
 import java.util.List;
@@ -95,5 +96,16 @@ public class AnkaAPI {
 
     public void updateInstance(AnkaMgmtVm vm, String name, String jenkinsNodeLink) throws AnkaMgmtException {
         communicator.updateVM(vm.getId(), name, jenkinsNodeLink);
+    }
+
+    public String getInstanceStatus(String vmId) throws AnkaMgmtException {
+        AnkaVmSession session = communicator.showVm(vmId);
+        if (session == null)
+            throw new VMDoesNotExistException(vmId);
+        return session.getSessionState();
+    }
+
+    public void terminateVm(String vmId) throws AnkaMgmtException {
+        this.communicator.terminateVm(vmId);
     }
 }

@@ -28,16 +28,20 @@ import static com.cloudbees.plugins.credentials.CredentialsProvider.lookupCreden
  */
 public class AnkaMgmtCloud extends Cloud {
 
+    private int currentPersistenceVersion;  // DO NOT CHANGE THIS! This gets handled in-code.
+    private static final transient int latestPersistenceVersion = 1;  // See migrateToNewVersion
+
     private final List<AnkaCloudSlaveTemplate> templates;
     private static final transient java.util.logging.Logger MgmtLogger = java.util.logging.Logger.getLogger("anka-host");
-    private static transient Map<String, InstanceDaemon> cloudToDaemonMap = new HashMap<>();
     private final String ankaMgmtUrl;
     private final AnkaAPI ankaAPI;
     private final String credentialsId;
     private final String rootCA;
+
     private final boolean skipTLSVerification;
-    private SaveImageRequestsHolder saveImageRequestsHolder = SaveImageRequestsHolder.getInstance();
-    private InstanceDaemon daemon;
+    private transient InstanceDaemon daemon;  // This is only here to allow backwards porting of older daemon to new monitor
+    private static transient SaveImageRequestsHolder saveImageRequestsHolder = SaveImageRequestsHolder.getInstance();
+    private static transient InstanceMonitor monitor = InstanceMonitor.getInstance();
 
     @DataBoundConstructor
     public AnkaMgmtCloud(String ankaMgmtUrl,
@@ -80,22 +84,7 @@ public class AnkaMgmtCloud extends Cloud {
             }
         }
 
-        InstanceDaemon runningDaemon = cloudToDaemonMap.get(cloudName);
-        if (runningDaemon != null)  // If configuration changed, do NOT create a new daemon
-            daemon = runningDaemon;
-        else {
-            daemon = new InstanceDaemon();
-            cloudToDaemonMap.put(cloudName, daemon);
-            new Thread(daemon).start();
-            registerDaemonEvents();
-        }
-    }
-
-    private void registerDaemonEvents() {
-        AnkaEvents.addListener(Event.nodeStarted, daemon );
-        AnkaEvents.addListener(Event.VMStarted, daemon );
-        AnkaEvents.addListener(Event.nodeTerminated, daemon );
-        AnkaEvents.addListener(Event.saveImage, daemon );
+        currentPersistenceVersion = latestPersistenceVersion;
     }
 
     private CertCredentials lookUpCredentials(String credentialsId) {
@@ -348,7 +337,7 @@ public class AnkaMgmtCloud extends Cloud {
         try {
             AnkaMgmtVm vm = ankaAPI.makeAnkaVm(templateId, tag, nameTemplate, sshPort,
                     startUpScript, groupId, priority, name, externalId);
-            AnkaEvents.fire(Event.VMStarted, new VMStarted(vm));
+            monitor.vmStarted(getCloudName(), vm.getId());
             return vm;
         } catch (AnkaMgmtException e) {
             e.printStackTrace();
@@ -357,22 +346,25 @@ public class AnkaMgmtCloud extends Cloud {
     }
 
     public void nodeStarted(AbstractAnkaSlave node) {
-        AnkaEvents.fire(Event.nodeStarted, new NodeStarted(node));
+        monitor.nodeStarted(getCloudName(), node.getNodeName(), node.vm.getId());
     }
 
     public void saveImage(AbstractAnkaSlave node) throws AnkaMgmtException {
-        AnkaEvents.fire(Event.saveImage, new SaveImageEvent(node));
+        monitor.saveImageSent(getCloudName(), node.getNodeName(), node.vm.getId());
         ImageSaver.saveImage(this, node, node.getVM());
-    }
-
-    public void nodeTerminated(AbstractAnkaSlave node){
-        AnkaEvents.fire(Event.nodeTerminated, new NodeTerminated(node));
     }
 
     public void updateInstance(AnkaMgmtVm vm, String name, String jenkinsNodeLink) throws AnkaMgmtException {
         ankaAPI.updateInstance(vm, name, jenkinsNodeLink);
     }
 
+    public String getInstanceStatus(String vmId) throws AnkaMgmtException {
+        return ankaAPI.getInstanceStatus(vmId);
+    }
+
+    public void terminateVm(String vmId) throws AnkaMgmtException {
+        ankaAPI.terminateVm(vmId);
+    }
 
     @Extension
     public static final class DescriptorImpl extends Descriptor<Cloud> {
@@ -398,13 +390,39 @@ public class AnkaMgmtCloud extends Cloud {
     }
 
     public Object readResolve() {
-        if (daemon == null) {  // When upgrading from versions without daemon in them
-            daemon = new InstanceDaemon();
-        }
-        cloudToDaemonMap.put(getCloudName(), daemon);
-        new Thread(daemon).start();
-        registerDaemonEvents();
+        // This is called right after object is being instantiated from file
+
+        if (currentPersistenceVersion < latestPersistenceVersion)
+            migrateToNewVersion();
+
         return this;
     }
 
+    private void migrateToNewVersion() {
+        /*
+         * If current version is 1 and i've introduced some ground breaking changes, I should
+         * - Set latestPersistenceVersion to 2
+         * - Implement a new condition (if persistenceVersion < 2) here
+         *
+         * In order to keep multiple versions migrations (from 0 to 2, for example) safe, make sure that:
+         * 1. The order of the upgrading operations is kept (0 to 1 first, 1 to 2 next, etc...)
+         * 2. Only one condition should be implemented per change,
+         *    and it should upgrade from the last version to the new one
+         */
+
+        if (currentPersistenceVersion < 1) {
+            if (daemon != null)
+                monitor.migrateFromOldDaemon(getCloudName(), daemon);
+
+            saveImageRequestsHolder.clean();  // Fix bug where list would not clean up
+            saveImageRequestsHolder.save();  // Write to new file
+        }
+
+        currentPersistenceVersion = latestPersistenceVersion;
+        try {  // Update config.xml
+            Jenkins.getInstance().save();
+        } catch (IOException e) {
+            Log("Could not save cloud changes to file! Error: %s", e.getMessage());
+        }
+    }
 }

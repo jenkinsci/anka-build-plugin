@@ -118,7 +118,6 @@ public abstract class AbstractAnkaSlave extends AbstractCloudSlave {
                 AnkaMgmtCloud.Log("Failed terminating vm %s. Error: %s", vm.getId(), e.getMessage());
             }
         }
-        cloud.nodeTerminated(this);
     }
 
     public void setTaskExecuted(boolean didExec) {
