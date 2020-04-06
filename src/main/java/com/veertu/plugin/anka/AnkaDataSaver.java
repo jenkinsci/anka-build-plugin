@@ -8,8 +8,19 @@ import java.nio.file.NoSuchFileException;
 
 import static com.veertu.plugin.anka.AnkaMgmtCloud.Log;
 
+/*
+    This class can be implemented to utilize jenkins persistence
+
+    Currently (v1.24.0), all sub-classes are singletons.
+    When utilizing with a singleton, remember:
+    - to call super() in the constructor (yes, yes, i've actually said it)
+    - to instantiate all sub-class properties with default values in the constructor
+    - to call load() in the constructor
+
+    See PersistenceManager for a very basic implementation.
+ */
+
 abstract class AnkaDataSaver {
-    // This class can be implemented to utilize jenkins persistence
 
     private transient final Object persistenceLock;
 
