@@ -11,7 +11,7 @@ import static com.veertu.plugin.anka.AnkaMgmtCloud.Log;
 abstract class AnkaDataSaver {
     // This class can be implemented to utilize jenkins persistence
 
-    private transient Object persistenceLock;
+    private transient final Object persistenceLock;
 
     public AnkaDataSaver() {
         persistenceLock = new Object();
@@ -23,7 +23,10 @@ abstract class AnkaDataSaver {
     protected void load() {
         synchronized (persistenceLock) {
             try {
-                new XmlFile(getConfigFile()).unmarshal(this);
+                File f = getConfigFile();
+                boolean isNew = f.createNewFile();
+                if (!isNew)
+                    new XmlFile(f).unmarshal(this);
             } catch (NoSuchFileException e) {
                 Log(getClassName() + ": Persistence file does not exist");
             } catch (IOException e) {
