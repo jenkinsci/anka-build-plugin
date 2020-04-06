@@ -28,8 +28,9 @@ import static com.cloudbees.plugins.credentials.CredentialsProvider.lookupCreden
  */
 public class AnkaMgmtCloud extends Cloud {
 
-    private int currentPersistenceVersion;  // DO NOT CHANGE THIS! This gets handled in-code.
-    private static final transient int latestPersistenceVersion = 1;  // See migrateToNewVersion
+    private static final transient int PERSISTENCE_VERSION = 1;  // See migrateToNewVersion
+    private static transient SaveImageRequestsHolder saveImageRequestsHolder = SaveImageRequestsHolder.getInstance();
+    private static transient InstanceMonitor monitor = InstanceMonitor.getInstance();
 
     private final List<AnkaCloudSlaveTemplate> templates;
     private static final transient java.util.logging.Logger MgmtLogger = java.util.logging.Logger.getLogger("anka-host");
@@ -40,8 +41,7 @@ public class AnkaMgmtCloud extends Cloud {
 
     private final boolean skipTLSVerification;
     private transient InstanceDaemon daemon;  // This is only here to allow backwards porting of older daemon to new monitor
-    private static transient SaveImageRequestsHolder saveImageRequestsHolder = SaveImageRequestsHolder.getInstance();
-    private static transient InstanceMonitor monitor = InstanceMonitor.getInstance();
+
 
     @DataBoundConstructor
     public AnkaMgmtCloud(String ankaMgmtUrl,
@@ -84,7 +84,7 @@ public class AnkaMgmtCloud extends Cloud {
             }
         }
 
-        currentPersistenceVersion = latestPersistenceVersion;
+        PersistenceManager.getInstance().setToVersion(PERSISTENCE_VERSION);
     }
 
     private CertCredentials lookUpCredentials(String credentialsId) {
@@ -149,7 +149,7 @@ public class AnkaMgmtCloud extends Cloud {
         if (ankaAPI == null) {
             return new ArrayList<>();
         }
-        try{
+        try {
             return ankaAPI.getNodeGroups();
         } catch (AnkaMgmtException e) {
             e.printStackTrace();
@@ -391,8 +391,7 @@ public class AnkaMgmtCloud extends Cloud {
 
     public Object readResolve() {
         // This is called right after object is being instantiated from file
-
-        if (currentPersistenceVersion < latestPersistenceVersion)
+        if (PersistenceManager.getInstance().isUpdateRequired(PERSISTENCE_VERSION))
             migrateToNewVersion();
 
         return this;
@@ -409,8 +408,11 @@ public class AnkaMgmtCloud extends Cloud {
          * 2. Only one condition should be implemented per change,
          *    and it should upgrade from the last version to the new one
          */
+        int currentPersistenceVersion = PersistenceManager.getInstance().getCurrentVersion();
+
 
         if (currentPersistenceVersion < 1) {
+            // Upgrade from 0 to 1
             if (daemon != null)
                 monitor.migrateFromOldDaemon(getCloudName(), daemon);
 
@@ -418,11 +420,8 @@ public class AnkaMgmtCloud extends Cloud {
             saveImageRequestsHolder.save();  // Write to new file
         }
 
-        currentPersistenceVersion = latestPersistenceVersion;
-        try {  // Update config.xml
-            Jenkins.getInstance().save();
-        } catch (IOException e) {
-            Log("Could not save cloud changes to file! Error: %s", e.getMessage());
-        }
+        // Keep this at the end of the migration method
+        // This makes sure these actions are done only once
+        PersistenceManager.getInstance().setToVersion(PERSISTENCE_VERSION);
     }
 }
