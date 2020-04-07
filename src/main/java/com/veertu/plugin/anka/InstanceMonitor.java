@@ -76,13 +76,7 @@ public class InstanceMonitor extends AnkaDataSaver {
         super.load();
         debugLog("Loading done successfully");
 
-        synchronized (mutex) {
-            Iterator<Instance> it = instances.iterator();
-            while (it.hasNext()) {
-                Instance instance = it.next();
-                vmMap.put(instance.vmId, instance);
-            }
-        }
+        generateVmMap();
 
         runMonitoringThread();
     }
@@ -134,10 +128,9 @@ public class InstanceMonitor extends AnkaDataSaver {
                 String vmId = nodeNamesToVm.get(unknownNodeName);
                 if (vmId != null && !vmId.equals("")) {
                     Instance instance = createBasicInstance(cloudName, vmId);
-                    if (daemon.isPushing(vmId)) {
+                    if (daemon.isPushing(vmId))
                         instance.isSaveImage = true;
-                        instance.nodeName = unknownNodeName;
-                    }
+                    instance.nodeName = unknownNodeName;
                     previousInstances.add(instance);
                 }
             }
@@ -190,6 +183,16 @@ public class InstanceMonitor extends AnkaDataSaver {
     }
 
     // Logic
+
+    public void generateVmMap() {
+        synchronized (mutex) {
+            Iterator<Instance> it = instances.iterator();
+            while (it.hasNext()) {
+                Instance instance = it.next();
+                vmMap.put(instance.vmId, instance);
+            }
+        }
+    }
 
     private Instance createBasicInstance(String cloudName, String vmId) {
         debugLog(String.format("Creating new instance. Cloud name: %s, vm id: %s", cloudName, vmId));
