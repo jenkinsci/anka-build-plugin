@@ -1,6 +1,7 @@
 package com.veertu.plugin.anka;
 
 import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
+import com.veertu.ankaMgmtSdk.exceptions.VMDoesNotExistException;
 import com.veertu.ankaMgmtSdk.exceptions.VmAlreadyTerminatedException;
 import jenkins.model.Jenkins;
 
@@ -288,7 +289,11 @@ public class InstanceMonitor extends AnkaDataSaver {
         AnkaMgmtCloud cloud = (AnkaMgmtCloud) Jenkins.getInstance().getCloud(instance.cloudName);
         if (cloud == null)
             return "";
-        return cloud.getInstanceStatus(instance.vmId);
+        try {
+            return cloud.getInstanceStatus(instance.vmId);
+        } catch (VMDoesNotExistException e) {
+            return "";
+        }
     }
 
     private boolean doesNodeExists(Instance instance) {
