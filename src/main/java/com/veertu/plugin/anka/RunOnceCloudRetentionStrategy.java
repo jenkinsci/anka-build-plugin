@@ -1,9 +1,11 @@
 package com.veertu.plugin.anka;
 
 import hudson.Extension;
-import hudson.model.*;
+import hudson.model.Descriptor;
+import hudson.model.Executor;
+import hudson.model.ExecutorListener;
+import hudson.model.Queue;
 import hudson.slaves.AbstractCloudComputer;
-import hudson.slaves.AbstractCloudSlave;
 import hudson.slaves.CloudRetentionStrategy;
 import hudson.slaves.RetentionStrategy;
 import org.kohsuke.accmod.Restricted;
@@ -12,18 +14,16 @@ import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Created by avia on 12/07/2016.
  */
 public class RunOnceCloudRetentionStrategy extends CloudRetentionStrategy implements ExecutorListener {
 
-    public static final transient Logger logger = Logger.getLogger(RunOnceCloudRetentionStrategy.class.getName());
-
     private int idleMinutes = 1;
-    private transient boolean terminating;
+    private int reconnectionRetries = 0;
+    private static final int MAX_RECONNECTION_RETRIES = 5;
+
 
     @DataBoundConstructor
     public RunOnceCloudRetentionStrategy(int idleMinutes) {
@@ -39,27 +39,46 @@ public class RunOnceCloudRetentionStrategy extends CloudRetentionStrategy implem
     public long check(final AbstractCloudComputer c) {
         try {
             AnkaCloudComputer computer = (AnkaCloudComputer) c;
-            if (!computer.isOnline()) {
-                computer.connect(true);
+
+            if (computer.isAcceptingTasks()) {  // this computer is still waiting to run a job
+                return 1;
             }
+
+
+            if (reconnectionRetries >= MAX_RECONNECTION_RETRIES) { // we tried to reconnect - but it's enough now
+                done(computer);
+                return 1;
+            }
+
+            if (!computer.isOnline()) {
+                boolean forceReconnect = true;
+                if (reconnectionRetries > 0) {  // only force reconnect on first retry, after that don't stop a connecting process
+                    forceReconnect = false;
+                }
+                computer.connect(forceReconnect);
+                reconnectionRetries++;
+                return 1;
+            }
+
+
+            if(computer.isIdle() && !disabled) {
+                final long idleMilliseconds = System.currentTimeMillis() - computer.getIdleStartMilliseconds();
+                if(idleMilliseconds > TimeUnit.MINUTES.toMillis(idleMinutes)) {
+                    AnkaMgmtCloud.Log("Disconnecting %s due to idle timeout", c.getName());
+                    done(computer);
+                }
+            }
+            return 1;
         } catch (ClassCastException e){
             return 1;  // these are not the droids you are looking for
         }
-
-        if(c.isIdle() && !disabled) {
-            final long idleMilliseconds = System.currentTimeMillis() - c.getIdleStartMilliseconds();
-            if(idleMilliseconds > TimeUnit.MINUTES.toMillis(idleMinutes)) {
-                logger.log(Level.FINE, "Disconnecting {0}", c.getName());
-                done(c);
-            }
-        }
-        return 1;
     }
 
 
     @Override
     public void taskAccepted(Executor executor, Queue.Task task) {
-
+        AnkaCloudComputer computer = (AnkaCloudComputer) executor.getOwner();
+        computer.setAcceptingTasks(false);
     }
 
     @Override
@@ -73,56 +92,28 @@ public class RunOnceCloudRetentionStrategy extends CloudRetentionStrategy implem
     }
 
     private void done(final Executor executor) {
-        final AbstractCloudComputer<?> c = (AbstractCloudComputer) executor.getOwner();
-        final Queue.Executable exec = executor.getCurrentExecutable();
-        logger.log(Level.FINE, "terminating {0} since {1} seems to be finished", new Object[]{c.getName(),exec});
-        done(c);
+        final AnkaCloudComputer computer = (AnkaCloudComputer) executor.getOwner();
+        done(computer);
     }
 
-    private void done(final AbstractCloudComputer<?> c) {
-        AnkaMgmtCloud.Log("computer %s is done - starting retention method", c.getName());
-        c.setAcceptingTasks(false);
-        Computer.threadPoolForRemoting.submit(new Runnable() {
-            @Override
-            public void run() {
-                Queue.withLock(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            AnkaMgmtCloud.Log("terminating %s (in RetentionStrategy)", c.getName());
-                            AbstractCloudSlave node = c.getNode();
-
-                            if(node != null) {
-                                AnkaMgmtCloud.Log("computer %s node %s found", c.getName(), node.getNodeName());
-                                AnkaOnDemandSlave slave = (AnkaOnDemandSlave) node;
-                                if ( slave.canTerminate()) {
-                                    AnkaMgmtCloud.Log("terminating computer %s node %s", c.getName(), node.getNodeName());
-                                    slave.terminate();
-                                }
-                                else {
-                                    AnkaMgmtCloud.Log("not terminating computer %s node %s due to termination configuration",
-                                            c.getName(), node.getNodeName());
-                                }
-                            }
-                            else {
-                                AnkaMgmtCloud.Log("node not found for %s", c.getName());
-
-                            }
-                        } catch(InterruptedException e) {
-                            logger.log(Level.WARNING, "Failed to terminate " + c.getName(), e);
-                            synchronized(RunOnceCloudRetentionStrategy.this) {
-                                terminating = false;
-                            }
-                        } catch(IOException e) {
-                            logger.log(Level.WARNING, "Failed to terminate " + c.getName(), e);
-                            synchronized(RunOnceCloudRetentionStrategy.this) {
-                                terminating = false;
-                            }
-                        }
-                    }
-                });
+    private void done(final AnkaCloudComputer computer) {
+        AnkaMgmtCloud.Log("Computer %s is done, terminating", computer.getName());
+        AbstractAnkaSlave node = computer.getNode();
+        if (node != null) {
+            AnkaMgmtCloud.Log("computer %s node %s found", computer.getName(), node.getNodeName());
+            if ( node.canTerminate()) {
+                AnkaMgmtCloud.Log("terminating computer %s node %s", computer.getName(), node.getNodeName());
+                try {
+                    node.terminate();
+                } catch (InterruptedException | IOException e) {
+                    AnkaMgmtCloud.Log("Failed to terminate " + computer.getName(), e);
+                }
             }
-        });
+            else {
+                AnkaMgmtCloud.Log("not terminating computer %s node %s due to termination configuration",
+                        computer.getName(), node.getNodeName());
+            }
+        }
     }
 
     @Override
@@ -140,4 +131,5 @@ public class RunOnceCloudRetentionStrategy extends CloudRetentionStrategy implem
             return "Run Once Cloud Retention Strategy";
         }
     }
+
 }

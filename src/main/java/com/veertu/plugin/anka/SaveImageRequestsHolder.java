@@ -24,7 +24,6 @@ public class SaveImageRequestsHolder {
     public void setRequest(String jobId, SaveImageRequest request) {
         List<SaveImageRequest> requestList = getListOfRequests(jobId);
         synchronized (mutex) {
-//            SaveImageRequest request = new SaveImageRequest(jobId);
             requestList.add(request);
         }
 

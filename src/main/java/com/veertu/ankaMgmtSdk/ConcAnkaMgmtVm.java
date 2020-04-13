@@ -15,7 +15,7 @@ public class ConcAnkaMgmtVm implements AnkaMgmtVm {
     private final long maxRunningTimeout = waitUnit * 60 * 60; // 1 hour
     private final long maxIpTimeout = waitUnit * 240;
     private final int sshConnectionPort;
-    private AnkaVmSession cachedVmSession;
+    private AnkaVmInstance cachedVmSession;
     private final int cacheTime = 5; // 5 seconds
     private int lastCached = 0;
     private static transient java.util.logging.Logger logger = java.util.logging.Logger.getLogger("anka-sdk");
@@ -31,16 +31,16 @@ public class ConcAnkaMgmtVm implements AnkaMgmtVm {
     }
 
     public String getStatus() throws AnkaMgmtException {
-        AnkaVmSession session = this.communicator.showVm(this.sessionId);
+        AnkaVmInstance session = this.communicator.showVm(this.sessionId);
         return session.getSessionState();
     }
 
-    private AnkaVmSession getSession() throws AnkaMgmtException {
+    private AnkaVmInstance getSession() throws AnkaMgmtException {
         return this.communicator.showVm(this.sessionId);
     }
 
     private String getIp() throws AnkaMgmtException {
-        AnkaVmSession session = this.communicator.showVm(this.sessionId);
+        AnkaVmInstance session = this.communicator.showVm(this.sessionId);
         if ( session.getVmInfo() == null) {
             return null;
         }
@@ -64,10 +64,10 @@ public class ConcAnkaMgmtVm implements AnkaMgmtVm {
         return false;
     }
 
-    private AnkaVmSession getSessionInfoCache() {
+    private AnkaVmInstance getSessionInfoCache() {
         try {
             if (this.cachedVmSession == null || this.shouldInvalidate()) {
-                AnkaVmSession session = this.communicator.showVm(this.sessionId);
+                AnkaVmInstance session = this.communicator.showVm(this.sessionId);
                 if (session != null) {
                     this.cachedVmSession = session;
                 } else {
@@ -91,11 +91,11 @@ public class ConcAnkaMgmtVm implements AnkaMgmtVm {
 
 
     private boolean isStarting() throws AnkaMgmtException {
-        AnkaVmSession sessionInfoCache = getSessionInfoCache();
+        AnkaVmInstance sessionInfoCache = getSessionInfoCache();
         if (sessionInfoCache == null) {
             return true;
         }
-        AnkaVmSession session = getSession();
+        AnkaVmInstance session = getSession();
         String status = session.getSessionState();
 
 
@@ -121,11 +121,11 @@ public class ConcAnkaMgmtVm implements AnkaMgmtVm {
     }
 
     private boolean isScheduling() throws AnkaMgmtException {
-        AnkaVmSession sessionInfoCache = getSessionInfoCache();
+        AnkaVmInstance sessionInfoCache = getSessionInfoCache();
         if (sessionInfoCache == null) {
             return true;
         }
-        AnkaVmSession session = getSession();
+        AnkaVmInstance session = getSession();
         String status = session.getSessionState();
 
 
@@ -214,7 +214,7 @@ public class ConcAnkaMgmtVm implements AnkaMgmtVm {
     }
 
     public String getName() {
-        AnkaVmSession session = this.getSessionInfoCache();
+        AnkaVmInstance session = this.getSessionInfoCache();
         if (session == null) {
             return "";
         }
@@ -226,7 +226,7 @@ public class ConcAnkaMgmtVm implements AnkaMgmtVm {
     }
 
     public String getConnectionIp() {
-        AnkaVmSession session = this.getSessionInfoCache();
+        AnkaVmInstance session = this.getSessionInfoCache();
         if (session == null || session.getVmInfo() == null)
             return null;
 
@@ -234,7 +234,7 @@ public class ConcAnkaMgmtVm implements AnkaMgmtVm {
     }
 
     public int getConnectionPort() {
-        AnkaVmSession session = this.getSessionInfoCache();
+        AnkaVmInstance session = this.getSessionInfoCache();
         if (session == null){
             return 0;
         }
@@ -271,7 +271,7 @@ public class ConcAnkaMgmtVm implements AnkaMgmtVm {
 
 
     public boolean isRunning() {
-        AnkaVmSession session = this.getSessionInfoCache();
+        AnkaVmInstance session = this.getSessionInfoCache();
         if (session == null ) {
             return false;
         }
@@ -279,7 +279,7 @@ public class ConcAnkaMgmtVm implements AnkaMgmtVm {
     }
 
     public String getInfo() {
-        AnkaVmSession session = this.getSessionInfoCache();
+        AnkaVmInstance session = this.getSessionInfoCache();
         if (session == null) {
             return "";
         }

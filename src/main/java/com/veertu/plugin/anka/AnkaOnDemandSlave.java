@@ -2,13 +2,9 @@ package com.veertu.plugin.anka;
 
 import com.veertu.ankaMgmtSdk.AnkaMgmtVm;
 import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
-import hudson.Extension;
-import hudson.model.Computer;
 import hudson.model.Descriptor;
-import hudson.model.TaskListener;
 import hudson.plugins.sshslaves.SSHLauncher;
 import hudson.slaves.ComputerLauncher;
-import hudson.slaves.ComputerListener;
 import hudson.slaves.JNLPLauncher;
 import hudson.slaves.NodeProperty;
 import jenkins.model.Jenkins;
@@ -22,8 +18,6 @@ import java.util.List;
  * Created by asafgur on 16/11/2016.
  */
 public class AnkaOnDemandSlave extends AbstractAnkaSlave {
-
-    private boolean acceptingTasks = true;
 
     protected AnkaOnDemandSlave(String name, String nodeDescription, String remoteFS, int numExecutors,
                                 Mode mode, String labelString, ComputerLauncher launcher,
@@ -179,41 +173,6 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
             e.printStackTrace();
             vm.terminate();
             throw e;
-        }
-    }
-
-
-    public void setDescription(String jobAndNumber) {
-        String description = String.format("master image: %s, job name and build number: %s, vm info: (%s)",
-                template.getMasterVmId(), jobAndNumber, this.vm.getInfo());
-        super.setNodeDescription(description);
-
-    }
-
-
-    public boolean isKeepAliveOnError() {
-        return this.template.isKeepAliveOnError();
-    }
-
-    public boolean canTerminate() {
-        if (hadProblemsInBuild) {
-            if (isKeepAliveOnError()) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    public void setHadErrorsOnBuild(boolean value) {
-        this.hadProblemsInBuild = value;
-    }
-
-    @Extension
-    public static class VeertuCloudComputerListener extends ComputerListener {
-
-        @Override
-        public void preLaunch(Computer c, TaskListener taskListener) throws IOException, InterruptedException {
-            super.preLaunch(c, taskListener);
         }
     }
 

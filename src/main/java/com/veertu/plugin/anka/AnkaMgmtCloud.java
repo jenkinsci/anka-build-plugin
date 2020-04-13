@@ -21,6 +21,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
 
 import static com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials;
+import static java.lang.Thread.sleep;
 
 
 /**
@@ -34,15 +35,12 @@ public class AnkaMgmtCloud extends Cloud {
     private final String ankaMgmtUrl;
     private final AnkaAPI ankaAPI;
     private final String credentialsId;
-    private transient boolean eventsInit;
 
     private final String rootCA;
 
     private final boolean skipTLSVerification;
 
-    private SaveImageRequestsHolder saveImageRequestsHolder = SaveImageRequestsHolder.getInstance();
-    private InstanceDaemon daemon;
-    public static Map<String, InstanceDaemon> cloudToDaemonMap;
+    private transient SaveImageRequestsHolder saveImageRequestsHolder = SaveImageRequestsHolder.getInstance();
 
     @DataBoundConstructor
     public AnkaMgmtCloud(String ankaMgmtUrl,
@@ -84,33 +82,8 @@ public class AnkaMgmtCloud extends Cloud {
                 ankaAPI = new AnkaAPI(ankaMgmtUrl, skipTLSVerification, this.rootCA);
             }
         }
-        initEvents();
     }
 
-    public void initEvents() {
-        if (!eventsInit) {
-            if (ankaAPI != null) {
-                if (cloudToDaemonMap == null)
-                    cloudToDaemonMap = new HashMap<>();
-
-                InstanceDaemon runningDaemon = cloudToDaemonMap.get(getCloudName());
-                if (runningDaemon == null) {
-                    if (daemon == null) {
-                        daemon = new InstanceDaemon();
-                    }
-                    AnkaEvents.addListener(Event.nodeStarted, daemon );
-                    AnkaEvents.addListener(Event.VMStarted, daemon );
-                    AnkaEvents.addListener(Event.nodeTerminated, daemon );
-                    AnkaEvents.addListener(Event.saveImage, daemon );
-                    new Thread(daemon).start();
-                }
-                else if (daemon == null)
-                    daemon = runningDaemon;
-                cloudToDaemonMap.put(getCloudName(), daemon);
-                eventsInit = true;
-            }
-        }
-    }
 
     private CertCredentials lookUpCredentials(String credentialsId) {
         List<CertCredentials> credentials = lookupCredentials(CertCredentials.class, Jenkins.getInstance(), null, new ArrayList<DomainRequirement>());
@@ -185,7 +158,6 @@ public class AnkaMgmtCloud extends Cloud {
 
     @Override
     public Collection<NodeProvisioner.PlannedNode> provision(Label label, int excessWorkload) {
-        initEvents();
         List<NodeProvisioner.PlannedNode> plannedNodes = new ArrayList<>();
 
         final AnkaCloudSlaveTemplate t = getTemplate(label);
@@ -245,7 +217,6 @@ public class AnkaMgmtCloud extends Cloud {
 
     @Override
     public boolean canProvision(Label label) {
-        initEvents();
         AnkaCloudSlaveTemplate template = getTemplateFromLabel(label);
         if (template == null){
             return false;
@@ -374,7 +345,6 @@ public class AnkaMgmtCloud extends Cloud {
         try {
             AnkaMgmtVm vm = ankaAPI.makeAnkaVm(templateId, tag, nameTemplate, sshPort,
                     startUpScript, groupId, priority, name, externalId);
-            AnkaEvents.fire(Event.VMStarted, new VMStarted(vm));
             return vm;
         } catch (AnkaMgmtException e) {
             e.printStackTrace();
@@ -382,21 +352,39 @@ public class AnkaMgmtCloud extends Cloud {
         }
     }
 
-    public void nodeStarted(AbstractAnkaSlave node) {
-        AnkaEvents.fire(Event.nodeStarted, new NodeStarted(node));
-    }
 
     public void saveImage(AbstractAnkaSlave node) throws AnkaMgmtException {
-        AnkaEvents.fire(Event.saveImage, new SaveImageEvent(node));
         ImageSaver.saveImage(this, node, node.getVM());
     }
 
-    public void nodeTerminated(AbstractAnkaSlave node){
-        AnkaEvents.fire(Event.nodeTerminated, new NodeTerminated(node));
-    }
 
     public void updateInstance(AnkaMgmtVm vm, String name, String jenkinsNodeLink) throws AnkaMgmtException {
         ankaAPI.updateInstance(vm, name, jenkinsNodeLink);
+    }
+
+    public void terminateVMInstance(String id) throws AnkaMgmtException {
+        AnkaVmInstance ankaVmInstance = ankaAPI.showInstance(id);
+
+        if (ankaVmInstance == null || ankaVmInstance.isTerminatingOrTerminated()) {
+            return; // if it's already terminated just forget about it
+        }
+
+        ankaAPI.terminateInstance(id);
+        try {
+            sleep(200);
+        } catch (InterruptedException e) {
+            // no rest for the wicked
+        }
+
+        while(ankaVmInstance != null && ankaVmInstance.isTerminatingOrTerminated()) {
+            ankaAPI.terminateInstance(id);
+            try {
+                sleep(1000);
+            } catch (InterruptedException e) {
+                // no rest for the wicked
+            }
+            ankaVmInstance = ankaAPI.showInstance(id);
+        }
     }
 
 

@@ -3,7 +3,6 @@ package com.veertu.plugin.anka;
 import com.veertu.ankaMgmtSdk.AnkaMgmtVm;
 import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
 import hudson.Extension;
-import hudson.model.Computer;
 import hudson.model.Descriptor;
 import hudson.model.TaskListener;
 import hudson.slaves.*;
@@ -110,9 +109,14 @@ public abstract class AbstractAnkaSlave extends AbstractCloudSlave {
                 } catch (AnkaMgmtException e) {
                     throw new IOException(e);
                 }
+            } else {
+                try {
+                    cloud.terminateVMInstance(vm.getId());
+                } catch (AnkaMgmtException e) {
+                    throw new IOException(e);
+                }
             }
         }
-        cloud.nodeTerminated(this);
     }
 
     public void setTaskExecuted(boolean didExec) {
@@ -125,24 +129,44 @@ public abstract class AbstractAnkaSlave extends AbstractCloudSlave {
 
     public void register() throws IOException {
         Jenkins.getInstance().addNode(this);
-        String cloudName = template.getCloudName();
-        AnkaMgmtCloud cloud = (AnkaMgmtCloud) Jenkins.getInstance().getCloud(cloudName);
-        cloud.nodeStarted(this);
     }
 
-    @Extension
-    public static class VeertuCloudComputerListener extends ComputerListener {
-
-        @Override
-        public void preLaunch(Computer c, TaskListener taskListener) throws IOException, InterruptedException {
-            super.preLaunch(c, taskListener);
-        }
-
-        public void onTemporarilyOffline(Computer c, OfflineCause cause) {
-            AnkaMgmtCloud.Log("temp off");
-        }
+    public void connected() {
 
     }
+
+    public String getVMId() {
+        if (this.vm != null) {
+            return this.vm.getId();
+        }
+        return null;
+    }
+
+
+    public boolean isKeepAliveOnError() {
+        return this.template.isKeepAliveOnError();
+    }
+
+    public boolean canTerminate() {
+        if (hadProblemsInBuild) {
+            if (isKeepAliveOnError()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public void setHadErrorsOnBuild(boolean value) {
+        this.hadProblemsInBuild = value;
+    }
+
+    public void setDescription(String jobAndNumber) {
+        String description = String.format("master image: %s, job name and build number: %s, vm info: (%s)",
+                template.getMasterVmId(), jobAndNumber, this.vm.getInfo());
+        super.setNodeDescription(description);
+
+    }
+
 
     public SlaveDescriptor getDescriptor() {
         return new AnkaOnDemandSlave.DescriptorImpl();

@@ -5,14 +5,14 @@ import org.json.JSONObject;
 /**
  * Created by asafgur on 17/05/2017.
  */
-public class AnkaVmSession extends AnkaVMRepresentation {
+public class AnkaVmInstance extends AnkaVMRepresentation {
 
     private final String sessionState;
     private final String vmId;
     private AnkaVmInfo vmInfo;
     private String message;
 
-    public AnkaVmSession(String id, JSONObject jsonObject) {
+    public AnkaVmInstance(String id, JSONObject jsonObject) {
         this.id = id;
         this.sessionState = jsonObject.getString("instance_state");
         this.vmId = jsonObject.getString("vmid");
@@ -25,10 +25,10 @@ public class AnkaVmSession extends AnkaVMRepresentation {
         }
     }
 
-    public static AnkaVmSession makeAnkaVmSessionFromJson(JSONObject jsonObject) {
+    public static AnkaVmInstance makeAnkaVmSessionFromJson(JSONObject jsonObject) {
         String instance_id = jsonObject.getString("instance_id");
         JSONObject vm = jsonObject.getJSONObject("vm");
-        return new AnkaVmSession(instance_id, vm);
+        return new AnkaVmInstance(instance_id, vm);
     }
 
 
@@ -46,6 +46,16 @@ public class AnkaVmSession extends AnkaVMRepresentation {
 
     public String getMessage() {
         return this.message;
+    }
+
+    public boolean isTerminatingOrTerminated() {
+        switch (sessionState) {
+            case "Terminated":
+            case "Terminating":
+                return true;
+        }
+        return false;
+
     }
 }
 

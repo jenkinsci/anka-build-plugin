@@ -1,8 +1,9 @@
 package com.veertu.plugin.anka;
 
+import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
 import hudson.model.*;
 import hudson.slaves.AbstractCloudComputer;
-import hudson.slaves.AbstractCloudSlave;
+import jenkins.model.Jenkins;
 import org.jenkinsci.plugins.workflow.support.steps.ExecutorStepExecution;
 
 
@@ -11,28 +12,61 @@ import org.jenkinsci.plugins.workflow.support.steps.ExecutorStepExecution;
  */
 public class AnkaCloudComputer extends AbstractCloudComputer {
 
-    private final AnkaOnDemandSlave slave;
-    private String uuid;
+    private final AbstractAnkaSlave slave;
     private AnkaCloudSlaveTemplate template;
     protected Run<?, ?> run;
+    private String vmId;
 
-    public AnkaCloudComputer(AbstractCloudSlave slave) {
+    public AnkaCloudComputer(AbstractAnkaSlave slave) {
         super(slave);
-        this.slave = (AnkaOnDemandSlave)slave;
-        AnkaOnDemandSlave slaveComputer = (AnkaOnDemandSlave) slave;
-        this.template = slaveComputer.getTemplate();
+        this.slave = slave;
+        this.template = slave.getTemplate();
     }
 
-    public String getUuid() {
-        return uuid;
+
+    @Override
+    public AbstractAnkaSlave getNode() {
+        return (AbstractAnkaSlave) super.getNode();
     }
 
+    public String getVMId() {
+        AbstractAnkaSlave node = getNode();
+        if (node != null) {
+            return node.getVMId();
+        }
+        return null;
+    }
+
+    public void connected() {
+        AbstractAnkaSlave node = this.getNode();
+        if (node != null) {
+            node.connected();
+            String vmId = node.getVMId();
+            if (vmId != null) {
+                this.vmId = vmId;
+            }
+        }
+    }
+
+    public void onRemoved() {
+        AnkaMgmtCloud.Log("Computer %s removed", this.getName());
+        if (vmId != null) {
+            String cloudName = template.getCloudName();
+            AnkaMgmtCloud cloud = (AnkaMgmtCloud) Jenkins.getInstance().getCloud(cloudName);
+            if (cloud != null) {
+                try {
+                    cloud.terminateVMInstance(vmId);
+                } catch (AnkaMgmtException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+    
     public AnkaCloudSlaveTemplate getTemplate() {
         return template;
     }
-
-
-
+    
     @Override
     public void taskAccepted(Executor executor, Queue.Task task) {
         super.taskAccepted(executor, task);
@@ -118,6 +152,5 @@ public class AnkaCloudComputer extends AbstractCloudComputer {
                 this.slave.setHadErrorsOnBuild(false);
         }
     }
-
-
+    
 }

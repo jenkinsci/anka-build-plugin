@@ -213,14 +213,14 @@ public class AnkaMgmtCommunicator {
         throw new AnkaMgmtException(jsonResponse.getString("message"));
     }
 
-    public AnkaVmSession showVm(String sessionId) throws AnkaMgmtException {
+    public AnkaVmInstance showVm(String sessionId) throws AnkaMgmtException {
         String url = String.format("/api/v1/vm?id=%s", sessionId);
         try {
             JSONObject jsonResponse = this.doRequest(RequestMethod.GET, url);
             String logicalResult = jsonResponse.getString("status");
             if (logicalResult.equals("OK")) {
                 JSONObject body = jsonResponse.getJSONObject("body");
-                return new AnkaVmSession(sessionId, body);
+                return new AnkaVmInstance(sessionId, body);
             }
             return null;
         } catch (IOException e) {
@@ -247,8 +247,8 @@ public class AnkaMgmtCommunicator {
     }
 
 
-    public List<AnkaVmSession> list() throws AnkaMgmtException {
-        List<AnkaVmSession> vms = new ArrayList<>();
+    public List<AnkaVmInstance> list() throws AnkaMgmtException {
+        List<AnkaVmInstance> vms = new ArrayList<>();
         String url = "/api/v1/vm";
         try {
             JSONObject jsonResponse = this.doRequest(RequestMethod.GET, url);
@@ -261,8 +261,8 @@ public class AnkaMgmtCommunicator {
                     JSONObject vm = vmJson.getJSONObject("vm");
                     vm.put("instance_id", instanceId);
                     vm.put("cr_time", vm.getString("cr_time"));
-                    AnkaVmSession ankaVmSession = AnkaVmSession.makeAnkaVmSessionFromJson(vmJson);
-                    vms.add(ankaVmSession);
+                    AnkaVmInstance ankaVmInstance = AnkaVmInstance.makeAnkaVmSessionFromJson(vmJson);
+                    vms.add(ankaVmInstance);
                 }
             }
             return vms;

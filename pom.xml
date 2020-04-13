@@ -9,7 +9,7 @@
     <relativePath />
   </parent>
   <artifactId>anka-build</artifactId>
-  <version>1.24.0-SNAPSHOT</version>
+  <version>2.0.0-SNAPSHOT</version>
   <packaging>hpi</packaging>
 
   <properties>
@@ -75,7 +75,7 @@
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>structs</artifactId>
-      <version>1.17</version>
+      <version>1.19</version>
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins.workflow</groupId>
@@ -128,8 +128,40 @@
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>ssh-slaves</artifactId>
-      <version>1.28</version>
+      <version>1.31.1</version>
     </dependency>
+
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jenkins-ci.plugins</groupId>
+      <artifactId>trilead-api</artifactId>
+      <version>1.0.5</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>1.7.26</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>jcl-over-slf4j</artifactId>
+      <version>1.7.26</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>log4j-over-slf4j</artifactId>
+      <version>1.7.26</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-jdk14</artifactId>
+      <version>1.7.26</version>
+    </dependency>
+
+
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>bouncycastle-api</artifactId>
@@ -154,11 +186,7 @@
     </dependency>
 
 
-    <dependency>
-      <groupId>org.jenkins-ci.main</groupId>
-      <artifactId>jenkins-core</artifactId>
-      <version>2.150.1</version>
-    </dependency>
+
   </dependencies>
 
   <build>
