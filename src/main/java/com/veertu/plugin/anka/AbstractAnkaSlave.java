@@ -115,7 +115,7 @@ public abstract class AbstractAnkaSlave extends Slave {
             } else {
                 try {
                     cloud.terminateVMInstance(vm.getId());
-
+                    Jenkins.get().removeNode(this);
                 } catch (AnkaMgmtException e) {
                     AnkaMgmtCloud.Log("Failed to terminate node %s", this.name);
                     throw new IOException(e);
