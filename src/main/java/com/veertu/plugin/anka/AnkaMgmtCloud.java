@@ -160,6 +160,12 @@ public class AnkaMgmtCloud extends Cloud {
     public Collection<NodeProvisioner.PlannedNode> provision(Label label, int excessWorkload) {
         List<NodeProvisioner.PlannedNode> plannedNodes = new ArrayList<>();
 
+        Jenkins jenkinsInstance = Jenkins.get();
+        if (jenkinsInstance.isQuietingDown() || jenkinsInstance.isTerminating()) {
+            Log("Not provisioning nodes, Jenkins instance is terminating or quieting down");
+            return Collections.emptyList();
+        }
+
         final AnkaCloudSlaveTemplate t = getTemplate(label);
         Log("Attempting to provision slave from template " + t + " needed by excess workload of " + excessWorkload + " units of label '" + label + "'");
         if (label == null || t == null) {
@@ -383,6 +389,9 @@ public class AnkaMgmtCloud extends Cloud {
         }
     }
 
+    public AnkaVmInstance showInstance(String id) throws AnkaMgmtException {
+        return ankaAPI.showInstance(id);
+    }
 
     @Extension
     public static final class DescriptorImpl extends Descriptor<Cloud> {

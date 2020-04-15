@@ -45,6 +45,7 @@ public class AnkaPlannedNode extends NodeProvisioner.PlannedNode{
                 return  null;
             }
             if (template.getLaunchMethod().toLowerCase().equals(LaunchMethod.SSH)) {
+                tryToCallSlave(slave);
                 return slave;
             }
             long startTime = System.currentTimeMillis(); // fetch starting time

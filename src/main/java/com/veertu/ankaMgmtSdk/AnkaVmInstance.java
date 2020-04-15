@@ -55,7 +55,10 @@ public class AnkaVmInstance extends AnkaVMRepresentation {
                 return true;
         }
         return false;
+    }
 
+    public boolean isStarted() {
+        return sessionState.equals("Started");
     }
 }
 

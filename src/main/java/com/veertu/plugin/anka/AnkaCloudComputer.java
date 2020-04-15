@@ -13,6 +13,7 @@ import org.jenkinsci.plugins.workflow.support.steps.ExecutorStepExecution;
 public class AnkaCloudComputer extends SlaveComputer {
 
     private final AbstractAnkaSlave slave;
+    private final String cloudName;
     private AnkaCloudSlaveTemplate template;
     protected Run<?, ?> run;
     private String vmId;
@@ -21,6 +22,7 @@ public class AnkaCloudComputer extends SlaveComputer {
         super(slave);
         this.slave = slave;
         this.template = slave.getTemplate();
+        this.cloudName = slave.getTemplate().getCloudName();
     }
 
 
@@ -30,6 +32,9 @@ public class AnkaCloudComputer extends SlaveComputer {
     }
 
     public String getVMId() {
+        if (vmId != null) {
+            return vmId;
+        }
         AbstractAnkaSlave node = getNode();
         if (node != null) {
             return node.getVMId();
@@ -152,5 +157,8 @@ public class AnkaCloudComputer extends SlaveComputer {
                 this.slave.setHadErrorsOnBuild(false);
         }
     }
-    
+
+    public String getCloudName() {
+        return cloudName;
+    }
 }

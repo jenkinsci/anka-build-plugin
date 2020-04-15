@@ -1,15 +1,20 @@
 package com.veertu.plugin.anka;
 
+import com.veertu.ankaMgmtSdk.AnkaVmInstance;
+import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
 import hudson.Extension;
+import hudson.init.InitMilestone;
 import hudson.model.Descriptor;
 import hudson.model.Executor;
 import hudson.model.ExecutorListener;
 import hudson.model.Queue;
 import hudson.slaves.RetentionStrategy;
+import jenkins.model.Jenkins;
 import org.kohsuke.accmod.Restricted;
 import org.kohsuke.accmod.restrictions.NoExternalUse;
 import org.kohsuke.stapler.DataBoundConstructor;
 
+import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -123,6 +128,38 @@ public class RunOnceCloudRetentionStrategy extends RetentionStrategy<AnkaCloudCo
                         computer.getName(), node.getNodeName());
             }
         }
+    }
+
+    @Override
+    public void start(final @Nonnull AnkaCloudComputer computer) {
+        //Jenkins is in the process of starting up
+        if (Jenkins.get().getInitLevel() != InitMilestone.COMPLETED) {
+            String vmId = computer.getVMId();
+            String cloudName = computer.getCloudName();
+            AnkaMgmtCloud cloud = (AnkaMgmtCloud) Jenkins.get().getCloud(cloudName);
+            if (cloud != null) {
+                try {
+                    AnkaVmInstance instance = cloud.showInstance(vmId);
+                    if (instance == null || !instance.isStarted()) {
+                        AbstractAnkaSlave node = computer.getNode();
+                        if (node != null) {
+                            node.terminate();
+                        } else {
+                            cloud.terminateVMInstance(vmId); // if there is no node terminate the instance
+                        }
+                        return;
+                    }
+                } catch (AnkaMgmtException | IOException e) {
+                    LOGGER.info("Got exception while handling node in jenkins startup");
+                    e.printStackTrace();
+                    return;
+                }
+            }
+        }
+
+
+        LOGGER.info("Start requested for " + computer.getName());
+        computer.connect(false);
     }
 
     @Override

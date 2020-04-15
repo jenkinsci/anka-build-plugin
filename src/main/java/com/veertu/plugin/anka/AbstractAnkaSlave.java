@@ -121,6 +121,8 @@ public abstract class AbstractAnkaSlave extends Slave {
                     throw new IOException(e);
                 }
             }
+        } else {
+            Jenkins.get().removeNode(this);  // in case we don't have a vm remove this node
         }
     }
 
