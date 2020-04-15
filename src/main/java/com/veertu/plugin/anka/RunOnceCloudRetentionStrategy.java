@@ -12,11 +12,14 @@ import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Created by avia on 12/07/2016.
  */
 public class RunOnceCloudRetentionStrategy extends RetentionStrategy<AnkaCloudComputer> implements ExecutorListener {
+    private static final transient Logger LOGGER = Logger.getLogger(RunOnceCloudRetentionStrategy.class.getName());
 
     private int idleMinutes = 1;
     private int reconnectionRetries = 0;
@@ -35,18 +38,26 @@ public class RunOnceCloudRetentionStrategy extends RetentionStrategy<AnkaCloudCo
     @Override
     public long check(final AnkaCloudComputer computer) {
         try {
+            LOGGER.log(Level.INFO, "Checking computer {0}", computer.getName());
+            if (computer.countBusy() > 1) {
+                LOGGER.log(Level.INFO, "Computer {0} has {1} busy executors", new Object[]{computer.getName(), computer.countBusy()});
+                return 1;
+            }
 
-            if (computer.isAcceptingTasks()) {  // this computer is still waiting to run a job
+            if (computer.isAcceptingTasks()) {  // this computer is still waiting to run a job or running a job
+                LOGGER.log(Level.INFO, "Computer {0} is waiting to accept tasks", computer.getName());
                 return 1;
             }
 
 
             if (reconnectionRetries >= MAX_RECONNECTION_RETRIES) { // we tried to reconnect - but it's enough now
+                LOGGER.log(Level.INFO, "Computer {0} has reached it's max reconnection retries", computer.getName());
                 done(computer);
                 return 1;
             }
 
             if (!computer.isOnline()) {
+                LOGGER.log(Level.INFO, "Computer {0} is offline, trying to reconnect", computer.getName());
                 boolean forceReconnect = true;
                 if (reconnectionRetries > 0) {  // only force reconnect on first retry, after that don't stop a connecting process
                     forceReconnect = false;
@@ -74,11 +85,13 @@ public class RunOnceCloudRetentionStrategy extends RetentionStrategy<AnkaCloudCo
     @Override
     public void taskAccepted(Executor executor, Queue.Task task) {
         AnkaCloudComputer computer = (AnkaCloudComputer) executor.getOwner();
-        computer.setAcceptingTasks(false);
+        LOGGER.log(Level.INFO, "Computr {0} accepted task {1}", new Object[]{computer.getName(), task.toString()});
     }
 
     @Override
     public void taskCompleted(final Executor executor, final Queue.Task task, final long durationMS) {
+        AnkaCloudComputer computer = (AnkaCloudComputer) executor.getOwner();
+        computer.setAcceptingTasks(false);
         done(executor);
     }
 
