@@ -14,14 +14,13 @@ import hudson.security.AccessControlled;
 import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
-import org.kohsuke.stapler.AncestorInPath;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.StaplerRequest;
-import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.*;
 
 import javax.annotation.Nullable;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
 import java.util.logging.Logger;
 
 import static com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials;
@@ -153,7 +152,7 @@ public class AnkaCloudSlaveTemplate extends AbstractSlaveTemplate implements Des
 
     @Override
     public Descriptor<AnkaCloudSlaveTemplate> getDescriptor() {
-        return Jenkins.getInstance().getDescriptor(getClass());
+        return Jenkins.get().getDescriptor(getClass());
 
     }
 
@@ -200,11 +199,15 @@ public class AnkaCloudSlaveTemplate extends AbstractSlaveTemplate implements Des
         
 
         public ListBoxModel doFillCredentialsIdItems(@AncestorInPath ItemGroup context) {
-            if (!(context instanceof AccessControlled ? (AccessControlled) context : Jenkins.getInstance()).hasPermission(Computer.CONFIGURE)) {
+            if (!(context instanceof AccessControlled ? (AccessControlled) context : Jenkins.get()).hasPermission(Computer.CONFIGURE)) {
                 return new ListBoxModel();
             }
             final List<StandardUsernameCredentials> credentials = lookupCredentials(StandardUsernameCredentials.class, context, ACL.SYSTEM, HTTP_SCHEME, HTTPS_SCHEME);
-            return new StandardUsernameListBoxModel().withAll(credentials);
+            StandardUsernameListBoxModel listBox = new StandardUsernameListBoxModel();
+            for (StandardUsernameCredentials cred: credentials) {
+                listBox.with(cred);
+            }
+            return listBox;
         }
 
         public List<AnkaVmTemplate> getClonableVms(AnkaMgmtCloud cloud) throws AnkaHostException {
@@ -234,7 +237,7 @@ public class AnkaCloudSlaveTemplate extends AbstractSlaveTemplate implements Des
         }
 
         public ListBoxModel doFillGroupItems(@QueryParameter String cloudName) {
-            AnkaMgmtCloud cloud = (AnkaMgmtCloud) Jenkins.getInstance().getCloud(cloudName);
+            AnkaMgmtCloud cloud = (AnkaMgmtCloud) Jenkins.get().getCloud(cloudName);
             ListBoxModel models = new ListBoxModel();
             models.add("Choose Node Group Or Leave Empty for all", null);
             for (NodeGroup nodeGroup: getNodeGroups(cloud)) {
@@ -244,7 +247,7 @@ public class AnkaCloudSlaveTemplate extends AbstractSlaveTemplate implements Des
         }
 
         public ListBoxModel doFillMasterVmIdItems(@QueryParameter String cloudName) {
-            AnkaMgmtCloud cloud = (AnkaMgmtCloud) Jenkins.getInstance().getCloud(cloudName);
+            AnkaMgmtCloud cloud = (AnkaMgmtCloud) Jenkins.get().getCloud(cloudName);
             ListBoxModel models = new ListBoxModel();
             models.add("Choose Vm template", null);
             if (cloud != null) {
@@ -260,7 +263,7 @@ public class AnkaCloudSlaveTemplate extends AbstractSlaveTemplate implements Des
         }
 
         public ListBoxModel doFillTagItems(@QueryParameter String cloudName , @QueryParameter String masterVmId) {
-            AnkaMgmtCloud cloud = (AnkaMgmtCloud) Jenkins.getInstance().getCloud(cloudName);
+            AnkaMgmtCloud cloud = (AnkaMgmtCloud) Jenkins.get().getCloud(cloudName);
             ListBoxModel models = new ListBoxModel();
             models.add("Choose a Tag or leave empty for latest", null);
             if (cloud != null && masterVmId != null && masterVmId.length() != 0) {

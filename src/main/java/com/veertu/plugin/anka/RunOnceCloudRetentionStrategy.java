@@ -5,8 +5,6 @@ import hudson.model.Descriptor;
 import hudson.model.Executor;
 import hudson.model.ExecutorListener;
 import hudson.model.Queue;
-import hudson.slaves.AbstractCloudComputer;
-import hudson.slaves.CloudRetentionStrategy;
 import hudson.slaves.RetentionStrategy;
 import org.kohsuke.accmod.Restricted;
 import org.kohsuke.accmod.restrictions.NoExternalUse;
@@ -18,7 +16,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Created by avia on 12/07/2016.
  */
-public class RunOnceCloudRetentionStrategy extends CloudRetentionStrategy implements ExecutorListener {
+public class RunOnceCloudRetentionStrategy extends RetentionStrategy<AnkaCloudComputer> implements ExecutorListener {
 
     private int idleMinutes = 1;
     private int reconnectionRetries = 0;
@@ -27,7 +25,6 @@ public class RunOnceCloudRetentionStrategy extends CloudRetentionStrategy implem
 
     @DataBoundConstructor
     public RunOnceCloudRetentionStrategy(int idleMinutes) {
-        super(idleMinutes);
         this.idleMinutes = idleMinutes;
     }
 
@@ -36,9 +33,8 @@ public class RunOnceCloudRetentionStrategy extends CloudRetentionStrategy implem
     }
 
     @Override
-    public long check(final AbstractCloudComputer c) {
+    public long check(final AnkaCloudComputer computer) {
         try {
-            AnkaCloudComputer computer = (AnkaCloudComputer) c;
 
             if (computer.isAcceptingTasks()) {  // this computer is still waiting to run a job
                 return 1;
@@ -61,10 +57,10 @@ public class RunOnceCloudRetentionStrategy extends CloudRetentionStrategy implem
             }
 
 
-            if(computer.isIdle() && !disabled) {
+            if(computer.isIdle()) {
                 final long idleMilliseconds = System.currentTimeMillis() - computer.getIdleStartMilliseconds();
                 if(idleMilliseconds > TimeUnit.MINUTES.toMillis(idleMinutes)) {
-                    AnkaMgmtCloud.Log("Disconnecting %s due to idle timeout", c.getName());
+                    AnkaMgmtCloud.Log("Disconnecting %s due to idle timeout", computer.getName());
                     done(computer);
                 }
             }
@@ -105,7 +101,7 @@ public class RunOnceCloudRetentionStrategy extends CloudRetentionStrategy implem
                 AnkaMgmtCloud.Log("terminating computer %s node %s", computer.getName(), node.getNodeName());
                 try {
                     node.terminate();
-                } catch (InterruptedException | IOException e) {
+                } catch (IOException e) {
                     AnkaMgmtCloud.Log("Failed to terminate " + computer.getName(), e);
                 }
             }

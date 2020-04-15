@@ -2,7 +2,7 @@ package com.veertu.plugin.anka;
 
 import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
 import hudson.model.*;
-import hudson.slaves.AbstractCloudComputer;
+import hudson.slaves.SlaveComputer;
 import jenkins.model.Jenkins;
 import org.jenkinsci.plugins.workflow.support.steps.ExecutorStepExecution;
 
@@ -10,7 +10,7 @@ import org.jenkinsci.plugins.workflow.support.steps.ExecutorStepExecution;
 /**
  * Created by asafgur on 16/11/2016.
  */
-public class AnkaCloudComputer extends AbstractCloudComputer {
+public class AnkaCloudComputer extends SlaveComputer {
 
     private final AbstractAnkaSlave slave;
     private AnkaCloudSlaveTemplate template;
@@ -52,7 +52,7 @@ public class AnkaCloudComputer extends AbstractCloudComputer {
         AnkaMgmtCloud.Log("Computer %s removed", this.getName());
         if (vmId != null) {
             String cloudName = template.getCloudName();
-            AnkaMgmtCloud cloud = (AnkaMgmtCloud) Jenkins.getInstance().getCloud(cloudName);
+            AnkaMgmtCloud cloud = (AnkaMgmtCloud) Jenkins.get().getCloud(cloudName);
             if (cloud != null) {
                 try {
                     cloud.terminateVMInstance(vmId);

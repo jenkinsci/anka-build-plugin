@@ -3,9 +3,12 @@ package com.veertu.plugin.anka;
 import com.veertu.ankaMgmtSdk.AnkaMgmtVm;
 import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
 import hudson.Extension;
+import hudson.model.Computer;
 import hudson.model.Descriptor;
-import hudson.model.TaskListener;
-import hudson.slaves.*;
+import hudson.model.Slave;
+import hudson.slaves.ComputerLauncher;
+import hudson.slaves.NodeProperty;
+import hudson.slaves.RetentionStrategy;
 import jenkins.model.Jenkins;
 
 import java.io.IOException;
@@ -14,7 +17,7 @@ import java.util.List;
 /**
  * Created by asafgur on 28/11/2016.
  */
-public abstract class AbstractAnkaSlave extends AbstractCloudSlave {
+public abstract class AbstractAnkaSlave extends Slave {
 
     protected boolean hadProblemsInBuild = false;
 
@@ -88,14 +91,13 @@ public abstract class AbstractAnkaSlave extends AbstractCloudSlave {
     }
 
     @Override
-    public AbstractCloudComputer createComputer() {
+    public Computer createComputer() {
         return new AnkaCloudComputer(this);
     }
 
-    @Override
-    protected void _terminate(TaskListener listener) throws IOException, InterruptedException {
+    public void terminate() throws IOException {
         String cloudName = template.getCloudName();
-        AnkaMgmtCloud cloud = (AnkaMgmtCloud) Jenkins.getInstance().getCloud(cloudName);
+        AnkaMgmtCloud cloud = (AnkaMgmtCloud) Jenkins.get().getCloud(cloudName);
         if (vm != null) {
             SaveImageParameters saveImageParams = template.getSaveImageParameters();
             if (taskExecuted && saveImageParams != null && this.template.getSaveImageParameters().getSaveImage() && saveImageParams.getSaveImage() && !hadProblemsInBuild) {
@@ -105,6 +107,7 @@ public abstract class AbstractAnkaSlave extends AbstractCloudSlave {
                             cloud.saveImage(this);
                             this.saveImageSent = true;
                         }
+                        Jenkins.get().removeNode(this);
                     }
                 } catch (AnkaMgmtException e) {
                     throw new IOException(e);
@@ -112,7 +115,9 @@ public abstract class AbstractAnkaSlave extends AbstractCloudSlave {
             } else {
                 try {
                     cloud.terminateVMInstance(vm.getId());
+
                 } catch (AnkaMgmtException e) {
+                    AnkaMgmtCloud.Log("Failed to terminate node %s", this.name);
                     throw new IOException(e);
                 }
             }

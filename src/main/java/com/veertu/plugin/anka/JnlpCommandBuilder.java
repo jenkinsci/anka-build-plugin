@@ -29,7 +29,7 @@ public class JnlpCommandBuilder {
             javaArgs = "";
         }
 
-        String effectiveJenkinsUrl = Jenkins.getInstance().getRootUrl();
+        String effectiveJenkinsUrl = Jenkins.get().getRootUrl();
 
         if (overrideJenkinsUrl != null && !overrideJenkinsUrl.isEmpty()) {
             effectiveJenkinsUrl = overrideJenkinsUrl;
@@ -45,7 +45,7 @@ public class JnlpCommandBuilder {
     public static String makeStartUpScript(String nodeName, String extraArgs, String javaArgs, String overrideJenkinsUrl) {
 
         String jarCommand = makeCommand(nodeName, extraArgs, javaArgs, overrideJenkinsUrl);
-        String jenkinsUrl = Jenkins.getInstance().getRootUrl();
+        String jenkinsUrl = Jenkins.get().getRootUrl();
         String script = String.format(scriptTemplate, jenkinsUrl, jenkinsUrl, jenkinsUrl, jarCommand, jarCommand);
         return script;
 

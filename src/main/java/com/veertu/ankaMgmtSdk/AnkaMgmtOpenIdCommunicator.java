@@ -103,19 +103,14 @@ public class AnkaMgmtOpenIdCommunicator extends AnkaMgmtCommunicator {
                         return jsonResponse;
                     }
 
-                } catch (ClientException e) {
+                } catch (ClientException | SSLException e) {
                     // don't retry on client exception
                     throw e;
                 } catch (HttpHostConnectException | ConnectTimeoutException e) {
                     throw new AnkaMgmtException(e);
-                } catch (SSLException e) {
-                    throw e;
                 } catch (UnsupportedEncodingException e) {
                     e.printStackTrace();
                     throw new RuntimeException(e);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    throw new AnkaMgmtException(e);
                 } catch (Exception e) {
                     e.printStackTrace();
                     throw new AnkaMgmtException(e);
@@ -123,13 +118,8 @@ public class AnkaMgmtOpenIdCommunicator extends AnkaMgmtCommunicator {
                     httpClient.close();
                 }
                 return null;
-            } catch (ClientException e) {
+            } catch (ClientException | Exception e) {
                 // don't retry on client exception
-                throw new AnkaMgmtException(e);
-            } catch (Exception e) {
-                if (retry >= maxRetries) {
-                    continue;
-                }
                 throw new AnkaMgmtException(e);
             }
         }

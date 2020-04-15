@@ -86,7 +86,7 @@ public class AnkaMgmtCloud extends Cloud {
 
 
     private CertCredentials lookUpCredentials(String credentialsId) {
-        List<CertCredentials> credentials = lookupCredentials(CertCredentials.class, Jenkins.getInstance(), null, new ArrayList<DomainRequirement>());
+        List<CertCredentials> credentials = lookupCredentials(CertCredentials.class, Jenkins.get(), null, new ArrayList<DomainRequirement>());
         for (CertCredentials creds: credentials) {
             if (creds.getId().equals(credentialsId)) {
                 return creds;
@@ -244,10 +244,6 @@ public class AnkaMgmtCloud extends Cloud {
         return null;
     }
 
-//    private AnkaMgmtCommunicator GetAnkaMgmtCommunicator() {
-//
-//    }
-
 
     private static void InternalLog(Slave slave, SlaveComputer slaveComputer, TaskListener listener, String format, Object... args) {
         String s = "";
@@ -311,7 +307,7 @@ public class AnkaMgmtCloud extends Cloud {
 
     public static List<AnkaMgmtCloud> getAnkaClouds() {
         List<AnkaMgmtCloud> clouds = new ArrayList<AnkaMgmtCloud>();
-        final Jenkins jenkins = Jenkins.getInstance();
+        final Jenkins jenkins = Jenkins.get();
         for (Cloud cloud : jenkins.clouds) {
             if (cloud instanceof AnkaMgmtCloud) {
                 AnkaMgmtCloud ankaCloud = (AnkaMgmtCloud) cloud;
@@ -322,7 +318,7 @@ public class AnkaMgmtCloud extends Cloud {
     }
 
     public static AnkaMgmtCloud getCloudThatHasImage(String masterVMID) {
-        final Jenkins jenkins = Jenkins.getInstance();
+        final Jenkins jenkins = Jenkins.get();
         for (Cloud cloud : jenkins.clouds) {
             if (cloud instanceof AnkaMgmtCloud) {
                 AnkaMgmtCloud ankaCloud = (AnkaMgmtCloud) cloud;
@@ -397,11 +393,11 @@ public class AnkaMgmtCloud extends Cloud {
         }
 
         public ListBoxModel doFillCredentialsIdItems(@AncestorInPath ItemGroup context) {
-            if (!(context instanceof AccessControlled ? (AccessControlled) context : Jenkins.getInstance()).hasPermission(Computer.CONFIGURE)) {
+            if (!(context instanceof AccessControlled ? (AccessControlled) context : Jenkins.get()).hasPermission(Computer.CONFIGURE)) {
                 return new ListBoxModel();
             }
             final List<CertCredentials> credentials;
-            credentials = lookupCredentials(CertCredentials.class, Jenkins.getInstance(), null, new ArrayList<DomainRequirement>());
+            credentials = lookupCredentials(CertCredentials.class, Jenkins.get(), null, new ArrayList<DomainRequirement>());
             ListBoxModel listBox = new StandardUsernameListBoxModel();
             for (CertCredentials cred: credentials) {
                 listBox.add(cred.getName(), cred.getId());

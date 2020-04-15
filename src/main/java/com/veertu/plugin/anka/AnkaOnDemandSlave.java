@@ -8,7 +8,6 @@ import hudson.slaves.ComputerLauncher;
 import hudson.slaves.JNLPLauncher;
 import hudson.slaves.NodeProperty;
 import jenkins.model.Jenkins;
-import jenkins.slaves.RemotingWorkDirSettings;
 import org.apache.commons.lang.RandomStringUtils;
 
 import java.io.IOException;
@@ -28,7 +27,7 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
     }
 
     public static String getJenkinsNodeLink(String nodeName) {
-        String effectiveJenkinsUrl = Jenkins.getInstance().getRootUrl();
+        String effectiveJenkinsUrl = Jenkins.get().getRootUrl();
         if (effectiveJenkinsUrl == null) {
             return String.format("/computer/%s", nodeName);
         }
@@ -97,10 +96,8 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
                 template.getSSHPort(), jnlpCommand, template.getGroup(), template.getPriority(), nodeName, getJenkinsNodeLink(nodeName));
         AnkaMgmtCloud.Log("vm %s %s is booted, creating jnlp launcher", vm.getId(), vm.getName());
 
-        String tunnel = "";
         JNLPLauncher launcher = new JNLPLauncher(template.getJnlpTunnel(),
-                "",
-                RemotingWorkDirSettings.getEnabledDefaults());
+                template.getExtraArgs());
         AnkaMgmtCloud.Log("launcher created for vm %s %s", vm.getId(), vm.getName());
         AnkaOnDemandSlave slave = new AnkaOnDemandSlave(nodeName, template.getTemplateDescription(), template.getRemoteFS(),
                 template.getNumberOfExecutors(),
@@ -110,22 +107,13 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
                 template.getNodeProperties(), template, vm);
         slave.register();
 
-        new Thread(new Runnable() {
 
-            @Override
-            public void run() {
-                try {
-                    vm.waitForBoot(template.getSchedulingTimeout());
-                } catch (InterruptedException | IOException | AnkaMgmtException e) {
-                    vm.terminate();
-                    throw new RuntimeException(new AnkaMgmtException(e));
-                }
-
-
-
-            }
-        }).run();
-
+        try {
+            vm.waitForBoot(template.getSchedulingTimeout());
+        } catch (InterruptedException | IOException | AnkaMgmtException e) {
+            vm.terminate();
+            throw new RuntimeException(new AnkaMgmtException(e));
+        }
 
         slave.setDisplayName(vm.getName());
         return slave;

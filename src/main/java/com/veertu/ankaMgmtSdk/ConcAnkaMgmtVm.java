@@ -7,6 +7,7 @@ import java.io.IOException;
 /**
  * Created by asafgur on 17/05/2017.
  */
+@SuppressWarnings("ALL")
 public class ConcAnkaMgmtVm implements AnkaMgmtVm {
 
     private final AnkaMgmtCommunicator communicator;

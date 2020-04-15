@@ -321,12 +321,16 @@ public class CreateDynamicAnkaNodeStep extends Step {
         }
 
         public ListBoxModel doFillCredentialsIdItems(@AncestorInPath ItemGroup context) {
-            if (!(context instanceof AccessControlled ? (AccessControlled) context : Jenkins.getInstance()).hasPermission(Computer.CONFIGURE)) {
+            if (!(context instanceof AccessControlled ? (AccessControlled) context : Jenkins.get()).hasPermission(Computer.CONFIGURE)) {
                 return new ListBoxModel();
             }
             final List<StandardUsernameCredentials> credentials = CredentialsProvider.lookupCredentials(StandardUsernameCredentials.class,
                     context, ACL.SYSTEM, DynamicSlaveProperties.HTTP_SCHEME, DynamicSlaveProperties.HTTPS_SCHEME);
-            return new StandardUsernameListBoxModel().withAll(credentials);
+            StandardUsernameListBoxModel listBox = new StandardUsernameListBoxModel();
+            for (StandardUsernameCredentials cred: credentials) {
+                listBox.with(cred);
+            }
+            return listBox;
         }
     }
 

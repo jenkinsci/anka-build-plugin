@@ -1,20 +1,20 @@
 package com.veertu.plugin.anka;
 
+import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
+import com.veertu.ankaMgmtSdk.exceptions.SaveImageRequestIdMissingException;
+import com.veertu.plugin.anka.exceptions.SaveImageStatusTimeout;
 import hudson.Extension;
 import hudson.Launcher;
-import hudson.model.*;
+import hudson.model.AbstractBuild;
+import hudson.model.AbstractProject;
+import hudson.model.BuildListener;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Publisher;
 import hudson.tasks.Recorder;
-import jenkins.model.Jenkins;
-
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.io.IOException;
-import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
-import com.veertu.ankaMgmtSdk.exceptions.SaveImageRequestIdMissingException;
-import com.veertu.plugin.anka.exceptions.SaveImageStatusTimeout;
 
 
 public class AnkaSaveImagePostBuildStep extends Recorder {

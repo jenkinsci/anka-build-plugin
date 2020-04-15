@@ -53,7 +53,7 @@ public class AnkaProvisioningStrategy extends NodeProvisioner.Strategy {
         int currentDemand = snap.getQueueLength();
         AnkaMgmtCloud.Log("Available capacity=%s, currentDemand=%s", availableCapacity, currentDemand);
         if (currentDemand > availableCapacity) {
-            Jenkins jenkinsInstance = Jenkins.getInstance();
+            Jenkins jenkinsInstance = Jenkins.get();
             for (Cloud cloud : jenkinsInstance.clouds) {
                 if (cloud instanceof AnkaMgmtCloud && cloud.canProvision(label)) {
                     Collection<NodeProvisioner.PlannedNode> plannedNodes = cloud.provision(label, currentDemand - availableCapacity);

@@ -8,9 +8,6 @@ import com.veertu.plugin.anka.exceptions.SaveImageStatusTimeout;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
 
 public class ImageSaver {
 
