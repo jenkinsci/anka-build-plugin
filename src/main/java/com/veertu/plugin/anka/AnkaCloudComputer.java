@@ -16,13 +16,14 @@ public class AnkaCloudComputer extends SlaveComputer {
     private final String cloudName;
     private AnkaCloudSlaveTemplate template;
     protected Run<?, ?> run;
-    private String vmId;
+    private final String vmId;
 
-    public AnkaCloudComputer(AbstractAnkaSlave slave) {
+    public AnkaCloudComputer(AbstractAnkaSlave slave, String vmId) {
         super(slave);
         this.slave = slave;
         this.template = slave.getTemplate();
         this.cloudName = slave.getTemplate().getCloudName();
+        this.vmId = vmId;
     }
 
 
@@ -41,15 +42,19 @@ public class AnkaCloudComputer extends SlaveComputer {
         }
         return null;
     }
+    
+    public boolean isAlive() {
+        AbstractAnkaSlave node = getNode();
+        if (node != null) {
+            return node.isAlive();
+        }
+        return false;
+    }
 
     public void connected() {
         AbstractAnkaSlave node = this.getNode();
         if (node != null) {
             node.connected();
-            String vmId = node.getVMId();
-            if (vmId != null) {
-                this.vmId = vmId;
-            }
         }
     }
 
@@ -160,5 +165,13 @@ public class AnkaCloudComputer extends SlaveComputer {
 
     public String getCloudName() {
         return cloudName;
+    }
+
+    public boolean isSchedulingOrPulling() {
+        AbstractAnkaSlave node = getNode();
+        if (node != null) {
+            return node.isSchedulingOrPulling();
+        }
+        return false;
     }
 }

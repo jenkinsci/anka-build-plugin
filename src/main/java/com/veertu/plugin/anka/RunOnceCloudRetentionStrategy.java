@@ -49,8 +49,11 @@ public class RunOnceCloudRetentionStrategy extends RetentionStrategy<AnkaCloudCo
                 return 1;
             }
 
-            if (computer.isAcceptingTasks()) {  // this computer is still waiting to run a job or running a job
-                LOGGER.log(Level.INFO, "Computer {0} is waiting to accept tasks", computer.getName());
+            if (computer.isConnecting()) {
+                return 1;
+            }
+
+            if (computer.isSchedulingOrPulling()) { // it's scheduling or pulling - wait
                 return 1;
             }
 

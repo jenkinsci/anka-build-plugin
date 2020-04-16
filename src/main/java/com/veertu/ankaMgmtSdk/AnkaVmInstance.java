@@ -60,6 +60,15 @@ public class AnkaVmInstance extends AnkaVMRepresentation {
     public boolean isStarted() {
         return sessionState.equals("Started");
     }
+
+    public boolean isSchedulingOrPulling() {
+        switch (sessionState) {
+            case "Pulling":
+            case "Scheduling":
+                return true;
+        }
+        return false;
+    }
 }
 
 

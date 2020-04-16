@@ -1,6 +1,7 @@
 package com.veertu.plugin.anka;
 
 import com.veertu.ankaMgmtSdk.AnkaMgmtVm;
+import com.veertu.ankaMgmtSdk.AnkaVmInstance;
 import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
 import hudson.Extension;
 import hudson.model.Computer;
@@ -92,7 +93,7 @@ public abstract class AbstractAnkaSlave extends Slave {
 
     @Override
     public Computer createComputer() {
-        return new AnkaCloudComputer(this);
+        return new AnkaCloudComputer(this, vm.getId());
     }
 
     public void terminate() throws IOException {
@@ -177,6 +178,55 @@ public abstract class AbstractAnkaSlave extends Slave {
 
     public SlaveDescriptor getDescriptor() {
         return new AnkaOnDemandSlave.DescriptorImpl();
+    }
+
+    public boolean isAlive() {
+        String vmId = vm.getId();
+        if (vmId == null) {
+            return false;
+        }
+        String cloudName = template.getCloudName();
+        AnkaMgmtCloud cloud = (AnkaMgmtCloud) Jenkins.get().getCloud(cloudName);
+        if (cloud != null) {
+            try {
+                AnkaVmInstance instance = cloud.showInstance(vmId);
+                if (instance != null) {
+                    if (instance.isStarted()) {
+                        return true;
+                    }
+                    if (instance.isSchedulingOrPulling()) {
+                        return true;
+                    }
+                }
+            } catch (AnkaMgmtException e) {
+                return true;   // in case we can't contact the cloud, assume the VM is alive
+            }
+            return false;
+        }
+        return false;
+    }
+
+    public boolean isSchedulingOrPulling() {
+        String vmId = vm.getId();
+        if (vmId == null) {
+            return false;
+        }
+        String cloudName = template.getCloudName();
+        AnkaMgmtCloud cloud =  (AnkaMgmtCloud) Jenkins.get().getCloud(cloudName);
+        if (cloud != null) {
+            try {
+                AnkaVmInstance instance = cloud.showInstance(vmId);
+                if (instance != null) {
+                    if (instance.isSchedulingOrPulling()) {
+                        return true;
+                    }
+                }
+            } catch (AnkaMgmtException e) {
+                return true;   // in case we can't contact the cloud, return true - so caller can check again
+            }
+            return false;
+        }
+        return false;
     }
 
     @Extension

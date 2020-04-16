@@ -112,7 +112,7 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
             vm.waitForBoot(template.getSchedulingTimeout());
         } catch (InterruptedException | IOException | AnkaMgmtException e) {
             vm.terminate();
-            throw new RuntimeException(new AnkaMgmtException(e));
+            throw new AnkaMgmtException(e);
         }
 
         slave.setDisplayName(vm.getName());
