@@ -28,7 +28,7 @@ public class RunOnceCloudRetentionStrategy extends RetentionStrategy<AnkaCloudCo
 
     private int idleMinutes = 1;
     private int reconnectionRetries = 0;
-    private static final int MAX_RECONNECTION_RETRIES = 5;
+    private static final int MAX_RECONNECTION_RETRIES = 7;
 
 
     @DataBoundConstructor
@@ -66,13 +66,13 @@ public class RunOnceCloudRetentionStrategy extends RetentionStrategy<AnkaCloudCo
 
             if (!computer.isOnline()) {
                 LOGGER.log(Level.INFO, "Computer {0} is offline, trying to reconnect", computer.getName());
-                boolean forceReconnect = true;
-                if (reconnectionRetries > 0) {  // only force reconnect on first retry, after that don't stop a connecting process
-                    forceReconnect = false;
+                boolean forceReconnect = false;
+                if (reconnectionRetries > 4) {
+                    forceReconnect = true;  // only force reconnect on first retry, after no answer for a while
                 }
                 computer.connect(forceReconnect);
                 reconnectionRetries++;
-                return 1;
+                return 2;
             }
 
 
