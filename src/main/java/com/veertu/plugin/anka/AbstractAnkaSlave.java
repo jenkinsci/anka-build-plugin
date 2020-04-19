@@ -34,8 +34,20 @@ public abstract class AbstractAnkaSlave extends Slave {
     }
 
     public void setJobNameAndNumber(String jobNameAndNumber) {
+        String finalString = jobNameAndNumber.replaceAll("\\P{Print}", "");
+        this.jobNameAndNumber = finalString;
 
-        this.jobNameAndNumber = jobNameAndNumber.replaceAll("\\P{Print}", "");
+        // Update metadata with job identifier
+        String cloudName = template.getCloudName();
+        AnkaMgmtCloud cloud = (AnkaMgmtCloud) Jenkins.get().getCloud(cloudName);
+        if (vm != null) {
+            try {
+                cloud.updateInstance(vm, null, null, finalString);
+            } catch (AnkaMgmtException e) {
+                AnkaMgmtCloud.Log("Failed to update node with job identifier");
+                e.printStackTrace();
+            }
+        }
     }
 
     protected String jobNameAndNumber;

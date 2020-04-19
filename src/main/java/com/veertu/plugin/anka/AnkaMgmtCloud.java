@@ -360,8 +360,8 @@ public class AnkaMgmtCloud extends Cloud {
     }
 
 
-    public void updateInstance(AnkaMgmtVm vm, String name, String jenkinsNodeLink) throws AnkaMgmtException {
-        ankaAPI.updateInstance(vm, name, jenkinsNodeLink);
+    public void updateInstance(AnkaMgmtVm vm, String name, String jenkinsNodeLink, String jobIdentifier) throws AnkaMgmtException {
+        ankaAPI.updateInstance(vm, name, jenkinsNodeLink, jobIdentifier);
     }
 
     public void terminateVMInstance(String id) throws AnkaMgmtException {

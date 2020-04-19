@@ -3,6 +3,7 @@ package com.veertu.ankaMgmtSdk;
 import com.veertu.RoundRobin;
 import com.veertu.ankaMgmtSdk.exceptions.*;
 import com.veertu.plugin.anka.AnkaMgmtCloud;
+import com.veertu.plugin.anka.MetadataKeys;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -37,6 +38,7 @@ import java.security.*;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 
@@ -406,7 +408,7 @@ public class AnkaMgmtCommunicator {
         return imageRequests;
     }
 
-    public void updateVM(String id, String name, String jenkinsNodeLink) throws AnkaMgmtException {
+    public void updateVM(String id, String name, String jenkinsNodeLink, String jobIdentifier) throws AnkaMgmtException {
         String url = String.format("/api/v1/vm?id=%s", id);
         JSONObject jsonResponse = null;
         JSONObject jsonObject = new JSONObject();
@@ -415,6 +417,11 @@ public class AnkaMgmtCommunicator {
         }
         if (name != null) {
             jsonObject.put("name", name);
+        }
+        if (jobIdentifier != null && !jobIdentifier.equals("")) {
+            HashMap<String, String> metaData = new HashMap<>();
+            metaData.put(MetadataKeys.JobIdentifier, jobIdentifier);
+            jsonObject.put("metadata", metaData);
         }
         try {
             jsonResponse = this.doRequest(RequestMethod.PUT, url, jsonObject);

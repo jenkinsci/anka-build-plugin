@@ -101,7 +101,7 @@ public class AnkaAPI {
         return communicator.showVm(vmId);
     }
 
-    public void updateInstance(AnkaMgmtVm vm, String name, String jenkinsNodeLink) throws AnkaMgmtException {
-        communicator.updateVM(vm.getId(), name, jenkinsNodeLink);
+    public void updateInstance(AnkaMgmtVm vm, String name, String jenkinsNodeLink, String jobIdentifier) throws AnkaMgmtException {
+        communicator.updateVM(vm.getId(), name, jenkinsNodeLink, jobIdentifier);
     }
 }

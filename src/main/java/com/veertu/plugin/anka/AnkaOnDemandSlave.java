@@ -145,10 +145,10 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
 
             slave.setLauncher(launcher);
             String name = vm.getName();
-            if (name != null){
+            if (name != null ) {
                 slave.setNodeName(name);
                 try {
-                    cloud.updateInstance(vm, name, getJenkinsNodeLink(name));
+                    cloud.updateInstance(vm, name, getJenkinsNodeLink(name), null);
                 } catch (AnkaMgmtException e) {
                     AnkaMgmtCloud.Log("Name update failed: ", e.getMessage());
                     e.printStackTrace();
