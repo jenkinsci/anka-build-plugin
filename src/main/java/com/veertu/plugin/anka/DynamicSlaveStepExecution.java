@@ -8,7 +8,6 @@ import org.jenkinsci.plugins.workflow.steps.SynchronousNonBlockingStepExecution;
 
 import java.io.IOException;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
 
 
 public class DynamicSlaveStepExecution extends SynchronousNonBlockingStepExecution<String> {
@@ -50,35 +49,7 @@ public class DynamicSlaveStepExecution extends SynchronousNonBlockingStepExecuti
 
         }
         slave.setMode(Node.Mode.EXCLUSIVE);
-        slave.register();
-        startTime = System.currentTimeMillis(); // fetch starting time
-        while (true) {
-            try {
-                AnkaMgmtCloud.Log("trying to init slave %s on vm", slave.getDisplayName());
-                AnkaPlannedNode.tryToCallSlave(slave);
-                break;
-            }
-            catch (ExecutionException e) {
-                if ((System.currentTimeMillis() - startTime) < slave.launchTimeout * 1000){
-                    AnkaMgmtCloud.Log("caught ExecutionException when trying to start %s " +
-                            "sleeping for 1 seconds to retry", slave.getNodeName());
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException err) {
-                        continue; // prevent interrupted exceptions during slave init
-                    }
-                    continue;
-                }
-                AnkaMgmtCloud.Log("Failed to connect to slave %s", slave.getNodeName());
-                slave.terminate();
-                throw e;
-            }
-            catch (Exception e) {
-                AnkaMgmtCloud.Log("vm quit unexpectedly for slave %s", slave.getNodeName());
-                slave.terminate();
-                throw e;
-            }
-        }
+
         return label;
     }
 

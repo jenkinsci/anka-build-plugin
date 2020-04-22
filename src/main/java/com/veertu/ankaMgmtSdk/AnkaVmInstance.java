@@ -69,6 +69,10 @@ public class AnkaVmInstance extends AnkaVMRepresentation {
         }
         return false;
     }
+
+    public boolean isInError() {
+        return sessionState.equalsIgnoreCase("error");
+    }
 }
 
 

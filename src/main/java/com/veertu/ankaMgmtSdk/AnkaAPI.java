@@ -12,9 +12,6 @@ import java.util.List;
 public class AnkaAPI {
 
     private AnkaMgmtCommunicator communicator;
-    private static int vmCounter = 1;
-
-    private static transient java.util.logging.Logger logger =  java.util.logging.Logger.getLogger("AnkaAPI");
 
     public AnkaAPI(List<String> mgmtURLS, boolean skipTLSVerification, String rootCA) {
         this.communicator = new AnkaMgmtCommunicator(mgmtURLS, skipTLSVerification, rootCA);
@@ -46,24 +43,6 @@ public class AnkaAPI {
         }
     }
 
-
-    public AnkaMgmtVm makeAnkaVm(String templateId,
-                                 String tag, String nameTemplate, int sshPort, String startUpScript, String groupId,
-                                 int priority, String name, String externalId) throws AnkaMgmtException {
-
-        logger.info(String.format("making anka vm," +
-                "templateId: %s, sshPort: %d", templateId, sshPort));
-        if (nameTemplate == null || nameTemplate.isEmpty())
-            nameTemplate = "$template_name-$node_name-$ts";
-        else if (!nameTemplate.contains("$ts"))
-            nameTemplate = String.format("%s-%d", nameTemplate, vmCounter++);
-
-        String sessionId = communicator.startVm(templateId, tag, nameTemplate, startUpScript, groupId, priority, name, externalId);
-        AnkaMgmtVm vm = new ConcAnkaMgmtVm(sessionId, communicator, sshPort);
-        return vm;
-
-    }
-
     public List<AnkaVmTemplate> listTemplates() throws AnkaMgmtException {
         return communicator.listTemplates();
     }
@@ -93,6 +72,14 @@ public class AnkaAPI {
         return communicator.status();
     }
 
+    public String startVM(String templateId, String tag, String nameTemplate, String startUpScript, String groupId, int priority, String name, String externalId) throws AnkaMgmtException {
+        return communicator.startVm(templateId, tag, nameTemplate, startUpScript, groupId, priority, name, externalId);
+    }
+
+    public String startVM(String templateId, String tag, String startUpScript, String groupId, int priority, String name, String externalId) throws AnkaMgmtException {
+        return communicator.startVm(templateId, tag, "$template_name-$node_name-$ts", startUpScript, groupId, priority, name, externalId);
+    }
+
     public boolean terminateInstance(String vmId) throws AnkaMgmtException {
         return communicator.terminateVm(vmId);
     }
@@ -101,7 +88,15 @@ public class AnkaAPI {
         return communicator.showVm(vmId);
     }
 
-    public void updateInstance(AnkaMgmtVm vm, String name, String jenkinsNodeLink, String jobIdentifier) throws AnkaMgmtException {
-        communicator.updateVM(vm.getId(), name, jenkinsNodeLink, jobIdentifier);
+    public void updateInstance(String vmId, String name, String jenkinsNodeLink, String jobIdentifier) throws AnkaMgmtException {
+        communicator.updateVM(vmId, name, jenkinsNodeLink, jobIdentifier);
+    }
+
+    public String saveImage(String instanceId, String targetVMId, String tagToPush,
+                            String description, Boolean suspend,
+                            String shutdownScript, boolean deleteLatest, String latestTag,
+                            boolean doSuspendTest) throws AnkaMgmtException {
+        return communicator.saveImage(instanceId, targetVMId, null, tagToPush, description, suspend,
+                shutdownScript, deleteLatest, latestTag, doSuspendTest);
     }
 }

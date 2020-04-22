@@ -37,8 +37,18 @@ public class AbstractSlaveTemplate {
     protected String jnlpTunnel;
     protected int priority;
     protected SaveImageParameters saveImageParameters;
+    protected String cloudName;
 
 
+
+
+    public String getCloudName() {
+        return cloudName;
+    }
+
+    public String getDisplayName() {
+        return labelString;
+    }
 
     public String getMasterVmId() {
         return valOrNull(masterVmId);
@@ -196,7 +206,11 @@ public class AbstractSlaveTemplate {
     }
 
     public RetentionStrategy getRetentionStrategy() {
-        return retentionStrategy;
+        try {
+            return ((RunOnceCloudRetentionStrategy) retentionStrategy).clone();
+        } catch (CloneNotSupportedException e) {
+            return new RunOnceCloudRetentionStrategy(1);
+        }
     }
 
     @DataBoundSetter
@@ -409,4 +423,5 @@ public class AbstractSlaveTemplate {
         setWaitForBuildToFinish(slave.getWaitForBuildToFinish());
 
     }
+
 }

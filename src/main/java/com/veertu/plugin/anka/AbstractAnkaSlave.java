@@ -1,6 +1,6 @@
 package com.veertu.plugin.anka;
 
-import com.veertu.ankaMgmtSdk.AnkaMgmtVm;
+import com.veertu.ankaMgmtSdk.AnkaVmInfo;
 import com.veertu.ankaMgmtSdk.AnkaVmInstance;
 import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
 import hudson.Extension;
@@ -20,14 +20,17 @@ import java.util.List;
  */
 public abstract class AbstractAnkaSlave extends Slave {
 
-    protected boolean hadProblemsInBuild = false;
+    private final AnkaMgmtCloud cloud;
+    private final String instanceId;
 
     protected AnkaCloudSlaveTemplate template;
-    protected AnkaMgmtVm vm;
+
     public final int launchTimeout = 300;
+
     protected String displayName;
     protected boolean taskExecuted;
     protected boolean saveImageSent;
+    protected boolean hadProblemsInBuild = false;
 
     public String getJobNameAndNumber() {
         return jobNameAndNumber;
@@ -38,59 +41,49 @@ public abstract class AbstractAnkaSlave extends Slave {
         this.jobNameAndNumber = finalString;
 
         // Update metadata with job identifier
-        String cloudName = template.getCloudName();
-        AnkaMgmtCloud cloud = (AnkaMgmtCloud) Jenkins.get().getCloud(cloudName);
-        if (vm != null) {
-            try {
-                cloud.updateInstance(vm, null, null, finalString);
-            } catch (AnkaMgmtException e) {
-                AnkaMgmtCloud.Log("Failed to update node with job identifier");
-                e.printStackTrace();
-            }
+        try {
+            cloud.updateInstance(instanceId, null, null, finalString);
+        } catch (AnkaMgmtException e) {
+            AnkaMgmtCloud.Log("Failed to update node with job identifier");
+            e.printStackTrace();
         }
     }
 
     protected String jobNameAndNumber;
 
-    protected static final int launchTimeoutSeconds = 2000;
-    protected static final int maxNumRetries = 5;
-    protected static final int retryWaitTime = 100;
 
-    protected AbstractAnkaSlave(String name, String nodeDescription, String remoteFS,
+
+    protected AbstractAnkaSlave(AnkaMgmtCloud cloud, String name, String nodeDescription, String remoteFS,
                                 int numExecutors, Mode mode, String labelString,
                                 ComputerLauncher launcher, RetentionStrategy retentionStrategy,
                                 List<? extends NodeProperty<?>> nodeProperties,
-                                AnkaCloudSlaveTemplate template, AnkaMgmtVm vm) throws Descriptor.FormException, IOException {
-        super(name, nodeDescription, remoteFS, numExecutors, mode,
-                labelString, launcher,
-                retentionStrategy, nodeProperties);
-        this.name = name;
+                                AnkaCloudSlaveTemplate template, String instanceId) throws IOException, Descriptor.FormException {
+        super(name, remoteFS, launcher);
+        this.setNodeDescription(nodeDescription);
+        this.setNumExecutors(numExecutors);
+        this.setMode(mode);
+        this.setLabelString(labelString);
+        this.setRetentionStrategy(retentionStrategy);
+        this.setNodeProperties(nodeProperties);
+        this.instanceId = instanceId;
+        this.cloud = cloud;
         this.template = template;
-        this.vm = vm;
         this.taskExecuted = false;
         this.saveImageSent = false;
+
         readResolve();
-    }
-
-    public AbstractAnkaSlave(String name, String nodeDescription, String remoteFS, String numExecutors,
-                             Mode mode, String labelString, ComputerLauncher launcher,
-                             RetentionStrategy retentionStrategy, List<? extends NodeProperty<?>> nodeProperties) throws IOException, Descriptor.FormException {
-        super(name, nodeDescription, remoteFS, numExecutors, mode, labelString,
-                launcher, retentionStrategy, nodeProperties);
-        this.name = name;
-        this.taskExecuted = false;
 
     }
 
 
+    public String getNodeName() {
+        return this.name;
+    }
 
     public AnkaCloudSlaveTemplate getTemplate() {
         return template;
     }
 
-    public AnkaMgmtVm getVM() {
-        return vm;
-    }
 
     public String getDisplayName() {
         if (this.displayName == null || this.displayName.isEmpty()) {
@@ -105,37 +98,39 @@ public abstract class AbstractAnkaSlave extends Slave {
 
     @Override
     public Computer createComputer() {
-        return new AnkaCloudComputer(this, vm.getId());
+        return new AnkaCloudComputer(this, instanceId);
     }
 
     public void terminate() throws IOException {
-        String cloudName = template.getCloudName();
-        AnkaMgmtCloud cloud = (AnkaMgmtCloud) Jenkins.get().getCloud(cloudName);
-        if (vm != null) {
-            SaveImageParameters saveImageParams = template.getSaveImageParameters();
-            if (taskExecuted && saveImageParams != null && this.template.getSaveImageParameters().getSaveImage() && saveImageParams.getSaveImage() && !hadProblemsInBuild) {
-                try {
+        try {
+            AnkaVmInstance vm = cloud.showInstance(this.instanceId);
+            if (vm != null) {
+                SaveImageParameters saveImageParams = template.getSaveImageParameters();
+                if (taskExecuted && saveImageParams != null && this.template.getSaveImageParameters().getSaveImage() && saveImageParams.getSaveImage() && !hadProblemsInBuild) {
                     synchronized (this) {
                         if (!this.saveImageSent) { // allow to send save image request only once
                             cloud.saveImage(this);
                             this.saveImageSent = true;
                         }
-                        Jenkins.get().removeNode(this);
                     }
-                } catch (AnkaMgmtException e) {
-                    throw new IOException(e);
-                }
-            } else {
-                try {
-                    cloud.terminateVMInstance(vm.getId());
-                    Jenkins.get().removeNode(this);
-                } catch (AnkaMgmtException e) {
-                    AnkaMgmtCloud.Log("Failed to terminate node %s", this.name);
-                    throw new IOException(e);
+                } else {
+                    cloud.terminateVMInstance(this.instanceId);
                 }
             }
-        } else {
-            Jenkins.get().removeNode(this);  // in case we don't have a vm remove this node
+        } catch (AnkaMgmtException e) {
+            throw new IOException(e);
+        } finally {
+            try {
+                if (this.instanceId != null) {
+                    AnkaVmInstance instance = cloud.showInstance(instanceId);
+                    if (instance == null || !instance.isStarted()) {
+                        Jenkins.get().removeNode(this); // only agree to remove the node after the instance doesn't
+                                                           // exist or is not started
+                    }
+                }
+            } catch (AnkaMgmtException e) {
+                throw new IOException(e);
+            }
         }
     }
 
@@ -143,23 +138,13 @@ public abstract class AbstractAnkaSlave extends Slave {
         this.taskExecuted = didExec;
     }
 
-    protected void setVM(AnkaMgmtVm vm) {
-        this.vm = vm;
-    }
-
-    public void register() throws IOException {
-        Jenkins.getInstance().addNode(this);
-    }
 
     public void connected() {
 
     }
 
-    public String getVMId() {
-        if (this.vm != null) {
-            return this.vm.getId();
-        }
-        return null;
+    public String getInstanceId() {
+        return instanceId;
     }
 
 
@@ -181,9 +166,26 @@ public abstract class AbstractAnkaSlave extends Slave {
     }
 
     public void setDescription(String jobAndNumber) {
-        String description = String.format("master image: %s, job name and build number: %s, vm info: (%s)",
-                template.getMasterVmId(), jobAndNumber, this.vm.getInfo());
-        super.setNodeDescription(description);
+        StringBuilder description = new StringBuilder();
+        description.append(String.format("master image: %s,\n job name and build number: %s,\n",
+                template.getMasterVmId(), jobAndNumber));
+        try {
+            AnkaVmInstance instance = cloud.showInstance(this.instanceId);
+            description.append(String.format("Instance ID: %s \n", this.instanceId));
+            description.append(String.format("Template ID: %s \n", instance.getVmId()));
+            description.append(String.format("Name: %s \n", instance.getName()));
+            AnkaVmInfo vmInfo = instance.getVmInfo();
+            if (vmInfo != null) {
+                description.append(String.format("Host: %s \n", vmInfo.getHostIp()));
+                description.append(String.format("Status: %s \n", vmInfo.getStatus()));
+                description.append(String.format("VM UUID: %s \n", vmInfo.getUuid()));
+                description.append(String.format("VM IP: %s \n", vmInfo.getVmIp()));
+
+            }
+        } catch (AnkaMgmtException e) {
+            e.printStackTrace();
+        }
+        super.setNodeDescription(description.toString());
 
     }
 
@@ -193,15 +195,9 @@ public abstract class AbstractAnkaSlave extends Slave {
     }
 
     public boolean isAlive() {
-        String vmId = vm.getId();
-        if (vmId == null) {
-            return false;
-        }
-        String cloudName = template.getCloudName();
-        AnkaMgmtCloud cloud = (AnkaMgmtCloud) Jenkins.get().getCloud(cloudName);
         if (cloud != null) {
             try {
-                AnkaVmInstance instance = cloud.showInstance(vmId);
+                AnkaVmInstance instance = cloud.showInstance(instanceId);
                 if (instance != null) {
                     if (instance.isStarted()) {
                         return true;
@@ -219,15 +215,9 @@ public abstract class AbstractAnkaSlave extends Slave {
     }
 
     public boolean isSchedulingOrPulling() {
-        String vmId = vm.getId();
-        if (vmId == null) {
-            return false;
-        }
-        String cloudName = template.getCloudName();
-        AnkaMgmtCloud cloud =  (AnkaMgmtCloud) Jenkins.get().getCloud(cloudName);
         if (cloud != null) {
             try {
-                AnkaVmInstance instance = cloud.showInstance(vmId);
+                AnkaVmInstance instance = cloud.showInstance(instanceId);
                 if (instance != null) {
                     if (instance.isSchedulingOrPulling()) {
                         return true;

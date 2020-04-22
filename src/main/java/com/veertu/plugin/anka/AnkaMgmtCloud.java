@@ -172,25 +172,63 @@ public class AnkaMgmtCloud extends Cloud {
             Log("can't start an on demand instance without a label");
             return Collections.emptyList();
         }
+        try {
+            int number = Math.max(excessWorkload / t.getNumberOfExecutors(), 1);
+            final List<AbstractAnkaSlave> slaves = createNewSlaves(t, number);
 
-        while (excessWorkload > 0) {
-            // check that mgmt server has this template
-            if (!hasMasterVm(t.getMasterVmId())) {
-                Log("no such template %s", t.getMasterVmId());
-                break;
+            if (slaves == null || slaves.isEmpty()) {
+                Log("Can't raise nodes for " + t);
+                return Collections.emptyList();
             }
-            try {
-                NodeProvisioner.PlannedNode newNode = AnkaPlannedNode.createInstance(this, t);
-                plannedNodes.add(newNode);
+
+            for (final AbstractAnkaSlave slave : slaves) {
+                if (slave == null) {
+                    Log("Can't raise node for " + t);
+                    continue;
+                }
+
+                plannedNodes.add(AnkaPlannedNodeCreator.createPlannedNode(this, t, slave));
                 excessWorkload -= t.getNumberOfExecutors();
             }
-            catch (Exception e) {
-                e.printStackTrace();
-                break;
+            return plannedNodes;
+        } catch (Exception e) {
+            return Collections.emptyList();
+        }
+    }
+
+    private List<AbstractAnkaSlave> createNewSlaves(AnkaCloudSlaveTemplate template, int number) throws AnkaMgmtException, IOException, Descriptor.FormException {
+        List<AbstractAnkaSlave> newSlaves = new ArrayList<>();
+        for (int i = 0; i < number; i++) {
+            String nodeName = AnkaOnDemandSlave.generateName(template);
+            String startUpScript = AnkaOnDemandSlave.createStartUpScript(template, nodeName);
+
+            AnkaOnDemandSlave slave = null;
+            String newInstanceId = null;
+            try {
+                newInstanceId = ankaAPI.startVM(template.getMasterVmId(), template.getTag(), startUpScript,
+                        template.getGroup(), template.getPriority(),
+                        nodeName, AnkaOnDemandSlave.getJenkinsNodeLink(nodeName));
+                AnkaLauncher launcher = new AnkaLauncher(this, template, newInstanceId);
+                slave = new AnkaOnDemandSlave(this, nodeName, template.getDescription(),
+                        template.getRemoteFS(), template.getNumberOfExecutors(), template.getMode(),
+                        template.getLabelString(), launcher, template.getNodeProperties(), template, newInstanceId);
+                newSlaves.add(slave);
+                Jenkins.get().addNode(slave); // add our node as early as possible to avoid zombies
+            } finally {
+                // insurance that our node is in the jenkins loop
+                if (slave == null) {
+                    ankaAPI.terminateInstance(newInstanceId);
+                } else {
+                    Node nodeFromJenkins = Jenkins.get().getNode(nodeName);
+                    if (nodeFromJenkins == null) { // shouldn't happen
+                        slave.terminate(); // but if it does, then terminate
+                    }
+                }
             }
         }
-        return plannedNodes;
+        return newSlaves;
     }
+
 
     public AnkaCloudSlaveTemplate getTemplate(final Label label) {
 
@@ -337,31 +375,24 @@ public class AnkaMgmtCloud extends Cloud {
     }
 
     public AnkaOnDemandSlave StartNewDynamicSlave(DynamicSlaveProperties properties, String label) throws InterruptedException, IOException, Descriptor.FormException, AnkaMgmtException, ExecutionException {
-        AnkaOnDemandSlave dynamicSlave = DynamicSlave.createDynamicSlave(this, properties, label);
-        return dynamicSlave;
-    }
-
-    public AnkaMgmtVm startVMInstance(String templateId,
-                                      String tag, String nameTemplate, int sshPort, String startUpScript,
-                                      String groupId, int priority, String name, String externalId) throws AnkaMgmtException {
-        try {
-            AnkaMgmtVm vm = ankaAPI.makeAnkaVm(templateId, tag, nameTemplate, sshPort,
-                    startUpScript, groupId, priority, name, externalId);
-            return vm;
-        } catch (AnkaMgmtException e) {
-            e.printStackTrace();
-            throw e;
+        AnkaCloudSlaveTemplate template = properties.toSlaveTemplate(label);
+        List<AbstractAnkaSlave> newSlaves = createNewSlaves(template, 1);
+        for (AbstractAnkaSlave slave: newSlaves) {
+            AnkaPlannedNodeCreator.createPlannedNode(this, template, slave);
+            Jenkins.get().addNode(slave);
+            return (AnkaOnDemandSlave) slave;
         }
+        return null;
     }
 
 
     public void saveImage(AbstractAnkaSlave node) throws AnkaMgmtException {
-        ImageSaver.saveImage(this, node, node.getVM());
+        ImageSaver.saveImage(this, node);
     }
 
 
-    public void updateInstance(AnkaMgmtVm vm, String name, String jenkinsNodeLink, String jobIdentifier) throws AnkaMgmtException {
-        ankaAPI.updateInstance(vm, name, jenkinsNodeLink, jobIdentifier);
+    public void updateInstance(String vmId, String name, String jenkinsNodeLink, String jobIdentifier) throws AnkaMgmtException {
+        ankaAPI.updateInstance(vmId, name, jenkinsNodeLink, jobIdentifier);
     }
 
     public void terminateVMInstance(String id) throws AnkaMgmtException {
@@ -391,6 +422,10 @@ public class AnkaMgmtCloud extends Cloud {
 
     public AnkaVmInstance showInstance(String id) throws AnkaMgmtException {
         return ankaAPI.showInstance(id);
+    }
+
+    public static AnkaMgmtCloud get(String cloudName) {
+        return (AnkaMgmtCloud) Jenkins.get().getCloud(cloudName);
     }
 
     @Extension

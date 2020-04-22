@@ -40,18 +40,22 @@ public class AnkaSlaveMonitor extends AsyncPeriodicWork {
             if (node instanceof AbstractAnkaSlave) {
                 final AbstractAnkaSlave ankaNode = (AbstractAnkaSlave) node;
                 LOGGER.info("Checking node " + ankaNode.getNodeName());
+                AnkaCloudComputer computer = (AnkaCloudComputer) ankaNode.getComputer();
+                if (computer != null && computer.isConnecting()) {
+                    continue;
+                }
                 try {
                     if (!ankaNode.isAlive()) {
-                        LOGGER.info("Anka VM is not alive: " + ankaNode.getVMId());
+                        LOGGER.info("Anka VM is not alive: " + ankaNode.getInstanceId());
                         ankaNode.terminate();
                     }
                 } catch (IOException e) {
-                    LOGGER.log(Level.WARNING,"Anka VM failed to terminate: " + ankaNode.getVMId());
+                    LOGGER.log(Level.WARNING,"Anka VM failed to terminate: " + ankaNode.getInstanceId());
                     e.printStackTrace();
                     try {
                         Jenkins.get().removeNode(ankaNode);
                     } catch (IOException e2) {
-                        LOGGER.log(Level.WARNING, "Anka VM failed to terminate: " + ankaNode.getVMId());
+                        LOGGER.log(Level.WARNING, "Anka VM failed to terminate: " + ankaNode.getInstanceId());
                         e2.printStackTrace();
                     }
 

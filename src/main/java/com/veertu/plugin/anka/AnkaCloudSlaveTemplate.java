@@ -36,7 +36,6 @@ public class AnkaCloudSlaveTemplate extends AbstractSlaveTemplate implements Des
     private static final transient Logger LOGGER = Logger.getLogger(AnkaCloudSlaveTemplate.class.getName());
     private int schedulingTimeout = DEFAULT_SCHEDULING_TIMEOUT;
     private Set<LabelAtom> labelSet;
-    private String cloudName;
 
     @DataBoundConstructor
     public AnkaCloudSlaveTemplate(
@@ -94,6 +93,18 @@ public class AnkaCloudSlaveTemplate extends AbstractSlaveTemplate implements Des
 
     public static Logger getLOGGER() {
         return LOGGER;
+    }
+
+    public String getDisplayName() {
+        StringBuilder sb = new StringBuilder();
+        if (cloudName != null) {
+            sb.append(cloudName).append(" ");
+        }
+        if (labelString != null) {
+            sb.append(labelString);
+        }
+
+        return sb.toString();
     }
 
     public static SchemeRequirement getHTTP_SCHEME() {

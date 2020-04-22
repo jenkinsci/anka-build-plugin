@@ -1,7 +1,6 @@
 package com.veertu.plugin.anka;
 
 import com.veertu.ankaMgmtSdk.AnkaAPI;
-import com.veertu.ankaMgmtSdk.AnkaMgmtVm;
 import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
 import com.veertu.plugin.anka.exceptions.SaveImageStatusTimeout;
 
@@ -11,7 +10,7 @@ import java.util.List;
 
 public class ImageSaver {
 
-    public static void saveImage(AnkaMgmtCloud cloud, AbstractAnkaSlave slave, AnkaMgmtVm vm) throws AnkaMgmtException {
+    public static void saveImage(AnkaMgmtCloud cloud, AbstractAnkaSlave slave) throws AnkaMgmtException {
         try {
 
             AnkaCloudSlaveTemplate template = slave.getTemplate();
@@ -36,7 +35,7 @@ public class ImageSaver {
             SaveImageRequest saveImageRequest = new SaveImageRequest(cloud, buildId);
             SaveImageRequestsHolder requestsHolder = SaveImageRequestsHolder.getInstance();
             requestsHolder.setRequest(buildId, saveImageRequest);
-            String reqId = vm.saveImage(template.getTemplateId(), tagToPush, template.getDescription(),
+            String reqId = cloud.getAnkaApi().saveImage(slave.getInstanceId(), template.getTemplateId(), tagToPush, template.getDescription(),
                     template.getSuspend(), shutdownScript, deleteLatest, latestTag, true);
             if (reqId.equals("")) {
                 throw new AnkaMgmtException("missing save image request ID");

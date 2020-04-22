@@ -23,7 +23,7 @@ import java.util.logging.Logger;
 /**
  * Created by avia on 12/07/2016.
  */
-public class RunOnceCloudRetentionStrategy extends RetentionStrategy<AnkaCloudComputer> implements ExecutorListener {
+public class RunOnceCloudRetentionStrategy extends RetentionStrategy<AnkaCloudComputer> implements ExecutorListener, Cloneable {
     private static final transient Logger LOGGER = Logger.getLogger(RunOnceCloudRetentionStrategy.class.getName());
 
     private int idleMinutes = 1;
@@ -118,6 +118,10 @@ public class RunOnceCloudRetentionStrategy extends RetentionStrategy<AnkaCloudCo
         AbstractAnkaSlave node = computer.getNode();
         if (node != null) {
             AnkaMgmtCloud.Log("computer %s node %s found", computer.getName(), node.getNodeName());
+            if (computer.countBusy() > 1) {
+                AnkaMgmtCloud.Log("computer %s is busy, not terminating", computer.getName());
+                return;
+            }
             if ( node.canTerminate()) {
                 AnkaMgmtCloud.Log("terminating computer %s node %s", computer.getName(), node.getNodeName());
                 try {
@@ -152,6 +156,8 @@ public class RunOnceCloudRetentionStrategy extends RetentionStrategy<AnkaCloudCo
                         }
                         return;
                     }
+                    // means we have an instance
+                    computer.connect(true); // try to force reconnection
                 } catch (AnkaMgmtException | IOException e) {
                     LOGGER.info("Got exception while handling node in jenkins startup");
                     e.printStackTrace();
@@ -163,6 +169,10 @@ public class RunOnceCloudRetentionStrategy extends RetentionStrategy<AnkaCloudCo
 
         LOGGER.info("Start requested for " + computer.getName());
         computer.connect(false);
+    }
+
+    public RunOnceCloudRetentionStrategy clone() throws CloneNotSupportedException {
+        return (RunOnceCloudRetentionStrategy) super.clone();
     }
 
     @Override

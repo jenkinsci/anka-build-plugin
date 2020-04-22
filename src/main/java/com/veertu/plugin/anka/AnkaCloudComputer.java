@@ -26,6 +26,17 @@ public class AnkaCloudComputer extends SlaveComputer {
         this.vmId = vmId;
     }
 
+    @Override
+    public boolean isConnecting() {
+        boolean parentConnecting = super.isConnecting();
+        if (parentConnecting) {
+            return true;
+        }
+        if (isSchedulingOrPulling()) {
+            return true;
+        }
+        return false;
+    }
 
     @Override
     public AbstractAnkaSlave getNode() {
@@ -38,7 +49,7 @@ public class AnkaCloudComputer extends SlaveComputer {
         }
         AbstractAnkaSlave node = getNode();
         if (node != null) {
-            return node.getVMId();
+            return node.getInstanceId();
         }
         return null;
     }
@@ -146,7 +157,7 @@ public class AnkaCloudComputer extends SlaveComputer {
         }
         ResultTrend trend = ResultTrend.getResultTrend(b);
         AnkaMgmtCloud.Log("slave: %s, vm id: %s exited build with trend: %s", this.slave.getNodeName(),
-                this.slave.getVM().getId(), trend.toString());
+                this.slave.getInstanceId(), trend.toString());
         switch (trend){
             case NOT_BUILT :
             case FAILURE :
