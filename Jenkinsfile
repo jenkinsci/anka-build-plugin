@@ -8,7 +8,7 @@ pipeline {
             sh 'mvn package'
         } }
         stage('Archive') { steps {
-            archiveArtifacts artifacts: 'target/anka-build.hpi', onlyIfSuccessful: true, allowEmptyArchive: true
+            archiveArtifacts artifacts: '**/target/anka-build.hpi', onlyIfSuccessful: true
         } }
     }
 }
