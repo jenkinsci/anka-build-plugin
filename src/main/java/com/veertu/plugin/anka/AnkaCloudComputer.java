@@ -17,6 +17,7 @@ public class AnkaCloudComputer extends SlaveComputer {
     private AnkaCloudSlaveTemplate template;
     protected Run<?, ?> run;
     private final String vmId;
+    private boolean afterFirstConnection = false;
 
     public AnkaCloudComputer(AbstractAnkaSlave slave, String vmId) {
         super(slave);
@@ -36,6 +37,14 @@ public class AnkaCloudComputer extends SlaveComputer {
             return true;
         }
         return false;
+    }
+
+    public boolean afterFirstConnection() {
+        return afterFirstConnection;
+    }
+
+    public void firstConnectionAttempted() {
+        afterFirstConnection = true;
     }
 
     @Override

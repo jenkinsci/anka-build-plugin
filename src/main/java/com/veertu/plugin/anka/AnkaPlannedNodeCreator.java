@@ -8,6 +8,9 @@ import hudson.model.Node;
 import hudson.slaves.NodeProvisioner;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -15,6 +18,9 @@ import java.util.logging.Logger;
  * Created by asafgur on 16/11/2016.
  */
 public class AnkaPlannedNodeCreator {
+
+    private static int connectionAttemps = 10;
+
     private static final transient Logger LOGGER = Logger.getLogger(AnkaPlannedNodeCreator.class.getName());
 
 
@@ -31,7 +37,7 @@ public class AnkaPlannedNodeCreator {
     }
 
     public static Node waitAndConnect(final AnkaMgmtCloud cloud, final AnkaCloudSlaveTemplate template, final AbstractAnkaSlave slave) throws AnkaMgmtException, InterruptedException {
-        float timeStarted = System.currentTimeMillis();
+        final long timeStarted = System.currentTimeMillis();
         while (true) {
             String instanceId = slave.getInstanceId();
 
@@ -53,10 +59,23 @@ public class AnkaPlannedNodeCreator {
                     Thread.sleep(2000);
                     continue;
                 }
+                for (int i = 0 ; i < connectionAttemps; i++){
+                    Computer computer = slave.toComputer();
+                    if ( computer != null ) {
+                        AnkaCloudComputer ankaComputer = (AnkaCloudComputer) computer;
+                        Thread.sleep(2000);
+                        Future<?> connect = ankaComputer.connect(false);
+                        try {
+                            connect.get();
+                            ankaComputer.firstConnectionAttempted();
+                            break;
+                        } catch (ExecutionException e) {
+                            LOGGER.log(Level.INFO, "instance `{0}` failed to connect #{1} ",
+                                    new Object[]{instanceId, i});
+                            Thread.sleep(1500);
+                        }
 
-                Computer computer = slave.toComputer();
-                if ( computer != null ) {
-                    computer.connect(false);
+                    }
                 }
                 return slave;
 
@@ -68,10 +87,16 @@ public class AnkaPlannedNodeCreator {
             }
 
             if (instance.isScheduling()) {
-                int secondsScheduling = (int)((System.currentTimeMillis() - timeStarted) * 1000);
-                if (secondsScheduling > template.getSchedulingTimeout()) {
+                final long sinceStarted = System.currentTimeMillis() - timeStarted;
+//                int secondsScheduling = (int)((System.currentTimeMillis() - timeStarted) * 1000);
+
+                int schedulingTimeout = template.getSchedulingTimeout();
+                long schedulingTimeoutMillis = TimeUnit.SECONDS.toMillis(schedulingTimeout);
+                LOGGER.log(Level.INFO,"Instance {0} is scheduling for {1} seconds",
+                            new Object[]{instanceId, sinceStarted * 1000});
+                if (sinceStarted > schedulingTimeoutMillis) {
                     LOGGER.log(Level.WARNING,"Instance {0} reached it's scheduling timeout of {1} seconds, terminating provisioning",
-                            new Object[]{instanceId, template.getSchedulingTimeout()});
+                            new Object[]{instanceId, schedulingTimeout});
                     cloud.terminateVMInstance(instanceId);
                     return null;
                 }

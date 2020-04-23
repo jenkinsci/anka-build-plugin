@@ -35,7 +35,6 @@ public class AnkaSlaveMonitor extends AsyncPeriodicWork {
 
     private void removeDeadNodes() {
         LOGGER.log(Level.INFO, "AnkaSlaveMonitor checking nodes...");
-
         for (Node node : Jenkins.get().getNodes()) {
             if (node instanceof AbstractAnkaSlave) {
                 final AbstractAnkaSlave ankaNode = (AbstractAnkaSlave) node;

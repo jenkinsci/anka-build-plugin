@@ -373,17 +373,17 @@ public class AnkaMgmtCloud extends Cloud {
         return null;
     }
 
-    public AnkaDynamicSlave StartNewDynamicSlave(DynamicSlaveProperties properties, String label) throws InterruptedException, IOException, Descriptor.FormException, AnkaMgmtException, ExecutionException {
+    public AnkaOnDemandSlave StartNewDynamicSlave(DynamicSlaveProperties properties, String label) throws InterruptedException, IOException, Descriptor.FormException, AnkaMgmtException, ExecutionException {
         AnkaCloudSlaveTemplate template = properties.toSlaveTemplate(label);
         List<AbstractAnkaSlave> newSlaves = createNewSlaves(template, 1);
         for (AbstractAnkaSlave slave: newSlaves) {
             AnkaPlannedNodeCreator.createPlannedNode(this, template, slave);
-            AnkaDynamicSlave dynamicSlave = (AnkaDynamicSlave) slave;
-            Jenkins.get().addNode(dynamicSlave);
-            return dynamicSlave;
+            Jenkins.get().addNode(slave);
+            return (AnkaOnDemandSlave) slave;
         }
         return null;
     }
+
 
 
     public void saveImage(AbstractAnkaSlave node) throws AnkaMgmtException {

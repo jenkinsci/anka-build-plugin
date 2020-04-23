@@ -49,8 +49,8 @@ public class RunOnceCloudRetentionStrategy extends RetentionStrategy<AnkaCloudCo
                 return 1;
             }
 
-            if (computer.isConnecting()) {
-                return 1;
+            if (computer.isConnecting() || !computer.afterFirstConnection()) {
+                return 3;
             }
 
             if (computer.isSchedulingOrPulling()) { // it's scheduling or pulling - wait
