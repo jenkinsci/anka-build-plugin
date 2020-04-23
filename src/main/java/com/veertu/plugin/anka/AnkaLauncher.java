@@ -87,13 +87,4 @@ public class AnkaLauncher extends DelegatingComputerLauncher {
         }
 
     }
-
-
-    public static class InstanceNotReadyYet extends OfflineCause {
-        public String toString() {
-            return "The Instance is not ready yet";
-        }
-    }
-
-
 }

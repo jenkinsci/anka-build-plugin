@@ -188,7 +188,6 @@ public class AnkaMgmtCloud extends Cloud {
                 }
 
                 plannedNodes.add(AnkaPlannedNodeCreator.createPlannedNode(this, t, slave));
-                excessWorkload -= t.getNumberOfExecutors();
             }
             return plannedNodes;
         } catch (Exception e) {
@@ -374,13 +373,14 @@ public class AnkaMgmtCloud extends Cloud {
         return null;
     }
 
-    public AnkaOnDemandSlave StartNewDynamicSlave(DynamicSlaveProperties properties, String label) throws InterruptedException, IOException, Descriptor.FormException, AnkaMgmtException, ExecutionException {
+    public AnkaDynamicSlave StartNewDynamicSlave(DynamicSlaveProperties properties, String label) throws InterruptedException, IOException, Descriptor.FormException, AnkaMgmtException, ExecutionException {
         AnkaCloudSlaveTemplate template = properties.toSlaveTemplate(label);
         List<AbstractAnkaSlave> newSlaves = createNewSlaves(template, 1);
         for (AbstractAnkaSlave slave: newSlaves) {
             AnkaPlannedNodeCreator.createPlannedNode(this, template, slave);
-            Jenkins.get().addNode(slave);
-            return (AnkaOnDemandSlave) slave;
+            AnkaDynamicSlave dynamicSlave = (AnkaDynamicSlave) slave;
+            Jenkins.get().addNode(dynamicSlave);
+            return dynamicSlave;
         }
         return null;
     }
@@ -409,7 +409,7 @@ public class AnkaMgmtCloud extends Cloud {
             // no rest for the wicked
         }
 
-        while(ankaVmInstance != null && ankaVmInstance.isTerminatingOrTerminated()) {
+        while(ankaVmInstance != null && !ankaVmInstance.isTerminatingOrTerminated()) {
             ankaAPI.terminateInstance(id);
             try {
                 sleep(1000);

@@ -123,7 +123,7 @@ public abstract class AbstractAnkaSlave extends Slave {
             try {
                 if (this.instanceId != null) {
                     AnkaVmInstance instance = cloud.showInstance(instanceId);
-                    if (instance == null || !instance.isStarted()) {
+                    if (instance == null || instance.isTerminatingOrTerminated()) {
                         Jenkins.get().removeNode(this); // only agree to remove the node after the instance doesn't
                                                            // exist or is not started
                     }

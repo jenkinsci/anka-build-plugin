@@ -58,7 +58,11 @@ public class AnkaVmInstance extends AnkaVMRepresentation {
     }
 
     public boolean isStarted() {
-        return sessionState.equals("Started");
+        return sessionState.equalsIgnoreCase("Started");
+    }
+
+    public boolean isPulling() {
+        return sessionState.equalsIgnoreCase("pulling");
     }
 
     public boolean isSchedulingOrPulling() {
@@ -68,6 +72,10 @@ public class AnkaVmInstance extends AnkaVMRepresentation {
                 return true;
         }
         return false;
+    }
+
+    public boolean isScheduling() {
+        return sessionState.equalsIgnoreCase("Scheduling");
     }
 
     public boolean isInError() {

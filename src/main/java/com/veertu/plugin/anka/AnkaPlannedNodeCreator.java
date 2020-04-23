@@ -62,7 +62,12 @@ public class AnkaPlannedNodeCreator {
 
             }
 
-            if (instance.isSchedulingOrPulling()) {
+            if (instance.isPulling()) {
+                Thread.sleep(5000);
+                continue;
+            }
+
+            if (instance.isScheduling()) {
                 int secondsScheduling = (int)((System.currentTimeMillis() - timeStarted) * 1000);
                 if (secondsScheduling > template.getSchedulingTimeout()) {
                     LOGGER.log(Level.WARNING,"Instance {0} reached it's scheduling timeout of {1} seconds, terminating provisioning",
@@ -71,7 +76,7 @@ public class AnkaPlannedNodeCreator {
                     return null;
                 }
                 Thread.sleep(5000);
-
+                continue;
             }
 
             if (instance.isTerminatingOrTerminated() || instance.isInError()) {
@@ -80,69 +85,6 @@ public class AnkaPlannedNodeCreator {
                 cloud.terminateVMInstance(instanceId);
                 return null;
             }
-
         }
     }
-
-//
-//    public static NodeProvisioner.PlannedNode createInstance(final AnkaMgmtCloud cloud, final AnkaCloudSlaveTemplate template) throws AnkaHostException, IOException{
-//        final int numberOfExecutors = template.getNumberOfExecutors();
-//        final String name = AnkaOnDemandSlave.generateName(template);
-//        final Callable<Node> provisionNodeCallable = () -> {
-//
-//            AnkaOnDemandSlave slave = null;
-//            try {
-//                slave = AnkaOnDemandSlave.createProvisionedSlave(cloud, template);
-//            }
-//            catch  (Exception e) {
-//                AnkaMgmtCloud.Log("createProvisionedSlave() caught exception %s", e.getMessage());
-//                e.printStackTrace();
-//                throw e;
-//            }
-//            if (slave == null) {
-//                return  null;
-//            }
-//            if (template.getLaunchMethod().toLowerCase().equals(LaunchMethod.SSH)) {
-//                tryToCallSlave(slave);
-//                return slave;
-//            }
-//            long startTime = System.currentTimeMillis(); // fetch starting time
-//            while (true) {
-//                try {
-//                    AnkaMgmtCloud.Log("trying to init slave %s on vm", slave.getDisplayName());
-//                    tryToCallSlave(slave);
-//                    break;
-//                }
-//                catch (ExecutionException e) {
-//                    if ((System.currentTimeMillis() - startTime) < slave.launchTimeout * 1000){
-//                        AnkaMgmtCloud.Log("caught ExecutionException when trying to start %s " +
-//                                "sleeping for 1 seconds to retry", slave.getNodeName());
-//                        Thread.sleep(1000);
-//                        continue;
-//                    }
-//                    AnkaMgmtCloud.Log("Failed to connect to slave %s", slave.getNodeName());
-//                    slave.terminate();
-//                    throw e;
-//                }
-//                catch (Exception e) {
-//                    AnkaMgmtCloud.Log("vm quit unexpectedly for slave %s", slave.getNodeName());
-//                    slave.terminate();
-//                    throw e;
-//                }
-//            }
-//            return slave;
-//        };
-//        Future<Node> f = Computer.threadPoolForRemoting.submit(provisionNodeCallable);
-//        return new NodeProvisioner.PlannedNode(name, f, numberOfExecutors);
-//
-//    }
-//
-//    public static void tryToCallSlave(AnkaOnDemandSlave slave) throws ExecutionException, InterruptedException {
-//        Computer computer = slave.toComputer();
-//        if (computer == null) {
-//            throw new ExecutionException("No link to computer", new NullPointerException("computer link is null"));
-//        }
-//        Future<?> f = computer.connect(false);
-//        f.get();
-//    }
 }

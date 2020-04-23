@@ -39,7 +39,7 @@ import java.util.Collection;
 @Extension
 public class AnkaProvisioningStrategy extends NodeProvisioner.Strategy {
 
-
+    // this function gets called when jenkins need more of a specific label
     @Nonnull
     @Override
     public NodeProvisioner.StrategyDecision apply(@Nonnull NodeProvisioner.StrategyState strategyState) {

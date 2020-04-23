@@ -52,13 +52,6 @@ public class AnkaSlaveMonitor extends AsyncPeriodicWork {
                 } catch (IOException e) {
                     LOGGER.log(Level.WARNING,"Anka VM failed to terminate: " + ankaNode.getInstanceId());
                     e.printStackTrace();
-                    try {
-                        Jenkins.get().removeNode(ankaNode);
-                    } catch (IOException e2) {
-                        LOGGER.log(Level.WARNING, "Anka VM failed to terminate: " + ankaNode.getInstanceId());
-                        e2.printStackTrace();
-                    }
-
                 }
             }
         }

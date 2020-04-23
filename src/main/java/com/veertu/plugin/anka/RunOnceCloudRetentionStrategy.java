@@ -100,16 +100,13 @@ public class RunOnceCloudRetentionStrategy extends RetentionStrategy<AnkaCloudCo
     public void taskCompleted(final Executor executor, final Queue.Task task, final long durationMS) {
         AnkaCloudComputer computer = (AnkaCloudComputer) executor.getOwner();
         computer.setAcceptingTasks(false);
-        done(executor);
+        done(computer);
     }
 
     @Override
     public void taskCompletedWithProblems(final Executor executor, final Queue.Task task, final long durationMS, final Throwable problems) {
-        done(executor);
-    }
-
-    private void done(final Executor executor) {
-        final AnkaCloudComputer computer = (AnkaCloudComputer) executor.getOwner();
+        AnkaCloudComputer computer = (AnkaCloudComputer) executor.getOwner();
+        computer.setAcceptingTasks(false);
         done(computer);
     }
 
@@ -147,7 +144,7 @@ public class RunOnceCloudRetentionStrategy extends RetentionStrategy<AnkaCloudCo
             if (cloud != null) {
                 try {
                     AnkaVmInstance instance = cloud.showInstance(vmId);
-                    if (instance == null || !instance.isStarted()) {
+                    if (instance == null || instance.isTerminatingOrTerminated() || instance.isInError()) {
                         AbstractAnkaSlave node = computer.getNode();
                         if (node != null) {
                             node.terminate();
