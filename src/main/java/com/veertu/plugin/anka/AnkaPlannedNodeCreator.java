@@ -59,24 +59,31 @@ public class AnkaPlannedNodeCreator {
                     Thread.sleep(2000);
                     continue;
                 }
-                for (int i = 0 ; i < connectionAttemps; i++){
-                    Computer computer = slave.toComputer();
-                    if ( computer != null ) {
-                        AnkaCloudComputer ankaComputer = (AnkaCloudComputer) computer;
-                        Thread.sleep(2000);
-                        Future<?> connect = ankaComputer.connect(false);
-                        try {
-                            connect.get();
-                            ankaComputer.firstConnectionAttempted();
-                            break;
-                        } catch (ExecutionException e) {
-                            LOGGER.log(Level.INFO, "instance `{0}` failed to connect #{1} ",
-                                    new Object[]{instanceId, i});
-                            Thread.sleep(1500);
-                        }
+                try {
+                    for (int i = 0 ; i < connectionAttemps; i++){
+                        Computer computer = slave.toComputer();
+                        if ( computer != null ) {
+                            AnkaCloudComputer ankaComputer = (AnkaCloudComputer) computer;
+                            Thread.sleep(2000);
+                            Future<?> connect = ankaComputer.connect(false);
+                            try {
+                                connect.get();
+                                break;
+                            } catch (ExecutionException e) {
+                                LOGGER.log(Level.INFO, "instance `{0}` failed to connect #{1} ",
+                                        new Object[]{instanceId, i});
+                                Thread.sleep(1500);
+                            }
 
+                        }
+                    }
+                } finally {
+                    AnkaCloudComputer ankaComputer = (AnkaCloudComputer)slave.toComputer();
+                    if (ankaComputer != null) {
+                        ankaComputer.firstConnectionAttempted();
                     }
                 }
+
                 return slave;
 
             }
