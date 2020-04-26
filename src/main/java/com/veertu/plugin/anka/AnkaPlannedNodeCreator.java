@@ -8,8 +8,6 @@ import hudson.model.Node;
 import hudson.slaves.NodeProvisioner;
 
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -60,22 +58,10 @@ public class AnkaPlannedNodeCreator {
                     continue;
                 }
                 try {
-                    for (int i = 0 ; i < connectionAttemps; i++){
-                        Computer computer = slave.toComputer();
-                        if ( computer != null ) {
-                            AnkaCloudComputer ankaComputer = (AnkaCloudComputer) computer;
-                            Thread.sleep(2000);
-                            Future<?> connect = ankaComputer.connect(false);
-                            try {
-                                connect.get();
-                                break;
-                            } catch (ExecutionException e) {
-                                LOGGER.log(Level.INFO, "instance `{0}` failed to connect #{1} ",
-                                        new Object[]{instanceId, i});
-                                Thread.sleep(1500);
-                            }
-
-                        }
+                    Computer computer = slave.toComputer();
+                    if ( computer != null ) {
+                        AnkaCloudComputer ankaComputer = (AnkaCloudComputer) computer;
+                        ankaComputer.connect(false);
                     }
                 } finally {
                     AnkaCloudComputer ankaComputer = (AnkaCloudComputer)slave.toComputer();
@@ -95,8 +81,6 @@ public class AnkaPlannedNodeCreator {
 
             if (instance.isScheduling()) {
                 final long sinceStarted = System.currentTimeMillis() - timeStarted;
-//                int secondsScheduling = (int)((System.currentTimeMillis() - timeStarted) * 1000);
-
                 int schedulingTimeout = template.getSchedulingTimeout();
                 long schedulingTimeoutMillis = TimeUnit.SECONDS.toMillis(schedulingTimeout);
                 LOGGER.log(Level.INFO,"Instance {0} is scheduling for {1} seconds",

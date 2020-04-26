@@ -49,11 +49,13 @@ public class RunOnceCloudRetentionStrategy extends RetentionStrategy<AnkaCloudCo
                 return 1;
             }
 
-            if (computer.isConnecting() || !computer.afterFirstConnection()) {
+
+            if (computer.isSchedulingOrPulling()) { // it's scheduling or pulling - wait
                 return 3;
             }
 
-            if (computer.isSchedulingOrPulling()) { // it's scheduling or pulling - wait
+
+            if (computer.isConnecting() || !computer.afterFirstConnection()) {
                 return 1;
             }
 
@@ -72,7 +74,7 @@ public class RunOnceCloudRetentionStrategy extends RetentionStrategy<AnkaCloudCo
                 }
                 computer.connect(forceReconnect);
                 reconnectionRetries++;
-                return 2;
+                return 1;
             }
 
 
@@ -155,6 +157,8 @@ public class RunOnceCloudRetentionStrategy extends RetentionStrategy<AnkaCloudCo
                     }
                     // means we have an instance
                     computer.connect(true); // try to force reconnection
+                    computer.firstConnectionAttempted(); // in case jenkins restarted before we could set this property
+                    return;
                 } catch (AnkaMgmtException | IOException e) {
                     LOGGER.info("Got exception while handling node in jenkins startup");
                     e.printStackTrace();

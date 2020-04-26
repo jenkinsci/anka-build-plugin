@@ -9,16 +9,17 @@ import hudson.slaves.*;
 
 import java.io.IOException;
 
-//public class AnkaLauncher extends ComputerLauncher {
 public class AnkaLauncher extends DelegatingComputerLauncher {
 
     private final AnkaMgmtCloud cloud;
     private final AnkaCloudSlaveTemplate template;
     private final String instanceId;
 
+
     protected static final int launchTimeoutSeconds = 2000;
-    protected static final int maxNumRetries = 5;
-    protected static final int retryWaitTime = 100;
+    protected static final int maxNumRetries = 15;
+    protected static final int retryWaitTime = 5;
+    protected static final int sshLaunchDelay = 15 * 1000;  // 15 seconds for ssh delay
 
     public AnkaLauncher(AnkaMgmtCloud cloud, AnkaCloudSlaveTemplate template, String instanceId) {
         super(null);
@@ -42,6 +43,10 @@ public class AnkaLauncher extends DelegatingComputerLauncher {
 
     }
 
+    @Override
+    public boolean isLaunchSupported() {
+        return launcher.isLaunchSupported();
+    }
 
     @Override
     public void launch(SlaveComputer computer, TaskListener listener) throws IOException, InterruptedException {
@@ -64,6 +69,7 @@ public class AnkaLauncher extends DelegatingComputerLauncher {
                                 template.getCredentialsId(),
                                 template.getJavaArgs(), null, null, null,
                                 launchTimeoutSeconds, maxNumRetries, retryWaitTime, null);
+                        Thread.sleep(sshLaunchDelay);
                         listener.getLogger().println(String.format("Launching SSH connection for %s", instanceId));
 
                     } else if (template.getLaunchMethod().equalsIgnoreCase(LaunchMethod.JNLP)) {

@@ -217,6 +217,7 @@ public class AnkaMgmtCloud extends Cloud {
                 // insurance that our node is in the jenkins loop
                 if (slave == null) {
                     ankaAPI.terminateInstance(newInstanceId);
+//                }
                 } else {
                     Node nodeFromJenkins = Jenkins.get().getNode(nodeName);
                     if (nodeFromJenkins == null) { // shouldn't happen

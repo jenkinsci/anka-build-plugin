@@ -2,7 +2,7 @@
 version: '2'
 services:
   jenkins:
-    image: jenkins/jenkins:2.200
+    image: jenkins/jenkins:lts
     container_name: jenkins
     user: jenkins
     volumes:

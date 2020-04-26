@@ -20,7 +20,7 @@ public class AnkaSlaveMonitor extends AsyncPeriodicWork {
 
     public AnkaSlaveMonitor() {
         super("Anka Live Nodes Monitor");
-        recurrencePeriod = TimeUnit.MINUTES.toMillis(5);
+        recurrencePeriod = TimeUnit.MINUTES.toMillis(3);
     }
 
     @Override
