@@ -116,13 +116,14 @@ public class AnkaCloudComputer extends SlaveComputer {
                 this.slave.setJobNameAndNumber(executor.getDisplayName());
             }
         }
+        this.slave.taskAccepted(executor, task);
     }
 
 
     @Override
     public void taskCompleted(Executor executor, Queue.Task task, long durationMS) {
+        this.slave.taskCompleted(executor, task, durationMS);
         checkLatestJobAndChangeNodeBehaviour(task);
-        this.slave.setTaskExecuted(true);
         super.taskCompleted(executor, task, durationMS);
 
     }
@@ -130,8 +131,8 @@ public class AnkaCloudComputer extends SlaveComputer {
 
     @Override
     public void taskCompletedWithProblems(Executor executor, Queue.Task task, long durationMS, Throwable problems) {
+        this.slave.taskCompleted(executor, task, durationMS);
         checkLatestJobAndChangeNodeBehaviour(task);
-        this.slave.setTaskExecuted(true);
         super.taskCompletedWithProblems(executor, task, durationMS, problems);
     }
 

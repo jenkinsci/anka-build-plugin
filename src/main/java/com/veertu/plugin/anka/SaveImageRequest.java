@@ -17,6 +17,7 @@ public class SaveImageRequest {
         state = SaveImageState.Pending;
     }
 
+
     public AnkaMgmtCloud getCloud() {
         return cloud;
     }
@@ -32,12 +33,14 @@ public class SaveImageRequest {
     public SaveImageRequest(AnkaMgmtCloud cloud, String buildId) {
         this.created = System.currentTimeMillis();
         this.cloud = cloud;
-        this.state = SaveImageState.Requesting;
+        this.state = SaveImageState.Future;
         this.buildId = buildId;
     }
 
     public SaveImageState checkState() {
         switch (state) {
+            case Future:
+                return state;
             case Requesting:
                 if (System.currentTimeMillis() - created > timeout) {
                         state = SaveImageState.Timeout;
@@ -71,4 +74,15 @@ public class SaveImageRequest {
         }
     }
 
+    public void requesting() {
+        state = SaveImageState.Requesting;
+    }
+
+    public boolean isFuture() {
+        switch (state) {
+            case Future:
+                return true;
+        }
+        return false;
+    }
 }

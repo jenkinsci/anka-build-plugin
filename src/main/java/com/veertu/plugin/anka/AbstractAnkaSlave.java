@@ -4,9 +4,7 @@ import com.veertu.ankaMgmtSdk.AnkaVmInfo;
 import com.veertu.ankaMgmtSdk.AnkaVmInstance;
 import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
 import hudson.Extension;
-import hudson.model.Computer;
-import hudson.model.Descriptor;
-import hudson.model.Slave;
+import hudson.model.*;
 import hudson.slaves.ComputerLauncher;
 import hudson.slaves.NodeProperty;
 import hudson.slaves.RetentionStrategy;
@@ -146,6 +144,10 @@ public abstract class AbstractAnkaSlave extends Slave {
 
     }
 
+    public void taskAccepted(Executor executor, Queue.Task task) {
+
+    }
+
     public String getInstanceId() {
         return instanceId;
     }
@@ -232,6 +234,15 @@ public abstract class AbstractAnkaSlave extends Slave {
             return false;
         }
         return false;
+    }
+
+    public void taskCompleted(Executor executor, Queue.Task task, long durationMS) {
+        this.setTaskExecuted(true);
+        SaveImageParameters saveImageParams = template.getSaveImageParameters();
+        if (saveImageParams != null && this.template.getSaveImageParameters().getSaveImage() &&
+                saveImageParams.getSaveImage()) {
+            AnkaMgmtCloud.markFuture(cloud, this);
+        }
     }
 
     @Extension

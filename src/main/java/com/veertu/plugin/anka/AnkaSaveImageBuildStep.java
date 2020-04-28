@@ -47,7 +47,6 @@ public class AnkaSaveImageBuildStep extends Step {
         private final boolean shouldFail;
         private final int timeoutMinutes;
         private final StepContext context;
-        private final int prerunSleepTime = 10;
 
 
         Execution(AnkaSaveImageBuildStep step, StepContext context) {
@@ -71,9 +70,6 @@ public class AnkaSaveImageBuildStep extends Step {
 
             assert listener != null;
             listener.getLogger().print("Checking save image status...");
-            Thread.sleep(1000 * prerunSleepTime); // add sleep before checking results.
-            // this lowers the chance of checking the
-            // result before the request happened
 
             try {
                 isSuccess = ImageSaver.isSuccessful(buildId, timeoutMinutes);

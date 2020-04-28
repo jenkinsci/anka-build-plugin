@@ -84,6 +84,10 @@ public class AnkaMgmtCloud extends Cloud {
         }
     }
 
+    public static void markFuture(AnkaMgmtCloud cloud, AbstractAnkaSlave abstractAnkaSlave) {
+        ImageSaver.markFuture(cloud, abstractAnkaSlave);
+    }
+
 
     private CertCredentials lookUpCredentials(String credentialsId) {
         List<CertCredentials> credentials = lookupCredentials(CertCredentials.class, Jenkins.get(), null, new ArrayList<DomainRequirement>());
