@@ -7,4 +7,4 @@ This plugin integrates with an [Anka Build Cloud](https://ankadocs.veertu.com/do
 ### Prerequisites
 
 1. [Anka Build Cloud (Controller & Registry + Nodes)](https://ankadocs.veertu.com/docs/anka-build-cloud/overview/)
-2. [VM Templates and Tags with your project dependencies](https://ankadocs.veertu.com/docs/getting-started/creating-your-first-vm/)
+2. [VM Template and Tag with your project dependencies](https://ankadocs.veertu.com/docs/getting-started/creating-your-first-vm/)
