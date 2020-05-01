@@ -29,7 +29,7 @@
 
   <name>Anka Plugin</name>
   <description>Integrates Jenkins with Anka</description>
-  <url>https://wiki.jenkins-ci.org/display/JENKINS/Veertu+Plugin</url>
+  <url>https://github.com/jenkinsci/anka-build-plugin</url>
 
   <!-- The default licence for Jenkins OSS Plugins is MIT. Substitute for the applicable one if needed. -->
 
