@@ -12,11 +12,15 @@ import jenkins.model.Jenkins;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Created by asafgur on 28/11/2016.
  */
 public abstract class AbstractAnkaSlave extends Slave {
+
+    private static final Logger LOGGER = Logger.getLogger(AbstractAnkaSlave.class.getName());
 
     private final AnkaMgmtCloud cloud;
     private final String instanceId;
@@ -102,10 +106,13 @@ public abstract class AbstractAnkaSlave extends Slave {
     public void terminate() throws IOException {
         try {
             Thread.sleep(3000); // Sleep for 3 seconds to avoid those spooky ChannelClosedException
-            AnkaVmInstance vm = cloud.showInstance(this.instanceId);
+            AnkaVmInstance vm = getAndLogInstance();
             if (vm != null) {
+                LOGGER.log(Level.INFO, "Node {0} Instance {1} is in state {2}", new Object[]{getNodeName(), instanceId, vm.getSessionState()});
                 SaveImageParameters saveImageParams = template.getSaveImageParameters();
                 if (taskExecuted && saveImageParams != null && this.template.getSaveImageParameters().getSaveImage() && saveImageParams.getSaveImage() && !hadProblemsInBuild) {
+                    LOGGER.log(Level.INFO, "Node {0} Instance {1}, saving image", new Object[]{getNodeName(), instanceId});
+
                     synchronized (this) {
                         if (!this.saveImageSent) { // allow to send save image request only once
                             cloud.saveImage(this);
@@ -113,8 +120,11 @@ public abstract class AbstractAnkaSlave extends Slave {
                         }
                     }
                 } else {
+                    LOGGER.log(Level.INFO, "Node {0} Instance {1}, terminating", new Object[]{getNodeName(), instanceId});
                     cloud.terminateVMInstance(this.instanceId);
                 }
+            } else {
+                LOGGER.log(Level.INFO, "Node {0} Instance {1} was not found, ensuring termination", new Object[]{getNodeName(), instanceId});
             }
         } catch (AnkaMgmtException e) {
             throw new IOException(e);
@@ -123,8 +133,14 @@ public abstract class AbstractAnkaSlave extends Slave {
         } finally {
             try {
                 if (this.instanceId != null) {
-                    AnkaVmInstance instance = cloud.showInstance(instanceId);
+                    AnkaVmInstance instance = getAndLogInstance();;
+                    String state = "not found";
+                    if (instance != null) {
+                        state = instance.getSessionState();
+                    }
+                    LOGGER.log(Level.INFO, "Node {0} Instance {1}, insuring termination before node removal, state: ", new Object[]{getNodeName(), instanceId, state});
                     if (instance == null || instance.isTerminatingOrTerminated()) {
+                        LOGGER.log(Level.INFO, "Node {0} Instance {1}, removing node since instance is terminated or not found", new Object[]{getNodeName(), instanceId});
                         Jenkins.get().removeNode(this); // only agree to remove the node after the instance doesn't
                                                            // exist or is not started
                     }
@@ -141,6 +157,15 @@ public abstract class AbstractAnkaSlave extends Slave {
 
 
     public void connected() {
+        try {
+            AnkaVmInstance vmInstance = getAndLogInstance();
+            if (vmInstance != null) {
+                AnkaMgmtCloud.Log("Node %s instance %s, connected", getNodeName(), instanceId);
+            }
+
+        } catch (AnkaMgmtException e) {
+            e.printStackTrace();
+        }
 
     }
 
@@ -175,7 +200,7 @@ public abstract class AbstractAnkaSlave extends Slave {
         description.append(String.format("master image: %s,\n job name and build number: %s,\n",
                 template.getMasterVmId(), jobAndNumber));
         try {
-            AnkaVmInstance instance = cloud.showInstance(this.instanceId);
+            AnkaVmInstance instance = getAndLogInstance();
             description.append(String.format("Instance ID: %s \n", this.instanceId));
             description.append(String.format("Template ID: %s \n", instance.getVmId()));
             description.append(String.format("Name: %s \n", instance.getName()));
@@ -199,11 +224,38 @@ public abstract class AbstractAnkaSlave extends Slave {
         return new AnkaOnDemandSlave.DescriptorImpl();
     }
 
+    private AnkaVmInstance getAndLogInstance() throws AnkaMgmtException {
+        AnkaVmInstance instance = cloud.showInstance(instanceId);
+        if (instance != null) {
+            String state = instance.getSessionState();
+            String templateId = instance.getVmId();
+            AnkaVmInfo vmInfo = instance.getVmInfo();
+            if (vmInfo != null) {
+                String vmId = vmInfo.getUuid();
+                String hostIp = vmInfo.getHostIp();
+                String vmStatus = vmInfo.getStatus();
+                AnkaMgmtCloud.Log("Node %s instance %s. instance state: %s, " +
+                                "template id: %s, VM uuid: %s, VM status: %s host IP: %s", getNodeName(), instanceId, state,
+                        templateId, vmId, vmStatus, hostIp);
+            } else {
+                AnkaMgmtCloud.Log("Node %s instance %s. instance state: %s, " +
+                                "template id: %s", getNodeName(), instanceId, state,
+                        templateId);
+            }
+        } else {
+            AnkaMgmtCloud.Log("Node %s instance %s. not found, ", getNodeName(), instanceId);
+        }
+        return instance;
+    }
+
     public boolean isAlive() {
         if (cloud != null) {
             try {
-                AnkaVmInstance instance = cloud.showInstance(instanceId);
+                AnkaVmInstance instance = getAndLogInstance();
                 if (instance != null) {
+                    String state = instance.getSessionState();
+                    LOGGER.log(Level.INFO, "Anka Node {0}, instance {1} is in state {2}",
+                            new Object[]{name, instanceId, state});
                     if (instance.isStarted()) {
                         return true;
                     }
@@ -222,7 +274,7 @@ public abstract class AbstractAnkaSlave extends Slave {
     public boolean isSchedulingOrPulling() {
         if (cloud != null) {
             try {
-                AnkaVmInstance instance = cloud.showInstance(instanceId);
+                AnkaVmInstance instance = getAndLogInstance();
                 if (instance != null) {
                     if (instance.isSchedulingOrPulling()) {
                         return true;

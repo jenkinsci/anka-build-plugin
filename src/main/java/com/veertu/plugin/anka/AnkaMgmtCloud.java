@@ -220,11 +220,13 @@ public class AnkaMgmtCloud extends Cloud {
             } finally {
                 // insurance that our node is in the jenkins loop
                 if (slave == null) {
-                    ankaAPI.terminateInstance(newInstanceId);
+                    Log("Failed to create Node "+ nodeName + ". terminating "+ newInstanceId);
+                    terminateVMInstance(newInstanceId);
 //                }
                 } else {
                     Node nodeFromJenkins = Jenkins.get().getNode(nodeName);
                     if (nodeFromJenkins == null) { // shouldn't happen
+                        Log("Node " + slave.getNodeName() + " is not attached to jenkins... terminating");
                         slave.terminate(); // but if it does, then terminate
                     }
                 }

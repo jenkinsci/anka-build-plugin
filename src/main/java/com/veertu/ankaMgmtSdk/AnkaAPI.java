@@ -1,15 +1,19 @@
 package com.veertu.ankaMgmtSdk;
 
 import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
+import com.veertu.plugin.anka.RunOnceCloudRetentionStrategy;
 import org.json.JSONObject;
 
 import java.util.List;
+import java.util.logging.Logger;
 
 /**
  * Created by asafgur on 18/05/2017.
  */
 
 public class AnkaAPI {
+
+    private static final transient Logger LOGGER = Logger.getLogger(RunOnceCloudRetentionStrategy.class.getName());
 
     private AnkaMgmtCommunicator communicator;
 
@@ -81,6 +85,7 @@ public class AnkaAPI {
     }
 
     public boolean terminateInstance(String vmId) throws AnkaMgmtException {
+        LOGGER.info("Sending termination request to instance: "+ vmId);
         return communicator.terminateVm(vmId);
     }
 

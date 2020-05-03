@@ -61,13 +61,15 @@ public class RunOnceCloudRetentionStrategy extends RetentionStrategy<AnkaCloudCo
 
 
             if (reconnectionRetries >= MAX_RECONNECTION_RETRIES) { // we tried to reconnect - but it's enough now
-                LOGGER.log(Level.INFO, "Computer {0} has reached it's max reconnection retries", computer.getName());
+                LOGGER.log(Level.INFO, "Computer {0}, instance {1} is terminating because it has reached it's max reconnection retries",
+                        new Object[]{computer.getName(), computer.getVMId()});
                 done(computer);
                 return 1;
             }
 
             if (!computer.isOnline()) {
-                LOGGER.log(Level.INFO, "Computer {0} is offline, trying to reconnect", computer.getName());
+                LOGGER.log(Level.INFO, "Computer {0}, instance {1} is offline, trying to reconnect",
+                        new Object[]{computer.getName(), computer.getVMId()});
                 boolean forceReconnect = false;
                 if (reconnectionRetries > 4) {
                     forceReconnect = true;  // only force reconnect on first retry, after no answer for a while
@@ -81,7 +83,8 @@ public class RunOnceCloudRetentionStrategy extends RetentionStrategy<AnkaCloudCo
             if(computer.isIdle()) {
                 final long idleMilliseconds = System.currentTimeMillis() - computer.getIdleStartMilliseconds();
                 if(idleMilliseconds > TimeUnit.MINUTES.toMillis(idleMinutes)) {
-                    AnkaMgmtCloud.Log("Disconnecting %s due to idle timeout", computer.getName());
+                    LOGGER.log(Level.INFO, "Computer {0}, instance {1} is terminating due to idle timeout",
+                            new Object[]{computer.getName(), computer.getVMId()});
                     done(computer);
                 }
             }
@@ -95,12 +98,15 @@ public class RunOnceCloudRetentionStrategy extends RetentionStrategy<AnkaCloudCo
     @Override
     public void taskAccepted(Executor executor, Queue.Task task) {
         AnkaCloudComputer computer = (AnkaCloudComputer) executor.getOwner();
-        LOGGER.log(Level.INFO, "Computr {0} accepted task {1}", new Object[]{computer.getName(), task.toString()});
+        LOGGER.log(Level.INFO, "Computer {0}, instance {2} accepted task {1}",
+                new Object[]{computer.getName(), task.toString(), computer.getVMId()});
     }
 
     @Override
     public void taskCompleted(final Executor executor, final Queue.Task task, final long durationMS) {
         AnkaCloudComputer computer = (AnkaCloudComputer) executor.getOwner();
+        LOGGER.log(Level.INFO, "Computer {0}, instance {2} completed task {1}",
+                new Object[]{computer.getName(), task.toString(), computer.getVMId()});
         computer.setAcceptingTasks(false);
         done(computer);
     }
@@ -108,6 +114,8 @@ public class RunOnceCloudRetentionStrategy extends RetentionStrategy<AnkaCloudCo
     @Override
     public void taskCompletedWithProblems(final Executor executor, final Queue.Task task, final long durationMS, final Throwable problems) {
         AnkaCloudComputer computer = (AnkaCloudComputer) executor.getOwner();
+        LOGGER.log(Level.INFO, "Computer {0}, instance {2} accepted task {1} with problems",
+                new Object[]{computer.getName(), task.toString(), computer.getVMId()});
         computer.setAcceptingTasks(false);
         done(computer);
     }
