@@ -17,7 +17,7 @@ public class AnkaLauncher extends DelegatingComputerLauncher {
 
 
     protected static final int launchTimeoutSeconds = 2000;
-    protected static final int maxNumRetries = 15;
+    protected static final int maxNumRetries = 5;
     protected static final int retryWaitTime = 5;
     protected static final int sshLaunchDelay = 15 * 1000;  // 15 seconds for ssh delay
 

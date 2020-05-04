@@ -6,6 +6,8 @@ import hudson.slaves.SlaveComputer;
 import jenkins.model.Jenkins;
 import org.jenkinsci.plugins.workflow.support.steps.ExecutorStepExecution;
 
+import java.io.IOException;
+
 
 /**
  * Created by asafgur on 16/11/2016.
@@ -194,5 +196,26 @@ public class AnkaCloudComputer extends SlaveComputer {
             return node.isSchedulingOrPulling();
         }
         return false;
+    }
+
+    public void terminate() throws IOException {
+        try {
+            // first try to terminate through the node
+            AbstractAnkaSlave node = getNode();
+            if (node != null) {
+                node.terminate();
+                return;
+            }
+            // if the node doesn't exist terminate directly with the cloud
+            if (vmId != null) {
+                String cloudName = template.getCloudName();
+                AnkaMgmtCloud cloud = (AnkaMgmtCloud) Jenkins.get().getCloud(cloudName);
+                if (cloud != null) {
+                    cloud.terminateVMInstance(vmId);
+                }
+            }
+        } catch (AnkaMgmtException e) {
+            throw new IOException(e);
+        }
     }
 }
