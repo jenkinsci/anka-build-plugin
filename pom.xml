@@ -25,6 +25,7 @@
          ~ stapler-plugin.version: The Stapler Maven plugin version required by the plugin.
     -->
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <hpi.compatibleSinceVersion>2.0.0</hpi.compatibleSinceVersion>
   </properties>
 
   <name>Anka Plugin</name>
