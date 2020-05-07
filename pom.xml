@@ -28,8 +28,15 @@
   </properties>
 
   <name>Anka Plugin</name>
-  <description>Integrates Jenkins with Anka</description>
-  <url>https://wiki.jenkins-ci.org/display/JENKINS/Veertu+Plugin</url>
+  <description>
+    Integrates Jenkins with Anka Cloud.
+    Please note! this version contains breaking changes.
+    Before upgrading to this version, please:
+    1. Backup your configuration
+    2. Backup your global environment variable (specifically)
+    3. Make sure no Anka Slave is running
+  </description>
+  <url>https://github.com/jenkinsci/anka-build-plugin</url>
 
   <!-- The default licence for Jenkins OSS Plugins is MIT. Substitute for the applicable one if needed. -->
 
@@ -186,10 +193,11 @@
       <plugin>
         <groupId>org.jenkins-ci.tools</groupId>
         <artifactId>maven-hpi-plugin</artifactId>
-        <configuration>
-          <disabledTestInjection>true</disabledTestInjection>
-            <minimumJavaVersion/>
-        </configuration>
+          <configuration>
+            <disabledTestInjection>true</disabledTestInjection>
+            <minimumJavaVersion>1.8</minimumJavaVersion>
+            <compatibleSinceVersion>2.0.0</compatibleSinceVersion>
+          </configuration>
       </plugin>
 
 

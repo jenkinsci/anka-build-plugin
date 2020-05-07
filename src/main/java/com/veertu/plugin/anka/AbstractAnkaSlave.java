@@ -133,7 +133,7 @@ public abstract class AbstractAnkaSlave extends Slave {
         } finally {
             try {
                 if (this.instanceId != null) {
-                    AnkaVmInstance instance = getAndLogInstance();;
+                    AnkaVmInstance instance = getAndLogInstance();
                     String state = "not found";
                     if (instance != null) {
                         state = instance.getSessionState();
@@ -234,13 +234,13 @@ public abstract class AbstractAnkaSlave extends Slave {
                 String vmId = vmInfo.getUuid();
                 String hostIp = vmInfo.getHostIp();
                 String vmStatus = vmInfo.getStatus();
-                AnkaMgmtCloud.Log("Node %s instance %s. instance state: %s, " +
-                                "template id: %s, VM uuid: %s, VM status: %s host IP: %s", getNodeName(), instanceId, state,
-                        templateId, vmId, vmStatus, hostIp);
+                LOGGER.log(Level.FINE, "Node {0} instance {1}. instance state: {2}, " +
+                                "template id: {3}, VM uuid: {4}, VM status: {5} host IP: {6}", new Object[]{ getNodeName(), instanceId, state,
+                        templateId, vmId, vmStatus, hostIp });
             } else {
-                AnkaMgmtCloud.Log("Node %s instance %s. instance state: %s, " +
-                                "template id: %s", getNodeName(), instanceId, state,
-                        templateId);
+                LOGGER.log(Level.FINE, "Node {0} instance {1}. instance state: {2}, " +
+                                "template id: {3}",  new Object[]{ getNodeName(), instanceId, state,
+                        templateId});
             }
         } else {
             AnkaMgmtCloud.Log("Node %s instance %s. not found, ", getNodeName(), instanceId);
@@ -254,7 +254,7 @@ public abstract class AbstractAnkaSlave extends Slave {
                 AnkaVmInstance instance = getAndLogInstance();
                 if (instance != null) {
                     String state = instance.getSessionState();
-                    LOGGER.log(Level.INFO, "Anka Node {0}, instance {1} is in state {2}",
+                    LOGGER.log(Level.FINE, "Anka Node {0}, instance {1} is in state {2}",
                             new Object[]{name, instanceId, state});
                     if (instance.isStarted()) {
                         return true;

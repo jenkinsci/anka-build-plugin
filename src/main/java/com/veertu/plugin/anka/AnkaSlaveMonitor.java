@@ -38,7 +38,7 @@ public class AnkaSlaveMonitor extends AsyncPeriodicWork {
         for (Node node : Jenkins.get().getNodes()) {
             if (node instanceof AbstractAnkaSlave) {
                 final AbstractAnkaSlave ankaNode = (AbstractAnkaSlave) node;
-                LOGGER.log(Level.INFO, "Checking Anka Node {0}, instance {1}",
+                LOGGER.log(Level.FINE, "Checking Anka Node {0}, instance {1}",
                         new Object[]{ankaNode.getNodeName(), ankaNode.getInstanceId()});
                 AnkaCloudComputer computer = (AnkaCloudComputer) ankaNode.getComputer();
                 if (computer != null && computer.isConnecting()) {
@@ -46,7 +46,7 @@ public class AnkaSlaveMonitor extends AsyncPeriodicWork {
                 }
                 try {
                     if (!ankaNode.isAlive()) {
-                        LOGGER.log(Level.INFO, "Anka Node {0}, instance {1}: instance is not alive - terminating",
+                        LOGGER.log(Level.WARNING, "Anka Node {0}, instance {1}: instance is not alive - terminating",
                                 new Object[]{ankaNode.getNodeName(), ankaNode.getInstanceId()});
                         ankaNode.terminate();
                     }

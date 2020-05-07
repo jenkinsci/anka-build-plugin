@@ -45,7 +45,7 @@ public class RunOnceCloudRetentionStrategy extends RetentionStrategy<AnkaCloudCo
         try {
             LOGGER.log(Level.INFO, "Checking computer {0}", computer.getName());
             if (computer.countBusy() > 1) {
-                LOGGER.log(Level.INFO, "Computer {0} has {1} busy executors", new Object[]{computer.getName(), computer.countBusy()});
+                LOGGER.log(Level.FINE, "Computer {0} has {1} busy executors", new Object[]{computer.getName(), computer.countBusy()});
                 return 1;
             }
 
@@ -61,14 +61,14 @@ public class RunOnceCloudRetentionStrategy extends RetentionStrategy<AnkaCloudCo
 
 
             if (reconnectionRetries >= MAX_RECONNECTION_RETRIES) { // we tried to reconnect - but it's enough now
-                LOGGER.log(Level.INFO, "Computer {0}, instance {1} is terminating because it has reached it's max reconnection retries",
+                LOGGER.log(Level.WARNING, "Computer {0}, instance {1} is terminating because it has reached it's max reconnection retries",
                         new Object[]{computer.getName(), computer.getVMId()});
                 done(computer);
                 return 1;
             }
 
             if (!computer.isOnline()) {
-                LOGGER.log(Level.INFO, "Computer {0}, instance {1} is offline, trying to reconnect",
+                LOGGER.log(Level.WARNING, "Computer {0}, instance {1} is offline, trying to reconnect",
                         new Object[]{computer.getName(), computer.getVMId()});
                 boolean forceReconnect = false;
                 if (reconnectionRetries > 4) {
@@ -83,7 +83,7 @@ public class RunOnceCloudRetentionStrategy extends RetentionStrategy<AnkaCloudCo
             if(computer.isIdle()) {
                 final long idleMilliseconds = System.currentTimeMillis() - computer.getIdleStartMilliseconds();
                 if(idleMilliseconds > TimeUnit.MINUTES.toMillis(idleMinutes)) {
-                    LOGGER.log(Level.INFO, "Computer {0}, instance {1} is terminating due to idle timeout",
+                    LOGGER.log(Level.WARNING, "Computer {0}, instance {1} is terminating due to idle timeout",
                             new Object[]{computer.getName(), computer.getVMId()});
                     done(computer);
                 }
