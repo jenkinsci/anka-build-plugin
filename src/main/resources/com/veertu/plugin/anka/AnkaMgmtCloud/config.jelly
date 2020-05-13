@@ -18,8 +18,9 @@
         <f:textarea clazz="string"  />
     </f:entry>
 
-
-
+    <f:entry title="Cloud instance capacity" description="The number of instances this cloud is allowed to run (0 is unlimited)" field="cloudInstanceCap">
+        <f:textbox clazz="required number" default="0" />
+    </f:entry>
     <f:section title="VM templates">
         <!-- templates section-->
         <f:block>

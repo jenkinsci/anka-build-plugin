@@ -18,6 +18,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 
 import static com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials;
@@ -39,7 +40,8 @@ public class AnkaMgmtCloud extends Cloud {
     private final String rootCA;
 
     private final boolean skipTLSVerification;
-
+    private int   cloudInstanceCap;
+    private transient ReentrantLock nodeNumLock = new ReentrantLock();
     private transient SaveImageRequestsHolder saveImageRequestsHolder = SaveImageRequestsHolder.getInstance();
 
     @DataBoundConstructor
@@ -48,8 +50,12 @@ public class AnkaMgmtCloud extends Cloud {
                      String credentialsId,
                      String rootCA,
                      boolean skipTLSVerification,
-                     List<AnkaCloudSlaveTemplate> templates) {
+                     List<AnkaCloudSlaveTemplate> templates, int cloudInstanceCap) {
         super(cloudName);
+        if (cloudInstanceCap < 0) {
+            this.cloudInstanceCap = 0; // zero means unlimited
+        }
+        this.cloudInstanceCap = cloudInstanceCap;
         this.ankaMgmtUrl = ankaMgmtUrl;
         if (templates == null) {
             this.templates = Collections.emptyList();
@@ -88,6 +94,12 @@ public class AnkaMgmtCloud extends Cloud {
         ImageSaver.markFuture(cloud, abstractAnkaSlave);
     }
 
+    protected Object readResolve() {
+        this.nodeNumLock = new ReentrantLock();
+        return this;
+    }
+
+
 
     private CertCredentials lookUpCredentials(String credentialsId) {
         List<CertCredentials> credentials = lookupCredentials(CertCredentials.class, Jenkins.get(), null, new ArrayList<DomainRequirement>());
@@ -117,6 +129,24 @@ public class AnkaMgmtCloud extends Cloud {
 
     public String getRootCA() {
         return rootCA;
+    }
+
+    public int getCloudInstanceCap() {
+        return cloudInstanceCap;
+    }
+
+    public void setCloudInstanceCap(int val) {
+        cloudInstanceCap = val;
+    }
+
+    public int getNumOfRunningNodes() {
+        int numRunningNodes = 0;
+        for (Node node : Jenkins.get().getNodes()) {
+            if (node instanceof AbstractAnkaSlave) {
+                numRunningNodes++;
+            }
+        }
+        return numRunningNodes;
     }
 
     public List<AnkaVmTemplate> listVmTemplates() {
@@ -178,22 +208,37 @@ public class AnkaMgmtCloud extends Cloud {
         }
         try {
             int number = Math.max(excessWorkload / t.getNumberOfExecutors(), 1);
-            final List<AbstractAnkaSlave> slaves = createNewSlaves(t, number);
+            try {
+                this.nodeNumLock.lock();
+                if (cloudInstanceCap > 0) {
+                    int numRunningNodes = getNumOfRunningNodes();
+                    int allowedCapacity = cloudInstanceCap - numRunningNodes;
+                    if (allowedCapacity <= 0) {
+                        return plannedNodes;
+                    }
+                    if (number > allowedCapacity) {
+                        number = allowedCapacity;
+                    }
+                }
+                final List<AbstractAnkaSlave> slaves = createNewSlaves(t, number);
 
-            if (slaves == null || slaves.isEmpty()) {
-                Log("Can't raise nodes for " + t);
-                return Collections.emptyList();
-            }
-
-            for (final AbstractAnkaSlave slave : slaves) {
-                if (slave == null) {
-                    Log("Can't raise node for " + t);
-                    continue;
+                if (slaves == null || slaves.isEmpty()) {
+                    Log("Can't raise nodes for " + t);
+                    return Collections.emptyList();
                 }
 
-                plannedNodes.add(AnkaPlannedNodeCreator.createPlannedNode(this, t, slave));
+                for (final AbstractAnkaSlave slave : slaves) {
+                    if (slave == null) {
+                        Log("Can't raise node for " + t);
+                        continue;
+                    }
+
+                    plannedNodes.add(AnkaPlannedNodeCreator.createPlannedNode(this, t, slave));
+                }
+                return plannedNodes;
+            } finally {
+                this.nodeNumLock.unlock();
             }
-            return plannedNodes;
         } catch (Exception e) {
             return Collections.emptyList();
         }
@@ -270,6 +315,16 @@ public class AnkaMgmtCloud extends Cloud {
         AnkaCloudSlaveTemplate template = getTemplateFromLabel(label);
         if (template == null){
             return false;
+        }
+        if (cloudInstanceCap > 0) {
+            try {
+                this.nodeNumLock.lock();
+                if (getNumOfRunningNodes() >= cloudInstanceCap) {
+                    return false;
+                }
+            } finally {
+                this.nodeNumLock.unlock();
+            }
         }
         return true;
     }
