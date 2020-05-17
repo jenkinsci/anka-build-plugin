@@ -5,8 +5,8 @@ import com.veertu.ankaMgmtSdk.exceptions.AnkaUnAuthenticatedRequestException;
 import com.veertu.ankaMgmtSdk.exceptions.AnkaUnauthorizedRequestException;
 import com.veertu.ankaMgmtSdk.exceptions.ClientException;
 import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
+import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpRequestBase;
@@ -49,9 +49,10 @@ public class AnkaMgmtOpenIdCommunicator extends AnkaMgmtCommunicator {
 
     protected JSONObject doRequest(AnkaMgmtCommunicator.RequestMethod method, String url, JSONObject requestBody, int reqTimeout) throws IOException, AnkaMgmtException {
         int retry = 0;
+        CloseableHttpResponse response = null;
         while (true){
             try {
-                CloseableHttpClient httpClient = makeHttpClient(reqTimeout);
+                CloseableHttpClient httpClient = getHttpClient();
                 HttpRequestBase request;
                 try {
                     switch (method) {
@@ -71,10 +72,11 @@ public class AnkaMgmtOpenIdCommunicator extends AnkaMgmtCommunicator {
                             break;
                     }
 
+                    request.setConfig(makeRequestConfig(reqTimeout));
                     NameValuePair authHeader = authenticator.getAuthorization();
                     request.setHeader(authHeader.getName(), authHeader.getValue());
 
-                    HttpResponse response = httpClient.execute(request);
+                    response = httpClient.execute(request);
                     int responseCode = response.getStatusLine().getStatusCode();
                     if (responseCode == 401) {
                         throw new AnkaUnAuthenticatedRequestException("Authentication Required");
@@ -115,7 +117,9 @@ public class AnkaMgmtOpenIdCommunicator extends AnkaMgmtCommunicator {
                     e.printStackTrace();
                     throw new AnkaMgmtException(e);
                 } finally {
-                    httpClient.close();
+                    if (response != null) {
+                        response.close();
+                    }
                 }
                 return null;
             } catch (ClientException | Exception e) {

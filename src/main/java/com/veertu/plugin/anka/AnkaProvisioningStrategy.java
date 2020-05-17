@@ -44,13 +44,16 @@ public class AnkaProvisioningStrategy extends NodeProvisioner.Strategy {
     @Override
     public NodeProvisioner.StrategyDecision apply(@Nonnull NodeProvisioner.StrategyState strategyState) {
         final Label label = strategyState.getLabel();
-
-        LoadStatistics.LoadStatisticsSnapshot snap = strategyState.getSnapshot();
-        int availableCapacity = snap.getAvailableExecutors()
-                        + snap.getConnectingExecutors()
-                        + strategyState.getPlannedCapacitySnapshot()
-                        + strategyState.getAdditionalPlannedCapacity();
-        int currentDemand = snap.getQueueLength();
+        int availableCapacity;
+        int currentDemand;
+        synchronized (this) {
+            LoadStatistics.LoadStatisticsSnapshot snap = strategyState.getSnapshot();
+            availableCapacity = snap.getAvailableExecutors()
+                    + snap.getConnectingExecutors()
+                    + strategyState.getPlannedCapacitySnapshot()
+                    + strategyState.getAdditionalPlannedCapacity();
+            currentDemand = snap.getQueueLength();
+        }
         AnkaMgmtCloud.Log("Available capacity=%s, currentDemand=%s", availableCapacity, currentDemand);
         if (currentDemand > availableCapacity) {
             Jenkins jenkinsInstance = Jenkins.get();

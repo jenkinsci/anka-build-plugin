@@ -26,9 +26,11 @@ public class AnkaCloudComputerListener extends ComputerListener {
     public void onLaunchFailure(Computer c, TaskListener taskListener) throws IOException, InterruptedException {
         if (c instanceof AnkaCloudComputer) {
             AnkaCloudComputer computer = (AnkaCloudComputer)c;
-            LOGGER.log(Level.INFO, "Computer {0}, instance {1} failed to launch, terminating",
-                    new Object[]{computer.getName(), computer.getVMId()});
-            computer.terminate();
+            if (c.isLaunchSupported()) {
+                LOGGER.log(Level.INFO, "Computer {0}, instance {1} failed to launch, terminating",
+                        new Object[]{computer.getName(), computer.getVMId()});
+                computer.terminate();
+            }
         }
     }
 

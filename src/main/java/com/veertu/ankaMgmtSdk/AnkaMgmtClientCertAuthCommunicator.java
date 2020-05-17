@@ -41,12 +41,12 @@ public class AnkaMgmtClientCertAuthCommunicator extends AnkaMgmtCommunicator {
         this.authenticator = new ClientCertAuthenticator(client, key);
     }
 
-    protected CloseableHttpClient makeHttpClient(int reqTimeout) throws CertificateException, NoSuchAlgorithmException,
+    protected CloseableHttpClient makeHttpClient() throws CertificateException, NoSuchAlgorithmException,
             KeyStoreException, IOException, UnrecoverableKeyException, KeyManagementException {
         RequestConfig.Builder requestBuilder = RequestConfig.custom();
-        requestBuilder = requestBuilder.setConnectTimeout(reqTimeout);
-        requestBuilder = requestBuilder.setConnectionRequestTimeout(reqTimeout);
-        requestBuilder.setSocketTimeout(reqTimeout);
+        requestBuilder = requestBuilder.setConnectTimeout(timeout);
+        requestBuilder = requestBuilder.setConnectionRequestTimeout(timeout);
+        requestBuilder.setSocketTimeout(timeout);
 
         HttpClientBuilder builder = HttpClientBuilder.create();
 
