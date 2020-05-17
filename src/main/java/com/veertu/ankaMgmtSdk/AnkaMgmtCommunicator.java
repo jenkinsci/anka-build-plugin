@@ -5,9 +5,7 @@ import com.veertu.ankaMgmtSdk.exceptions.*;
 import com.veertu.plugin.anka.AnkaMgmtCloud;
 import com.veertu.plugin.anka.MetadataKeys;
 import org.apache.commons.codec.binary.Base64;
-import org.apache.http.ConnectionReuseStrategy;
 import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.*;
 import org.apache.http.client.utils.URIBuilder;
@@ -42,6 +40,7 @@ import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -55,6 +54,8 @@ public class AnkaMgmtCommunicator {
     protected boolean skipTLSVerification;
     protected String rootCA;
     protected transient RoundRobin roundRobin;
+    protected int maxConnections = 50;
+    protected transient CloseableHttpClient httpClient;
 
 
     public AnkaMgmtCommunicator(String url) {
@@ -95,11 +96,11 @@ public class AnkaMgmtCommunicator {
     }
 
     public int getMaxConections() {
-        return maxConections;
+        return maxConnections;
     }
 
     public void setMaxConections(int maxConections) {
-        this.maxConections = maxConections;
+        this.maxConnections = maxConections;
     }
 
     public List<AnkaVmTemplate> listTemplates() throws AnkaMgmtException {
