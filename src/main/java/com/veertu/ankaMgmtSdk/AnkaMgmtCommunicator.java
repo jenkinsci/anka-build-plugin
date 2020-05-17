@@ -6,7 +6,6 @@ import com.veertu.plugin.anka.AnkaMgmtCloud;
 import com.veertu.plugin.anka.MetadataKeys;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.*;
 import org.apache.http.client.utils.URIBuilder;
@@ -17,6 +16,7 @@ import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.ssl.TrustStrategy;
 import org.bouncycastle.cert.X509CertificateHolder;
@@ -40,6 +40,7 @@ import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -53,6 +54,8 @@ public class AnkaMgmtCommunicator {
     protected boolean skipTLSVerification;
     protected String rootCA;
     protected transient RoundRobin roundRobin;
+    protected transient CloseableHttpClient httpClient;
+    protected int maxConnections = 50;
 
 
     public AnkaMgmtCommunicator(String url) {
@@ -456,12 +459,14 @@ public class AnkaMgmtCommunicator {
 
     protected JSONObject doRequest(RequestMethod method, String path, JSONObject requestBody, int reqTimeout) throws IOException, AnkaMgmtException {
         int retry = 0;
+        CloseableHttpResponse response = null;
+        HttpRequestBase request;
+
         while (true){
             try {
                 retry++;
 
-                CloseableHttpClient httpClient = makeHttpClient(reqTimeout);
-                HttpRequestBase request;
+                CloseableHttpClient httpClient = getHttpClient();
                 try {
                     String host = "";
                     if (roundRobin != null) {
@@ -495,7 +500,7 @@ public class AnkaMgmtCommunicator {
                             request = new HttpGet(url);
                             break;
                     }
-                    HttpResponse response ;
+                    request.setConfig(makeRequestConfig(reqTimeout));
                     try {
                         long startTime = System.currentTimeMillis();
                         response = httpClient.execute(request);
@@ -533,6 +538,7 @@ public class AnkaMgmtCommunicator {
                         while ((line = rd.readLine()) != null) {
                             result.append(line);
                         }
+                        rd.close();
                         JSONObject jsonResponse = new JSONObject(result.toString());
                         return jsonResponse;
                     }
@@ -549,7 +555,9 @@ public class AnkaMgmtCommunicator {
                     e.printStackTrace();
                     throw new AnkaMgmtException(e);
                 } finally {
-                    httpClient.close();
+                    if (response != null) {
+                        response.close();
+                    }
                 }
                 return null;
             } catch (HttpHostConnectException | ConnectTimeoutException | ClientException | SSLException | NoRouteToHostException e) {
@@ -570,13 +578,28 @@ public class AnkaMgmtCommunicator {
 
     }
 
-    protected CloseableHttpClient makeHttpClient(int reqTimeout) throws KeyStoreException, NoSuchAlgorithmException, KeyManagementException, CertificateException, IOException, UnrecoverableKeyException {
+    protected CloseableHttpClient getHttpClient() throws CertificateException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException, IOException {
+        synchronized (this) {
+            if (httpClient == null) {
+                httpClient = makeHttpClient();
+            }
+            return httpClient;
+        }
+    }
+
+    protected RequestConfig makeRequestConfig(int reqTimeout) {
         RequestConfig.Builder requestBuilder = RequestConfig.custom();
         requestBuilder = requestBuilder.setConnectTimeout(reqTimeout);
         requestBuilder = requestBuilder.setConnectionRequestTimeout(reqTimeout);
         requestBuilder.setSocketTimeout(reqTimeout);
+        return requestBuilder.build();
+    }
 
+    protected CloseableHttpClient makeHttpClient() throws KeyStoreException, NoSuchAlgorithmException, KeyManagementException, CertificateException, IOException, UnrecoverableKeyException {
+        RequestConfig defaultRequestConfig = makeRequestConfig(timeout);
         HttpClientBuilder builder = HttpClientBuilder.create();
+        PoolingHttpClientConnectionManager cm = new PoolingHttpClientConnectionManager(); // use a connection pool
+        builder.setConnectionManager(cm);
         KeyStore keystore = null;
         if (rootCA != null) {
             PEMParser reader;
@@ -594,7 +617,9 @@ public class AnkaMgmtCommunicator {
         builder.setSSLContext(sslContext);
         setTLSVerificationIfDefined(sslContext, builder);
         builder.disableAutomaticRetries();
-        CloseableHttpClient httpClient = builder.setDefaultRequestConfig(requestBuilder.build()).build();
+        builder.setMaxConnTotal(maxConnections);
+        builder.setConnectionTimeToLive(2, TimeUnit.MINUTES);
+        CloseableHttpClient httpClient = builder.setDefaultRequestConfig(defaultRequestConfig).build();
         return httpClient;
 
     }

@@ -71,14 +71,33 @@ public class AnkaLauncher extends DelegatingComputerLauncher {
                                 launchTimeoutSeconds, maxNumRetries, retryWaitTime, null);
                         Thread.sleep(sshLaunchDelay);
                         listener.getLogger().println(String.format("Launching SSH connection for %s", instanceId));
+                        this.launcher.launch(computer, listener);
 
                     } else if (template.getLaunchMethod().equalsIgnoreCase(LaunchMethod.JNLP)) {
                         listener.getLogger().println(String.format("Launching JNLP for %s", instanceId));
+                        int numRetries = 0;
+                        while (true) {
+                            try {
+                                if (numRetries > maxNumRetries) {
+                                    break;
+                                }
+                                this.launcher.launch(computer, listener);
+                                if (computer.isOnline()) {
+                                    break;
+                                }
+                            } catch (IOException | InterruptedException e) {
+                                if (numRetries >= maxNumRetries) {
+                                    throw e;
+                                }
+                            } finally {
+                                numRetries++;
+                            }
+                        }
+
                     } else {
                         listener.getLogger().println(String.format("Unknown launcher for %s", instanceId));
                         return;
                     }
-                    this.launcher.launch(computer, listener);
                     AbstractAnkaSlave node = (AbstractAnkaSlave) computer.getNode();
                     if (node != null) {
                         node.setDisplayName(vmInfo.getName());

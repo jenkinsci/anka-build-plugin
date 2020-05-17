@@ -217,6 +217,8 @@ public class AnkaMgmtCloud extends Cloud {
                         template.getLabelString(), launcher, template.getNodeProperties(), template, newInstanceId);
                 newSlaves.add(slave);
                 Jenkins.get().addNode(slave); // add our node as early as possible to avoid zombies
+            } catch (Exception e) {
+                e.printStackTrace();
             } finally {
                 // insurance that our node is in the jenkins loop
                 if (slave == null) {
