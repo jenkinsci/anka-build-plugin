@@ -38,7 +38,17 @@ public class AbstractSlaveTemplate {
     protected int priority;
     protected SaveImageParameters saveImageParameters;
     protected String cloudName;
+    protected int instanceCapacity;
 
+
+    public int getInstanceCapacity() {
+        return instanceCapacity;
+    }
+
+    @DataBoundSetter
+    public void setInstanceCapacity(int instanceCapacity) {
+        this.instanceCapacity = instanceCapacity;
+    }
 
 
 

@@ -22,6 +22,10 @@ public abstract class AbstractAnkaSlave extends Slave {
 
     private static final Logger LOGGER = Logger.getLogger(AbstractAnkaSlave.class.getName());
 
+    public AnkaMgmtCloud getCloud() {
+        return cloud;
+    }
+
     private final AnkaMgmtCloud cloud;
     private final String instanceId;
 

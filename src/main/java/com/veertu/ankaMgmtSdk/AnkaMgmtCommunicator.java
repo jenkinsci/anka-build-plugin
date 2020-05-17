@@ -5,6 +5,7 @@ import com.veertu.ankaMgmtSdk.exceptions.*;
 import com.veertu.plugin.anka.AnkaMgmtCloud;
 import com.veertu.plugin.anka.MetadataKeys;
 import org.apache.commons.codec.binary.Base64;
+import org.apache.http.ConnectionReuseStrategy;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.config.RequestConfig;
@@ -48,6 +49,7 @@ import java.util.List;
 public class AnkaMgmtCommunicator {
 
     protected URL mgmtUrl;
+    protected int maxConections;
     protected final int timeout = 30000;
     protected final int maxRetries = 10;
     protected boolean skipTLSVerification;
@@ -63,7 +65,7 @@ public class AnkaMgmtCommunicator {
             b.setHost( tmpUrl.getHost());
             b.setPort(tmpUrl.getPort());
             mgmtUrl = b.build().toURL();
-
+            maxConections = 50;
         } catch (IOException | URISyntaxException e) {
 
             e.printStackTrace();
@@ -90,6 +92,14 @@ public class AnkaMgmtCommunicator {
         this.roundRobin = new RoundRobin(mgmtURLS);
         this.skipTLSVerification = skipTLSVerification;
         this.rootCA = rootCA;
+    }
+
+    public int getMaxConections() {
+        return maxConections;
+    }
+
+    public void setMaxConections(int maxConections) {
+        this.maxConections = maxConections;
     }
 
     public List<AnkaVmTemplate> listTemplates() throws AnkaMgmtException {
@@ -570,6 +580,8 @@ public class AnkaMgmtCommunicator {
 
     }
 
+    protected CloseableHttpClient getHttpClient(int reqTimeout) {}
+
     protected CloseableHttpClient makeHttpClient(int reqTimeout) throws KeyStoreException, NoSuchAlgorithmException, KeyManagementException, CertificateException, IOException, UnrecoverableKeyException {
         RequestConfig.Builder requestBuilder = RequestConfig.custom();
         requestBuilder = requestBuilder.setConnectTimeout(reqTimeout);
@@ -594,6 +606,9 @@ public class AnkaMgmtCommunicator {
         builder.setSSLContext(sslContext);
         setTLSVerificationIfDefined(sslContext, builder);
         builder.disableAutomaticRetries();
+        builder.setConnectionTimeToLive();
+        builder.setMaxConnTotal(maxConections);
+        builder.setConnectionReuseStrategy()
         CloseableHttpClient httpClient = builder.setDefaultRequestConfig(requestBuilder.build()).build();
         return httpClient;
 

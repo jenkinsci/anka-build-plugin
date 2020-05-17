@@ -86,6 +86,10 @@
                 </f:repeatable>
             </f:entry>
         </f:block>
+
+        <f:entry title="Template instance capacity" description="The number of instances this template is allowed to run (0 is unlimited)" field="instanceCapacity">
+            <f:textbox clazz="required number" default="0" />
+        </f:entry>
         <j:if test="${(cloud.isPushSupported())}">
          <f:section title="Cache Builder" description="Push the vm to the registry when the build is done">
           <f:optionalBlock inline="true" field="saveImage" title="Cache Builder" checked="${instance.getSaveImage()}">

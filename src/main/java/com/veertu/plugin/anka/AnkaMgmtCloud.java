@@ -143,11 +143,36 @@ public class AnkaMgmtCloud extends Cloud {
         int numRunningNodes = 0;
         for (Node node : Jenkins.get().getNodes()) {
             if (node instanceof AbstractAnkaSlave) {
-                numRunningNodes++;
+                AbstractAnkaSlave ankaNode = (AbstractAnkaSlave)node;
+                if (ankaNode.getCloud().getCloudName().equals(this.getCloudName())) {
+                    numRunningNodes++;
+                }
             }
         }
         return numRunningNodes;
     }
+
+    public NodeCountResponse getNumOfRunningNodesPerLabel(Label label) {
+        AnkaCloudSlaveTemplate templateFromLabel = getTemplateFromLabel(label);
+        int numRunningNodes = 0;
+        int runningTemplateNodes = 0;
+        if (templateFromLabel != null) {
+            for (Node node : Jenkins.get().getNodes()) {
+                if (node instanceof AbstractAnkaSlave) {
+                    AbstractAnkaSlave ankaNode = (AbstractAnkaSlave)node;
+                    if (ankaNode.getCloud().getCloudName().equals(this.getCloudName())) {
+                        if (label.matches(ankaNode.getTemplate().getLabelSet())) {
+                            runningTemplateNodes++;
+                        }
+                        numRunningNodes++;
+                    }
+                }
+            }
+        }
+        return new NodeCountResponse(numRunningNodes, runningTemplateNodes);
+    }
+
+
 
     public List<AnkaVmTemplate> listVmTemplates() {
         if (ankaAPI == null) {
@@ -210,14 +235,25 @@ public class AnkaMgmtCloud extends Cloud {
             int number = Math.max(excessWorkload / t.getNumberOfExecutors(), 1);
             try {
                 this.nodeNumLock.lock();
-                if (cloudInstanceCap > 0) {
-                    int numRunningNodes = getNumOfRunningNodes();
-                    int allowedCapacity = cloudInstanceCap - numRunningNodes;
-                    if (allowedCapacity <= 0) {
-                        return plannedNodes;
+                if (cloudInstanceCap > 0 || t.getInstanceCapacity() > 0) {
+                    NodeCountResponse nodeCount = getNumOfRunningNodesPerLabel(label);
+                    if (cloudInstanceCap > 0) {
+                        int allowedCloudCapacity = cloudInstanceCap - nodeCount.numNodes;
+                        if (allowedCloudCapacity <= 0) {
+                            return plannedNodes;
+                        }
+                        if (number > allowedCloudCapacity) {
+                            number = allowedCloudCapacity;
+                        }
                     }
-                    if (number > allowedCapacity) {
-                        number = allowedCapacity;
+                    if (t.getInstanceCapacity() > 0) {
+                        int allowedTemplateCapacity = cloudInstanceCap - nodeCount.numNodesPerLabel;
+                        if (allowedTemplateCapacity <= 0) {
+                            return plannedNodes;
+                        }
+                        if (number > allowedTemplateCapacity) {
+                            number = allowedTemplateCapacity;
+                        }
                     }
                 }
                 final List<AbstractAnkaSlave> slaves = createNewSlaves(t, number);
@@ -316,10 +352,11 @@ public class AnkaMgmtCloud extends Cloud {
         if (template == null){
             return false;
         }
-        if (cloudInstanceCap > 0) {
+        if (template.getInstanceCapacity() > 0 || cloudInstanceCap > 0) {
             try {
                 this.nodeNumLock.lock();
-                if (getNumOfRunningNodes() >= cloudInstanceCap) {
+                NodeCountResponse countResponse = getNumOfRunningNodesPerLabel(label);
+                if (countResponse.numNodes >= cloudInstanceCap || countResponse.numNodesPerLabel >= template.getInstanceCapacity()) {
                     return false;
                 }
             } finally {
