@@ -21,6 +21,20 @@
     <f:entry title="Cloud instance capacity" description="The number of instances this cloud is allowed to run (0 is unlimited)" field="cloudInstanceCap">
         <f:textbox clazz="required number" default="0" />
     </f:entry>
+    <f:advanced>
+        <f:entry title="${%Monitor recurrence}" field="monitorRecurrenceMinutes" description="Number of minutes to check for dead instances (global)">
+            <f:textbox clazz="number" default="10"/>
+        </f:entry>
+        <f:entry title="${%Connection keep alive seconds}" field="connectionKeepAliveSeconds" description="Number of seconds to keep tcp connection alive">
+            <f:textbox clazz="number" default="120"/>
+        </f:entry>
+        <f:entry title="${%Max connections}" field="maxConnections" description="Limit for http connection (for the controller)">
+            <f:textbox clazz="number" default="50"/>
+        </f:entry>
+        <f:entry title="${%VM Poll time}" field="vmPollTime" description="Time in milliseconds to poll during VM creation">
+            <f:textbox clazz="number" default="5000"/>
+        </f:entry>
+    </f:advanced>
     <f:section title="VM templates">
         <!-- templates section-->
         <f:block>

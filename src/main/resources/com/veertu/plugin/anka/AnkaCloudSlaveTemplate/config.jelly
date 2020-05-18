@@ -125,6 +125,9 @@
             <f:entry title="${%Scheduling Timeout}" field="schedulingTimeout" description="Seconds for timeout when node is in scheduling state">
                   <f:textbox clazz="number" default="${descriptor.schedulingTimeout}"/>
             </f:entry>
+            <f:entry title="${%Idle Check Timeout}" field="idleMinutes" description="Number of minutes between computer checks">
+              <f:textbox clazz="number" default="3"/>
+            </f:entry>
           </f:advanced>
     </table>
 

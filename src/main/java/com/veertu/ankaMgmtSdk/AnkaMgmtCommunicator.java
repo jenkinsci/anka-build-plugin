@@ -55,6 +55,8 @@ public class AnkaMgmtCommunicator {
     protected String rootCA;
     protected transient RoundRobin roundRobin;
     protected int maxConnections = 50;
+
+    protected int connectionKeepAliveSeconds = 120;
     protected transient CloseableHttpClient httpClient;
 
 
@@ -101,6 +103,14 @@ public class AnkaMgmtCommunicator {
 
     public void setMaxConections(int maxConections) {
         this.maxConnections = maxConections;
+    }
+
+    public int getConnectionKeepAliveSeconds() {
+        return connectionKeepAliveSeconds;
+    }
+
+    public void setConnectionKeepAliveSeconds(int connectionKeepAliveSeconds) {
+        this.connectionKeepAliveSeconds = connectionKeepAliveSeconds;
     }
 
     public List<AnkaVmTemplate> listTemplates() throws AnkaMgmtException {
@@ -626,7 +636,8 @@ public class AnkaMgmtCommunicator {
         setTLSVerificationIfDefined(sslContext, builder);
         builder.disableAutomaticRetries();
         builder.setMaxConnTotal(maxConnections);
-        builder.setConnectionTimeToLive(2, TimeUnit.MINUTES);
+        builder.setMaxConnPerRoute(maxConnections);
+        builder.setConnectionTimeToLive(connectionKeepAliveSeconds, TimeUnit.SECONDS);
         CloseableHttpClient httpClient = builder.setDefaultRequestConfig(defaultRequestConfig).build();
         return httpClient;
 

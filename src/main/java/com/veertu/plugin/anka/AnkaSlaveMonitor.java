@@ -7,6 +7,8 @@ import hudson.model.TaskListener;
 import jenkins.model.Jenkins;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -15,12 +17,38 @@ import java.util.logging.Logger;
 public class AnkaSlaveMonitor extends AsyncPeriodicWork {
 
     private static final Logger LOGGER = Logger.getLogger(AnkaSlaveMonitor.class.getName());
+    private static int monitorRecurrenceMinutes = 10;
+    private static List<AnkaSlaveMonitor> monitors = new ArrayList<>();
 
-    private final Long recurrencePeriod;
+    public static void register(AnkaSlaveMonitor monitor) {
+        monitors.add(monitor);
+    }
+
+    public static void recurrenceChanged() {
+        for (AnkaSlaveMonitor monitor: monitors) {
+            monitor.resetRecurrence();
+        }
+    }
+
+    public static int getMonitorRecurrenceMinutes() {
+        return monitorRecurrenceMinutes;
+    }
+
+    private Long recurrencePeriod;
 
     public AnkaSlaveMonitor() {
         super("Anka Live Nodes Monitor");
-        recurrencePeriod = TimeUnit.MINUTES.toMillis(3);
+        recurrencePeriod = TimeUnit.MINUTES.toMillis(monitorRecurrenceMinutes);
+        register(this);
+    }
+
+    public void resetRecurrence() {
+        recurrencePeriod = TimeUnit.MINUTES.toMillis(monitorRecurrenceMinutes);
+    }
+
+    public static void setMonitorRecurrenceMinutes(int minutes) {
+        monitorRecurrenceMinutes = minutes;
+        recurrenceChanged();
     }
 
     @Override

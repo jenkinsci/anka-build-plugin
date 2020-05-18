@@ -30,7 +30,7 @@ public class AbstractSlaveTemplate {
     protected boolean keepAliveOnError;
     protected int SSHPort = 22;
     protected List<AnkaCloudSlaveTemplate.EnvironmentEntry> environments;
-    protected RetentionStrategy retentionStrategy = new RunOnceCloudRetentionStrategy(1);
+    protected RetentionStrategy retentionStrategy;
     protected String nameTemplate;
     protected String javaArgs;
     protected String jnlpJenkinsOverrideUrl;
@@ -40,6 +40,23 @@ public class AbstractSlaveTemplate {
     protected String cloudName;
     protected int instanceCapacity;
 
+
+
+    protected int idleMinutes = 3;
+
+
+    public AbstractSlaveTemplate() {
+        this.retentionStrategy = new RunOnceCloudRetentionStrategy(idleMinutes);
+    }
+
+    public int getIdleMinutes() {
+        return idleMinutes;
+    }
+
+    @DataBoundSetter
+    public void setIdleMinutes(int idleMinutes) {
+        this.idleMinutes = idleMinutes;
+    }
 
     public int getInstanceCapacity() {
         return instanceCapacity;
@@ -219,7 +236,7 @@ public class AbstractSlaveTemplate {
         try {
             return ((RunOnceCloudRetentionStrategy) retentionStrategy).clone();
         } catch (CloneNotSupportedException e) {
-            return new RunOnceCloudRetentionStrategy(1);
+            return new RunOnceCloudRetentionStrategy(this.idleMinutes);
         }
     }
 

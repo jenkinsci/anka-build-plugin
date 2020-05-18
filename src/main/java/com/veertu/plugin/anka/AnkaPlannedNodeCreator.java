@@ -38,7 +38,7 @@ public class AnkaPlannedNodeCreator {
         final long timeStarted = System.currentTimeMillis();
         while (true) {
             String instanceId = slave.getInstanceId();
-
+            int vmCheckTime = cloud.getVmPollTime();
             AnkaVmInstance instance = cloud.showInstance(instanceId);
             if (instance == null) {
                 LOGGER.log(Level.WARNING, "instance `{0}` not found in cloud {1}. Terminate provisioning ",
@@ -49,12 +49,12 @@ public class AnkaPlannedNodeCreator {
             if (instance.isStarted()) {
                 AnkaVmInfo vmInfo = instance.getVmInfo();
                 if (vmInfo == null) { // shouldn't happen if vm is Started
-                    Thread.sleep(5000);
+                    Thread.sleep(vmCheckTime);
                     continue;
                 }
                 String hostIp = vmInfo.getHostIp();
                 if (hostIp == null || hostIp.isEmpty()) { // the node doesn't have an ip yet
-                    Thread.sleep(2000);
+                    Thread.sleep(vmCheckTime);
                     continue;
                 }
                 try {
@@ -75,7 +75,7 @@ public class AnkaPlannedNodeCreator {
             }
 
             if (instance.isPulling()) {
-                Thread.sleep(5000);
+                Thread.sleep(vmCheckTime);
                 continue;
             }
 
@@ -91,7 +91,7 @@ public class AnkaPlannedNodeCreator {
                     cloud.terminateVMInstance(instanceId);
                     return null;
                 }
-                Thread.sleep(5000);
+                Thread.sleep(vmCheckTime);
                 continue;
             }
 

@@ -14,6 +14,7 @@ import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
 
 import java.io.IOException;
 import java.util.*;
@@ -43,6 +44,38 @@ public class AnkaMgmtCloud extends Cloud {
     private int   cloudInstanceCap;
     private transient ReentrantLock nodeNumLock = new ReentrantLock();
     private transient SaveImageRequestsHolder saveImageRequestsHolder = SaveImageRequestsHolder.getInstance();
+    private int vmPollTime;
+
+    public int getMonitorRecurrenceMinutes() {
+        return AnkaSlaveMonitor.getMonitorRecurrenceMinutes();
+    }
+
+    @DataBoundSetter
+    public void setMonitorRecurrenceMinutes(int minutes) {
+        AnkaSlaveMonitor.setMonitorRecurrenceMinutes(minutes);
+    }
+
+    public int getMaxConnections() {
+        return maxConnections;
+    }
+
+    @DataBoundSetter
+    public void setMaxConnections(int maxConnections) {
+        this.maxConnections = maxConnections;
+    }
+
+    protected int maxConnections = 50;
+
+    public int getConnectionKeepAliveSeconds() {
+        return connectionKeepAliveSeconds;
+    }
+
+    @DataBoundSetter
+    public void setConnectionKeepAliveSeconds(int connectionKeepAliveSeconds) {
+        this.connectionKeepAliveSeconds = connectionKeepAliveSeconds;
+    }
+
+    protected int connectionKeepAliveSeconds = 120;
 
     @DataBoundConstructor
     public AnkaMgmtCloud(String ankaMgmtUrl,
@@ -88,6 +121,8 @@ public class AnkaMgmtCloud extends Cloud {
                 ankaAPI = new AnkaAPI(ankaMgmtUrl, skipTLSVerification, this.rootCA);
             }
         }
+        this.ankaAPI.setMaxConnections(maxConnections);
+        this.ankaAPI.setConnectionKeepAliveSeconds(connectionKeepAliveSeconds);
     }
 
     public static void markFuture(AnkaMgmtCloud cloud, AbstractAnkaSlave abstractAnkaSlave) {
@@ -96,6 +131,8 @@ public class AnkaMgmtCloud extends Cloud {
 
     protected Object readResolve() {
         this.nodeNumLock = new ReentrantLock();
+        this.ankaAPI.setConnectionKeepAliveSeconds(connectionKeepAliveSeconds);
+        this.ankaAPI.setMaxConnections(maxConnections);
         return this;
     }
 
@@ -358,7 +395,10 @@ public class AnkaMgmtCloud extends Cloud {
             try {
                 this.nodeNumLock.lock();
                 NodeCountResponse countResponse = getNumOfRunningNodesPerLabel(label);
-                if (countResponse.numNodes >= cloudInstanceCap || countResponse.numNodesPerLabel >= template.getInstanceCapacity()) {
+                if ((cloudInstanceCap > 0 && countResponse.numNodes >= cloudInstanceCap)
+                        ||
+                    (template.getInstanceCapacity() >0 &&
+                        countResponse.numNodesPerLabel >= template.getInstanceCapacity())) {
                     return false;
                 }
             } finally {
@@ -527,6 +567,15 @@ public class AnkaMgmtCloud extends Cloud {
 
     public static AnkaMgmtCloud get(String cloudName) {
         return (AnkaMgmtCloud) Jenkins.get().getCloud(cloudName);
+    }
+
+    public int getVmPollTime() {
+        return this.vmPollTime;
+    }
+
+    @DataBoundSetter
+    public void setVmPollTime(int milliseconds) {
+        vmPollTime =milliseconds;
     }
 
     @Extension

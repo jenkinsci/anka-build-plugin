@@ -26,7 +26,7 @@ import java.util.logging.Logger;
 public class RunOnceCloudRetentionStrategy extends RetentionStrategy<AnkaCloudComputer> implements ExecutorListener, Cloneable {
     private static final transient Logger LOGGER = Logger.getLogger(RunOnceCloudRetentionStrategy.class.getName());
 
-    private int idleMinutes = 1;
+    private int idleMinutes;
     private int reconnectionRetries = 0;
     private static final int MAX_RECONNECTION_RETRIES = 7;
 
@@ -46,17 +46,17 @@ public class RunOnceCloudRetentionStrategy extends RetentionStrategy<AnkaCloudCo
             LOGGER.log(Level.INFO, "Checking computer {0}", computer.getName());
             if (computer.countBusy() > 1) {
                 LOGGER.log(Level.FINE, "Computer {0} has {1} busy executors", new Object[]{computer.getName(), computer.countBusy()});
-                return 1;
+                return idleMinutes;
             }
 
 
             if (computer.isSchedulingOrPulling()) { // it's scheduling or pulling - wait
-                return 3;
+                return idleMinutes * 3;
             }
 
 
             if (computer.isConnecting() || !computer.afterFirstConnection()) {
-                return 1;
+                return idleMinutes;
             }
 
 
@@ -64,7 +64,7 @@ public class RunOnceCloudRetentionStrategy extends RetentionStrategy<AnkaCloudCo
                 LOGGER.log(Level.WARNING, "Computer {0}, instance {1} is terminating because it has reached it's max reconnection retries",
                         new Object[]{computer.getName(), computer.getVMId()});
                 done(computer);
-                return 1;
+                return idleMinutes;
             }
 
             if (!computer.isOnline()) {
@@ -76,7 +76,7 @@ public class RunOnceCloudRetentionStrategy extends RetentionStrategy<AnkaCloudCo
                 }
                 computer.connect(forceReconnect);
                 reconnectionRetries++;
-                return 1;
+                return idleMinutes;
             }
 
 
@@ -88,9 +88,9 @@ public class RunOnceCloudRetentionStrategy extends RetentionStrategy<AnkaCloudCo
                     done(computer);
                 }
             }
-            return 1;
+            return idleMinutes;
         } catch (ClassCastException e){
-            return 1;  // these are not the droids you are looking for
+            return idleMinutes;  // these are not the droids you are looking for
         }
     }
 

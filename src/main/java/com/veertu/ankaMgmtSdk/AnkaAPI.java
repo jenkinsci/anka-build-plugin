@@ -47,6 +47,14 @@ public class AnkaAPI {
         }
     }
 
+    public void setMaxConnections(int maxConnections) {
+        this.communicator.setMaxConections(maxConnections);
+    }
+
+    public void setConnectionKeepAliveSeconds(int seconds) {
+        this.communicator.setConnectionKeepAliveSeconds(seconds);
+    }
+
     public List<AnkaVmTemplate> listTemplates() throws AnkaMgmtException {
         return communicator.listTemplates();
     }
