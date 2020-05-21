@@ -2,9 +2,8 @@ package com.veertu.plugin.anka;
 
 import hudson.Extension;
 import hudson.model.AsyncPeriodicWork;
-import hudson.model.Node;
 import hudson.model.TaskListener;
-import jenkins.model.Jenkins;
+import jenkins.slaves.iterators.api.NodeIterator;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -47,6 +46,9 @@ public class AnkaSlaveMonitor extends AsyncPeriodicWork {
     }
 
     public static void setMonitorRecurrenceMinutes(int minutes) {
+        if (minutes < 1) { // allow a minimum of 1 minute
+            minutes = 1;
+        }
         monitorRecurrenceMinutes = minutes;
         recurrenceChanged();
     }
@@ -63,25 +65,22 @@ public class AnkaSlaveMonitor extends AsyncPeriodicWork {
 
     private void removeDeadNodes() {
         LOGGER.log(Level.INFO, "AnkaSlaveMonitor checking nodes...");
-        for (Node node : Jenkins.get().getNodes()) {
-            if (node instanceof AbstractAnkaSlave) {
-                final AbstractAnkaSlave ankaNode = (AbstractAnkaSlave) node;
-                LOGGER.log(Level.FINE, "Checking Anka Node {0}, instance {1}",
-                        new Object[]{ankaNode.getNodeName(), ankaNode.getInstanceId()});
-                AnkaCloudComputer computer = (AnkaCloudComputer) ankaNode.getComputer();
-                if (computer != null && computer.isConnecting()) {
-                    continue;
+        for (AbstractAnkaSlave ankaNode : NodeIterator.nodes(AbstractAnkaSlave.class)) {
+            LOGGER.log(Level.FINE, "Checking Anka Node {0}, instance {1}",
+                    new Object[]{ankaNode.getNodeName(), ankaNode.getInstanceId()});
+            AnkaCloudComputer computer = (AnkaCloudComputer) ankaNode.getComputer();
+            if (computer != null && computer.isConnecting()) {
+                continue;
+            }
+            try {
+                if (!ankaNode.isAlive()) {
+                    LOGGER.log(Level.WARNING, "Anka Node {0}, instance {1}: instance is not alive - terminating",
+                            new Object[]{ankaNode.getNodeName(), ankaNode.getInstanceId()});
+                    ankaNode.terminate();
                 }
-                try {
-                    if (!ankaNode.isAlive()) {
-                        LOGGER.log(Level.WARNING, "Anka Node {0}, instance {1}: instance is not alive - terminating",
-                                new Object[]{ankaNode.getNodeName(), ankaNode.getInstanceId()});
-                        ankaNode.terminate();
-                    }
-                } catch (IOException e) {
-                    LOGGER.log(Level.WARNING,"Anka VM failed to terminate: " + ankaNode.getInstanceId());
-                    e.printStackTrace();
-                }
+            } catch (IOException e) {
+                LOGGER.log(Level.WARNING,"Anka VM failed to terminate: " + ankaNode.getInstanceId());
+                e.printStackTrace();
             }
         }
     }

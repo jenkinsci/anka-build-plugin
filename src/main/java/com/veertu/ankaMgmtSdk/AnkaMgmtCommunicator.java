@@ -10,6 +10,7 @@ import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.*;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.conn.ConnectTimeoutException;
+import org.apache.http.conn.ConnectionPoolTimeoutException;
 import org.apache.http.conn.HttpHostConnectException;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
@@ -58,6 +59,7 @@ public class AnkaMgmtCommunicator {
 
     protected int connectionKeepAliveSeconds = 120;
     protected transient CloseableHttpClient httpClient;
+    private static int MinMaxConnections = 5;
 
 
     public AnkaMgmtCommunicator(String url) {
@@ -102,6 +104,9 @@ public class AnkaMgmtCommunicator {
     }
 
     public void setMaxConections(int maxConections) {
+        if (maxConections == 0) { // probably a misconfig
+            maxConections = MinMaxConnections;
+        }
         this.maxConnections = maxConections;
     }
 
@@ -457,6 +462,26 @@ public class AnkaMgmtCommunicator {
 
     }
 
+    public List<AnkaNode> getNodes() throws AnkaMgmtException {
+        List<AnkaNode> nodes = new ArrayList<>();
+        String url = "/api/v1/node";
+        try {
+            JSONObject jsonResponse = this.doRequest(RequestMethod.GET, url);
+            String logicalResult = jsonResponse.getString("status");
+            if (logicalResult.equals("OK")) {
+                JSONArray vmsJson = jsonResponse.getJSONArray("body");
+                for (int i = 0; i < vmsJson.length(); i++) {
+                    JSONObject nodeJson = vmsJson.getJSONObject(i);
+                    AnkaNode ankaNode = AnkaNode.fromJson(nodeJson);
+                    nodes.add(ankaNode);
+                }
+            }
+            return nodes;
+        } catch (IOException e) {
+            return nodes;
+        }
+    }
+
     protected enum RequestMethod {
         GET, POST, DELETE, PUT
     }
@@ -561,6 +586,8 @@ public class AnkaMgmtCommunicator {
                         return jsonResponse;
                     }
 
+                } catch (ConnectionPoolTimeoutException e) {
+                    throw e; // keep on retrying
                 } catch (HttpHostConnectException | ConnectTimeoutException | ClientException | SSLException | NoRouteToHostException e) {
                     AnkaMgmtCloud.Log("Got client exception: %s", e.getMessage());
 
