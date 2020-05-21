@@ -295,7 +295,7 @@ public abstract class AbstractAnkaSlave extends Slave {
     public void taskCompleted(Executor executor, Queue.Task task, long durationMS) {
         this.setTaskExecuted(true);
         SaveImageParameters saveImageParams = template.getSaveImageParameters();
-        if (saveImageParams != null && this.template.getSaveImageParameters().getSaveImage() &&
+        if (!hadProblemsInBuild && saveImageParams != null && this.template.getSaveImageParameters().getSaveImage() &&
                 saveImageParams.getSaveImage()) {
             AnkaMgmtCloud.markFuture(cloud, this);
         }
