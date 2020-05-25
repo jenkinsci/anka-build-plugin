@@ -117,6 +117,12 @@ public class AnkaMgmtCloud extends Cloud {
 
         Log("Init Anka Cloud");
         this.skipTLSVerification = skipTLSVerification;
+        if (maxConnections == 0) {
+            maxConnections = 50;
+        }
+        if (connectionKeepAliveSeconds == 0) {
+            connectionKeepAliveSeconds = 120;
+        }
         createAnkaAPIObject();
     }
 
@@ -149,6 +155,12 @@ public class AnkaMgmtCloud extends Cloud {
 
     protected Object readResolve() {
         this.nodeNumLock = new ReentrantLock();
+        if (maxConnections == 0) {
+            maxConnections = 50;
+        }
+        if (connectionKeepAliveSeconds == 0) {
+            connectionKeepAliveSeconds = 120;
+        }
         createAnkaAPIObject();
         return this;
     }
