@@ -117,16 +117,20 @@ public class AnkaMgmtCloud extends Cloud {
 
         Log("Init Anka Cloud");
         this.skipTLSVerification = skipTLSVerification;
+
+        createAnkaAPIObject();
+    }
+
+    private void createAnkaAPIObject(){
         if (maxConnections == 0) {
             maxConnections = 50;
         }
         if (connectionKeepAliveSeconds == 0) {
             connectionKeepAliveSeconds = 120;
         }
-        createAnkaAPIObject();
-    }
-
-    private void createAnkaAPIObject(){
+        if (vmPollTime <= 0) {
+            vmPollTime = 5000;
+        }
         CertCredentials credentials = lookUpCredentials(credentialsId);
         if (credentials != null && credentials.getClientCertificate() != null &&
                 !credentials.getClientCertificate().isEmpty() && credentials.getClientKey() != null &&
@@ -155,12 +159,6 @@ public class AnkaMgmtCloud extends Cloud {
 
     protected Object readResolve() {
         this.nodeNumLock = new ReentrantLock();
-        if (maxConnections == 0) {
-            maxConnections = 50;
-        }
-        if (connectionKeepAliveSeconds == 0) {
-            connectionKeepAliveSeconds = 120;
-        }
         createAnkaAPIObject();
         return this;
     }
