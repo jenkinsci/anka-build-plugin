@@ -51,11 +51,16 @@ public class AnkaLauncher extends DelegatingComputerLauncher {
     @Override
     public void launch(SlaveComputer computer, TaskListener listener) throws IOException, InterruptedException {
         try {
-
+            if (!(computer instanceof AnkaCloudComputer)) {
+                throw new RuntimeException("This is not a an Anka Computer");
+            }
+            AnkaCloudComputer ankaCloudComputer = (AnkaCloudComputer) computer;
+            ankaCloudComputer.reportLaunching();
             AnkaVmInstance instance = cloud.showInstance(instanceId);
             if (instance == null) {
                 return;
             }
+            listener.getLogger().println(String.format("Instance %s is %s", instanceId, instance.getSessionState()));
             if (instance.isStarted()) {
                 listener.getLogger().println(String.format("Instance %s is Started", instanceId));
                 AnkaVmInfo vmInfo = instance.getVmInfo();
@@ -72,6 +77,7 @@ public class AnkaLauncher extends DelegatingComputerLauncher {
                         Thread.sleep(sshLaunchDelay);
                         listener.getLogger().println(String.format("Launching SSH connection for %s", instanceId));
                         this.launcher.launch(computer, listener);
+                        ankaCloudComputer.reportLaunchFinished();
 
                     } else if (template.getLaunchMethod().equalsIgnoreCase(LaunchMethod.JNLP)) {
                         listener.getLogger().println(String.format("Launching JNLP for %s", instanceId));
@@ -83,6 +89,7 @@ public class AnkaLauncher extends DelegatingComputerLauncher {
                                 }
                                 this.launcher.launch(computer, listener);
                                 if (computer.isOnline()) {
+                                    ankaCloudComputer.reportLaunchFinished();
                                     break;
                                 }
                             } catch (IOException | InterruptedException e) {
@@ -110,6 +117,10 @@ public class AnkaLauncher extends DelegatingComputerLauncher {
         } catch (AnkaMgmtException e) {
             throw new IOException(e);
         }
+
+    }
+
+    public void launchFinished() {
 
     }
 }

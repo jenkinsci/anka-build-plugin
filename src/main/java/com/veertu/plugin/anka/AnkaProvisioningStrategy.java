@@ -53,20 +53,21 @@ public class AnkaProvisioningStrategy extends NodeProvisioner.Strategy {
                     + strategyState.getPlannedCapacitySnapshot()
                     + strategyState.getAdditionalPlannedCapacity();
             currentDemand = snap.getQueueLength();
-        }
-        AnkaMgmtCloud.Log("Available capacity=%s, currentDemand=%s", availableCapacity, currentDemand);
-        if (currentDemand > availableCapacity) {
-            Jenkins jenkinsInstance = Jenkins.get();
-            for (Cloud cloud : jenkinsInstance.clouds) {
-                if (cloud instanceof AnkaMgmtCloud && cloud.canProvision(label)) {
-                    Collection<NodeProvisioner.PlannedNode> plannedNodes = cloud.provision(label, currentDemand - availableCapacity);
-                    AnkaMgmtCloud.Log(String.format("Planned %d new nodes", plannedNodes.size()));
-                    strategyState.recordPendingLaunches(plannedNodes);
-                    availableCapacity += plannedNodes.size();
-                    AnkaMgmtCloud.Log("After provisioning, available capacity=%d, currentDemand=%d", availableCapacity, currentDemand);
-                    break;
-                }
 
+            AnkaMgmtCloud.Log("Available capacity=%s, currentDemand=%s", availableCapacity, currentDemand);
+            if (currentDemand > availableCapacity) {
+                Jenkins jenkinsInstance = Jenkins.get();
+                for (Cloud cloud : jenkinsInstance.clouds) {
+                    if (cloud instanceof AnkaMgmtCloud && cloud.canProvision(label)) {
+                        Collection<NodeProvisioner.PlannedNode> plannedNodes = cloud.provision(label, currentDemand - availableCapacity);
+                        AnkaMgmtCloud.Log(String.format("Planned %d new nodes", plannedNodes.size()));
+                        strategyState.recordPendingLaunches(plannedNodes);
+                        availableCapacity += plannedNodes.size();
+                        AnkaMgmtCloud.Log("After provisioning, available capacity=%d, currentDemand=%d", availableCapacity, currentDemand);
+                        break;
+                    }
+
+                }
             }
         }
         if (availableCapacity >= currentDemand) {

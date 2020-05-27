@@ -20,6 +20,7 @@ public class AnkaCloudComputer extends SlaveComputer {
     protected Run<?, ?> run;
     private final String vmId;
     private boolean afterFirstConnection = false;
+    private boolean launching;
 
     public AnkaCloudComputer(AbstractAnkaSlave slave, String vmId) {
         super(slave);
@@ -36,6 +37,9 @@ public class AnkaCloudComputer extends SlaveComputer {
             return true;
         }
         if (isSchedulingOrPulling()) {
+            return true;
+        }
+        if (isAlive() && launching) {
             return true;
         }
         return false;
@@ -217,5 +221,13 @@ public class AnkaCloudComputer extends SlaveComputer {
         } catch (AnkaMgmtException e) {
             throw new IOException(e);
         }
+    }
+
+    public void reportLaunching() {
+        this.launching = true;
+    }
+
+    public void reportLaunchFinished() {
+        this.launching = false;
     }
 }
