@@ -247,7 +247,7 @@ public abstract class AbstractAnkaSlave extends Slave {
                         templateId});
             }
         } else {
-            AnkaMgmtCloud.Log("Node %s instance %s. not found, ", getNodeName(), instanceId);
+            AnkaMgmtCloud.Log("Node %s instance %s. not found.", getNodeName(), instanceId);
         }
         return instance;
     }
