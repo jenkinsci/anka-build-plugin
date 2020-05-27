@@ -42,7 +42,7 @@ public class AbstractSlaveTemplate {
 
 
 
-    protected int idleMinutes = 3;
+    protected int idleMinutes = 1;
 
 
     public AbstractSlaveTemplate() {

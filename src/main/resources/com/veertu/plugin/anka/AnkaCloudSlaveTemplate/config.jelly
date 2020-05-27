@@ -126,7 +126,7 @@
                   <f:textbox clazz="number" default="${descriptor.schedulingTimeout}"/>
             </f:entry>
             <f:entry title="${%Idle Check Timeout}" field="idleMinutes" description="Number of minutes between computer checks">
-              <f:textbox clazz="number" default="3"/>
+              <f:textbox clazz="number" default="1"/>
             </f:entry>
           </f:advanced>
     </table>
