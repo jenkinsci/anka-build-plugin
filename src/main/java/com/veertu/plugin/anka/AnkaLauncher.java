@@ -99,6 +99,7 @@ public class AnkaLauncher extends DelegatingComputerLauncher {
                                 }
                             } finally {
                                 numRetries++;
+                                Thread.sleep(5000);
                             }
                         }
 
