@@ -347,7 +347,7 @@ public class AnkaMgmtCloud extends Cloud {
     }
 
     private List<AbstractAnkaSlave> createNewSlaves(AnkaCloudSlaveTemplate template, int number) throws AnkaMgmtException, IOException, Descriptor.FormException {
-        if (durabilityMode.equalsIgnoreCase(DurabilityMode.Durable)) {
+        if (durabilityMode == null || durabilityMode.equalsIgnoreCase(DurabilityMode.Durable)) {
             return createNewDurableSlaves(template, number);
         } else {
             return createNewLightWeightSlaves(template, number);

@@ -236,6 +236,9 @@ public class AbstractSlaveTemplate {
         try {
             return ((RunOnceCloudRetentionStrategy) retentionStrategy).clone();
         } catch (CloneNotSupportedException e) {
+            if (idleMinutes < 1) {
+                idleMinutes = 1;
+            }
             return new RunOnceCloudRetentionStrategy(this.idleMinutes);
         }
     }

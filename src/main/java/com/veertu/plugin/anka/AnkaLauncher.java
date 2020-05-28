@@ -50,11 +50,12 @@ public class AnkaLauncher extends DelegatingComputerLauncher {
 
     @Override
     public void launch(SlaveComputer computer, TaskListener listener) throws IOException, InterruptedException {
+        if (!(computer instanceof AnkaCloudComputer)) {
+            throw new RuntimeException("This is not a an Anka Computer");
+        }
+        AnkaCloudComputer ankaCloudComputer = (AnkaCloudComputer) computer;
         try {
-            if (!(computer instanceof AnkaCloudComputer)) {
-                throw new RuntimeException("This is not a an Anka Computer");
-            }
-            AnkaCloudComputer ankaCloudComputer = (AnkaCloudComputer) computer;
+
             ankaCloudComputer.reportLaunching();
             AnkaVmInstance instance = cloud.showInstance(instanceId);
             if (instance == null) {
@@ -116,6 +117,8 @@ public class AnkaLauncher extends DelegatingComputerLauncher {
             }
         } catch (AnkaMgmtException e) {
             throw new IOException(e);
+        } finally {
+            ankaCloudComputer.reportLaunchFinished();
         }
 
     }
