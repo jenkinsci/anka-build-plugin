@@ -49,11 +49,13 @@ public class RunOnceCloudRetentionStrategy extends RetentionStrategy<AnkaCloudCo
                 return idleMinutes;
             }
 
-
             if (computer.isSchedulingOrPulling()) { // it's scheduling or pulling - wait
                 return idleMinutes * 3;
             }
-
+            AbstractAnkaSlave node = computer.getNode();
+            if (node != null && !node.isAlive()) {
+                done(computer);
+            }
 
             if (computer.isConnecting() || !computer.afterFirstConnection()) {
                 return idleMinutes;

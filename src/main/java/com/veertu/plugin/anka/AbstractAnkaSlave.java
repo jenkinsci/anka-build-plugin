@@ -21,6 +21,7 @@ import java.util.logging.Logger;
 public abstract class AbstractAnkaSlave extends Slave {
 
     private static final Logger LOGGER = Logger.getLogger(AbstractAnkaSlave.class.getName());
+    private transient String buildId;
 
     public AnkaMgmtCloud getCloud() {
         return cloud;
@@ -266,6 +267,9 @@ public abstract class AbstractAnkaSlave extends Slave {
                     if (instance.isSchedulingOrPulling()) {
                         return true;
                     }
+                    if (instance.isPushing()) {
+                        return true;
+                    }
                 }
             } catch (AnkaMgmtException e) {
                 return true;   // in case we can't contact the cloud, assume the VM is alive
@@ -299,6 +303,10 @@ public abstract class AbstractAnkaSlave extends Slave {
                 saveImageParams.getSaveImage()) {
             AnkaMgmtCloud.markFuture(cloud, this);
         }
+    }
+
+    public void setBuildId(String buildId) {
+        this.buildId = buildId;
     }
 
     @Extension

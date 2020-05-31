@@ -39,18 +39,18 @@ public class SaveImageRequest {
 
     public SaveImageState checkState() {
         switch (state) {
-            case Future:
+            case Pending:
+                getRemoteState();
+                break;
+            case Done:
+            case Error:
+            case Timeout:
                 return state;
+            case Future:
             case Requesting:
                 if (System.currentTimeMillis() - created > timeout) {
                         state = SaveImageState.Timeout;
                 }
-                return state;
-            case Pending:
-                getRemoteState();
-            case Done:
-            case Error:
-            case Timeout:
                 return state;
         }
         return state;
@@ -58,7 +58,9 @@ public class SaveImageRequest {
 
     private void getRemoteState() {
         try {
-
+            if (requestId == null) {
+                return;
+            }
             String status = cloud.getAnkaApi().getSaveImageStatus(requestId);
             if (status.toLowerCase().equals("pending")) {
                 state = SaveImageState.Pending;

@@ -22,9 +22,9 @@ public class ImageSaver {
 
             String buildId = slave.getJobNameAndNumber();
             SaveImageRequestsHolder requestsHolder = SaveImageRequestsHolder.getInstance();
-            List<SaveImageRequest> saveImageRequests =  requestsHolder.getRequests(buildId);
+            List<SaveImageRequest> saveImageRequests = requestsHolder.getRequests(buildId);
             SaveImageRequest saveImageRequest = null;
-            for (SaveImageRequest req: saveImageRequests) {
+            for (SaveImageRequest req : saveImageRequests) {
                 if (req.isFuture() && req.getRequestId() == null) {
                     saveImageRequest = req;
                 }
@@ -73,24 +73,28 @@ public class ImageSaver {
         SaveImageRequestsHolder requestsHolder = SaveImageRequestsHolder.getInstance();
 
         try {
-            List<SaveImageRequest> requests = requestsHolder.getRequests(buildId);
-            for (int i = requests.size()-1; i >= 0; i--) {
-                SaveImageRequest request = requests.get(i);
-                if (request == null) {
-                    continue;
+            while (true) {
+                List<SaveImageRequest> requests = requestsHolder.getRequests(buildId);
+                if (requests.size() <= 0) {
+                    return true;
                 }
-                while (true) {
+                for (int i = requests.size() - 1; i >= 0; i--) {
+                    SaveImageRequest request = requests.get(i);
+                    if (request == null) {
+                        continue;
+                    }
                     SaveImageState state = request.checkState();
                     if (state == SaveImageState.Future) {
                         AnkaMgmtCloud.Log("Save Image request haven't started yet");
                         Thread.sleep(1000 * retryWaitTimeSeconds);
-                        continue;
+                        break;
                     }
                     if (state == SaveImageState.Pending || state == SaveImageState.Requesting) {
                         if ((System.currentTimeMillis() - startTime) > (timeoutMinutes * 60 * 1000)) {
                             throw new SaveImageStatusTimeout();
                         }
                         Thread.sleep(1000 * retryWaitTimeSeconds);
+                        break;
                     }
                     if (state == SaveImageState.Error || state == SaveImageState.Timeout) {
                         AnkaMgmtCloud.Log("Save image failed. Anka Cloud Name: %s, Request id: %s",
@@ -98,9 +102,8 @@ public class ImageSaver {
                         return false;
                     }
                     if (state == SaveImageState.Done) {
-                        break;
+                        return true;
                     }
-
                 }
             }
         } catch (InterruptedException ex) {
@@ -113,4 +116,11 @@ public class ImageSaver {
         return "sync && sleep 60";
     }
 
+    public static void deleteRequest(AbstractAnkaSlave node) {
+        if (node != null) {
+            String buildId = node.getJobNameAndNumber();
+            SaveImageRequestsHolder requestsHolder = SaveImageRequestsHolder.getInstance();
+            requestsHolder.runFinished(buildId);
+        }
+    }
 }

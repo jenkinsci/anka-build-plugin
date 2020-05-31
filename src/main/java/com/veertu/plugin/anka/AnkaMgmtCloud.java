@@ -12,11 +12,10 @@ import hudson.slaves.NodeProvisioner;
 import hudson.slaves.SlaveComputer;
 import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
+import jenkins.slaves.iterators.api.NodeIterator;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
-import jenkins.slaves.iterators.api.NodeIterator;
-
 
 import java.io.IOException;
 import java.util.*;
@@ -596,8 +595,18 @@ public class AnkaMgmtCloud extends Cloud {
     }
 
     public void terminateVMInstance(String id) throws AnkaMgmtException {
-        AnkaVmInstance ankaVmInstance = ankaAPI.showInstance(id);
+        AbstractAnkaSlave node = null;
+        for (AbstractAnkaSlave ankaNode : NodeIterator.nodes(AbstractAnkaSlave.class)) {
+            if (ankaNode.getInstanceId().equalsIgnoreCase(id)) {
+                node = ankaNode;
+            }
+        }
+        terminateVMInstance(id, node);
+    }
 
+    public void terminateVMInstance(String id, AbstractAnkaSlave node) throws AnkaMgmtException {
+        AnkaVmInstance ankaVmInstance = ankaAPI.showInstance(id);
+        ImageSaver.deleteRequest(node);
         if (ankaVmInstance == null || ankaVmInstance.isTerminatingOrTerminated()) {
             return; // if it's already terminated just forget about it
         }
