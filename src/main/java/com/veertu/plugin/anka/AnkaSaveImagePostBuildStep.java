@@ -37,31 +37,32 @@ public class AnkaSaveImagePostBuildStep extends Recorder {
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener taskListener) throws InterruptedException, IOException{
         boolean isSuccess = true;
 
-        if (shouldFail) {
-            taskListener.getLogger().print("Checking save image status...");
-            AbstractAnkaSlave slave = (AbstractAnkaSlave) (build.getBuiltOn());
-            
-            // Killing vm to manually initiate save image request
-            assert slave != null;
-            slave.setTaskExecuted(true);
-            slave.terminate();
+        taskListener.getLogger().print("Checking save image status...");
+        AbstractAnkaSlave slave = (AbstractAnkaSlave) (build.getBuiltOn());
 
-            try {
-                isSuccess = ImageSaver.isSuccessful(slave.getJobNameAndNumber(), timeoutMinutes);
-                taskListener.getLogger().println(isSuccess? "Done!" : "Failed!");
-            } catch (SaveImageStatusTimeout e) {
-                taskListener.getLogger().println("TIMED OUT");
-                isSuccess = false;
-            }
-            catch (SaveImageRequestIdMissingException e) {
-                taskListener.getLogger().print(e.getMessage());
-                isSuccess = false;
-            }
-            catch (AnkaMgmtException e) {
-                taskListener.getLogger().print("error while checking if save image requess finished\n");
-                e.printStackTrace();
-                isSuccess = false;
-            }
+        // Killing vm to manually initiate save image request
+        assert slave != null;
+        slave.setTaskExecuted(true);
+        slave.terminate();
+
+        try {
+            isSuccess = ImageSaver.isSuccessful(slave.getJobNameAndNumber(), timeoutMinutes);
+            taskListener.getLogger().println(isSuccess? "Done!" : "Failed!");
+        } catch (SaveImageStatusTimeout e) {
+            taskListener.getLogger().println("TIMED OUT");
+            isSuccess = false;
+        }
+        catch (SaveImageRequestIdMissingException e) {
+            taskListener.getLogger().print(e.getMessage());
+            isSuccess = false;
+        }
+        catch (AnkaMgmtException e) {
+            taskListener.getLogger().print("error while checking if save image requess finished\n");
+            e.printStackTrace();
+            isSuccess = false;
+        }
+        if (!shouldFail) {
+            return true;
         }
         return isSuccess;
     }

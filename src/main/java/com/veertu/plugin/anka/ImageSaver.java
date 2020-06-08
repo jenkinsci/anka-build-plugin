@@ -31,6 +31,7 @@ public class ImageSaver {
             }
             if (saveImageRequest == null) {  // no request in "future" state found
                 saveImageRequest = new SaveImageRequest(cloud, buildId);
+                requestsHolder.setRequest(buildId, saveImageRequest);
             }
 
             saveImageRequest.requesting();
