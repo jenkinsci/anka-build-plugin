@@ -9,10 +9,16 @@ public class DynamicSlaveProperties extends AbstractSlaveTemplate {
 
         AnkaCloudSlaveTemplate ankaCloudSlaveTemplate = new AnkaCloudSlaveTemplate("");
         ankaCloudSlaveTemplate.setProperties(this);
-        ankaCloudSlaveTemplate.setRemoteFS("/Users/anka/");
-        ankaCloudSlaveTemplate.setNumberOfExecutors(1);
-        ankaCloudSlaveTemplate.setLaunchMethod(LaunchMethod.JNLP);
         ankaCloudSlaveTemplate.setSaveImageParameters(this.saveImageParameters);
+        if (this.getRemoteFS() == null) {
+            ankaCloudSlaveTemplate.setRemoteFS("/Users/anka/");
+        }
+        if (this.getNumberOfExecutors() < 1) {
+            ankaCloudSlaveTemplate.setNumberOfExecutors(1);
+        }
+        if (this.getLaunchMethod() == null) {
+            ankaCloudSlaveTemplate.setLaunchMethod(LaunchMethod.JNLP);
+        }
         return ankaCloudSlaveTemplate;
     }
 
