@@ -17,7 +17,6 @@ import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.ssl.TrustStrategy;
 import org.bouncycastle.cert.X509CertificateHolder;
@@ -643,8 +642,8 @@ public class AnkaMgmtCommunicator {
     protected CloseableHttpClient makeHttpClient() throws KeyStoreException, NoSuchAlgorithmException, KeyManagementException, CertificateException, IOException, UnrecoverableKeyException {
         RequestConfig defaultRequestConfig = makeRequestConfig(timeout);
         HttpClientBuilder builder = HttpClientBuilder.create();
-        PoolingHttpClientConnectionManager cm = new PoolingHttpClientConnectionManager(); // use a connection pool
-        builder.setConnectionManager(cm);
+//        PoolingHttpClientConnectionManager cm = new PoolingHttpClientConnectionManager(); // use a connection pool
+//        builder.setConnectionManager(cm);
         KeyStore keystore = null;
         if (rootCA != null) {
             PEMParser reader;
