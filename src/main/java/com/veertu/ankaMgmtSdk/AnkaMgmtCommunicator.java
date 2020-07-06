@@ -9,10 +9,12 @@ import org.apache.http.HttpEntity;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.*;
 import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.config.RegistryBuilder;
 import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.http.conn.ConnectionPoolTimeoutException;
 import org.apache.http.conn.HttpHostConnectException;
-import org.apache.http.conn.ssl.NoopHostnameVerifier;
+import org.apache.http.conn.socket.ConnectionSocketFactory;
+import org.apache.http.conn.socket.PlainConnectionSocketFactory;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -20,10 +22,13 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.ssl.TrustStrategy;
+import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.openssl.PEMKeyPair;
 import org.bouncycastle.openssl.PEMParser;
+import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -43,6 +48,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import static org.apache.http.conn.ssl.SSLConnectionSocketFactory.getDefaultHostnameVerifier;
+
 
 /**
  * Created by asafgur on 09/05/2017.
@@ -60,7 +67,6 @@ public class AnkaMgmtCommunicator {
     protected int connectionKeepAliveSeconds = 120;
     protected transient CloseableHttpClient httpClient;
     private static int MinMaxConnections = 5;
-
 
     public AnkaMgmtCommunicator(String url) {
         try {
@@ -482,6 +488,10 @@ public class AnkaMgmtCommunicator {
         }
     }
 
+    protected void addHeaders(HttpRequestBase request) throws AnkaMgmtException, ClientException {
+        return;
+    }
+
     protected enum RequestMethod {
         GET, POST, DELETE, PUT
     }
@@ -544,6 +554,7 @@ public class AnkaMgmtCommunicator {
                             break;
                     }
                     request.setConfig(makeRequestConfig(reqTimeout));
+                    this.addHeaders(request);
                     try {
                         long startTime = System.currentTimeMillis();
                         response = httpClient.execute(request);
@@ -640,27 +651,29 @@ public class AnkaMgmtCommunicator {
         return requestBuilder.build();
     }
 
-    protected CloseableHttpClient makeHttpClient() throws KeyStoreException, NoSuchAlgorithmException, KeyManagementException, CertificateException, IOException, UnrecoverableKeyException {
+    protected CloseableHttpClient makeHttpClient() throws KeyStoreException, NoSuchAlgorithmException,
+            KeyManagementException, CertificateException, IOException, UnrecoverableKeyException {
+
         RequestConfig defaultRequestConfig = makeRequestConfig(timeout);
         HttpClientBuilder builder = HttpClientBuilder.create();
-        PoolingHttpClientConnectionManager cm = new PoolingHttpClientConnectionManager(); // use a connection pool
-        builder.setConnectionManager(cm);
-        KeyStore keystore = null;
+        KeyStore keystore = this.getKeyStore();
         if (rootCA != null) {
+            if (keystore == null) {
+                keystore = KeyStore.getInstance("JKS");
+                keystore.load(null);
+            }
             PEMParser reader;
             BouncyCastleProvider bouncyCastleProvider = new BouncyCastleProvider();
             reader = new PEMParser(new StringReader(rootCA));
             X509CertificateHolder holder = (X509CertificateHolder)reader.readObject();
             Certificate certificate = new JcaX509CertificateConverter().setProvider(bouncyCastleProvider).getCertificate(holder);
-            keystore = KeyStore.getInstance("JKS");
-            keystore.load(null);
             keystore.setCertificateEntry("rootCA", certificate);
         }
 
-        SSLContext sslContext = new SSLContextBuilder()
-                .loadTrustMaterial(keystore, getTrustStartegy()).build();
+        SSLContext sslContext = this.getSSLContext(keystore);
+        PoolingHttpClientConnectionManager cm = getConnectionManager(sslContext);
+        builder.setConnectionManager(cm);
         builder.setSSLContext(sslContext);
-        setTLSVerificationIfDefined(sslContext, builder);
         builder.disableAutomaticRetries();
         builder.setMaxConnTotal(maxConnections);
         builder.setMaxConnPerRoute(maxConnections);
@@ -670,13 +683,24 @@ public class AnkaMgmtCommunicator {
 
     }
 
-    protected void setTLSVerificationIfDefined(SSLContext sslContext, HttpClientBuilder builder) {
-        if (skipTLSVerification) {
-            builder.setSSLSocketFactory(new SSLConnectionSocketFactory(sslContext, new NoopHostnameVerifier()));
-        }
+    protected SSLContext getSSLContext(KeyStore keystore) throws KeyStoreException, NoSuchAlgorithmException, KeyManagementException, UnrecoverableKeyException {
+        return new SSLContextBuilder()
+                .loadTrustMaterial(keystore, getTrustStrategy()).build();
     }
 
-    protected TrustStrategy getTrustStartegy() {
+    protected KeyStore getKeyStore() throws CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException {
+        return null;
+    }
+
+    private PoolingHttpClientConnectionManager getConnectionManager(SSLContext sslContext) {
+        RegistryBuilder<ConnectionSocketFactory> reg = RegistryBuilder.
+                <ConnectionSocketFactory>create()
+                .register("http", PlainConnectionSocketFactory.getSocketFactory())
+                .register("https", new SSLConnectionSocketFactory(sslContext, getDefaultHostnameVerifier()));
+        return new PoolingHttpClientConnectionManager(reg.build());
+    }
+
+    protected TrustStrategy getTrustStrategy() {
         if (skipTLSVerification) {
             return utils.strategyLambda();
         }
