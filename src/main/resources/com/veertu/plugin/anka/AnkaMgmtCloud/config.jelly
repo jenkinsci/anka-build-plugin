@@ -31,7 +31,7 @@
         <f:entry title="${%Max connections}" field="maxConnections" description="Limit for http connection (for the controller)">
             <f:textbox clazz="number" default="50"/>
         </f:entry>
-        <f:entry title="${%VM Poll time}" field="vmPollTimecd " description="Time in milliseconds to poll during VM creation">
+        <f:entry title="${%VM Poll time}" field="vmPollTime" description="Time in milliseconds to poll during VM creation">
             <f:textbox clazz="number" default="5000"/>
         </f:entry>
 
