@@ -127,7 +127,7 @@ public class SaveImageParameters {
                 jsonObject.optBoolean(saveImageKey, false),
                 jsonObject.optString(templateIDKey, null),
                 jsonObject.optString(tagKey, null),
-                jsonObject.optBoolean(appendTimestampKey, null),
+                jsonObject.optBoolean(appendTimestampKey, true),
                 jsonObject.optBoolean(deleteLatestKey, false),
                 jsonObject.optString(descriptionKey, null),
                 jsonObject.optBoolean(suspendKey, false),

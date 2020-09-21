@@ -25,10 +25,6 @@ public class DynamicSlaveProperties extends AbstractSlaveTemplate {
     public DynamicSlaveProperties(String masterVmId) {
         this.setMasterVmId(masterVmId);
         saveImageParameters = new SaveImageParameters(false, null, null,
-                false, null,false, false);
-
+                true, false, null,false, false);
     }
-
-
-
 }
