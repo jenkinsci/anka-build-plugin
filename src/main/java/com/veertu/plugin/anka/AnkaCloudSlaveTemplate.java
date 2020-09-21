@@ -48,6 +48,7 @@ public class AnkaCloudSlaveTemplate extends AbstractSlaveTemplate implements Des
             String nameTemplate, int priority, int schedulingTimeout,
             @Nullable Boolean saveImage, @Nullable String templateId,
             @Nullable String pushTag,
+            @Nullable Boolean appendTimestamp,
             @Nullable Boolean deleteLatest,
             @Nullable String description, @Nullable Boolean suspend, @Nullable Boolean waitForBuildToFinish,
             @Nullable List<EnvironmentEntry> environments) {
@@ -70,6 +71,7 @@ public class AnkaCloudSlaveTemplate extends AbstractSlaveTemplate implements Des
         setSaveImage(saveImage);
         setTemplateId(templateId);
         setPushTag(pushTag);
+        setAppendTimestamp(appendTimestamp);
         setDeleteLatest(deleteLatest);
         setDescription(description);
         setSuspend(suspend);
@@ -207,7 +209,7 @@ public class AnkaCloudSlaveTemplate extends AbstractSlaveTemplate implements Des
         public String getDisplayName() {
             return null;
         }
-        
+
 
         public ListBoxModel doFillCredentialsIdItems(@AncestorInPath ItemGroup context) {
             if (!(context instanceof AccessControlled ? (AccessControlled) context : Jenkins.get()).hasPermission(Computer.CONFIGURE)) {
