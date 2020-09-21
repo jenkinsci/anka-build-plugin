@@ -368,6 +368,20 @@ public class AbstractSlaveTemplate {
         }
     }
 
+    public boolean isAppendTimestamp() {
+        if (saveImageParameters != null) {
+            return saveImageParameters.isAppendTimestamp();
+        }
+        return true;
+    }
+
+    @DataBoundSetter
+    public void setAppendTimestamp(boolean appendTimestamp) {
+        if (saveImageParameters != null) {
+            saveImageParameters.setAppendTimestamp(appendTimestamp);
+        }
+    }
+
     public boolean isDeleteLatest() {
         if (saveImageParameters != null) {
             return saveImageParameters.isDeleteLatest();
@@ -448,6 +462,7 @@ public class AbstractSlaveTemplate {
         setTemplateId(slave.getTemplateId());
         setSaveImage(slave.getSaveImage());
         setPushTag(slave.getPushTag());
+        setAppendTimestamp(slave.isAppendTimestamp());
         setDeleteLatest(slave.isDeleteLatest());
         setDescription(slave.getDescription());
         setWaitForBuildToFinish(slave.getWaitForBuildToFinish());

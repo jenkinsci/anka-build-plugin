@@ -41,7 +41,11 @@ public class ImageSaver {
             if (tagToPush == null || tagToPush.isEmpty()) {
                 tagToPush = slave.getJobNameAndNumber();
             }
-            tagToPush += "_" + new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
+
+            if (template.isAppendTimestamp()) {
+                tagToPush += "_" + new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
+            }
+
             boolean deleteLatest = false;
             String latestTag = null;
             if (template.isDeleteLatest()) {
