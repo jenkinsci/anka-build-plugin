@@ -9,6 +9,7 @@ public class SaveImageParameters {
     public static String saveImageKey = "saveImage";
     public static String templateIDKey = "templateId";
     public static String tagKey = "tag";
+    public static String appendTimestampKey = "appendTimestamp";
     public static String deleteLatestKey = "deleteLatest";
     public static String descriptionKey = "description";
     public static String suspendKey = "suspend";
@@ -22,6 +23,7 @@ public class SaveImageParameters {
 
     protected String templateID;
     protected String tag;
+    protected Boolean appendTimestamp;
     protected Boolean deleteLatest;
 
 
@@ -46,6 +48,10 @@ public class SaveImageParameters {
 
     public String getTag() {
         return tag;
+    }
+
+    public boolean isAppendTimestamp() {
+        return appendTimestamp;
     }
 
     public boolean isDeleteLatest() {
@@ -87,6 +93,11 @@ public class SaveImageParameters {
     }
 
     @DataBoundSetter
+    public void setAppendTimestamp(boolean appendTimestamp) {
+        this.appendTimestamp = appendTimestamp;
+    }
+
+    @DataBoundSetter
     public void setDeleteLatest(Boolean deleteLatest) {
         this.deleteLatest = deleteLatest;
     }
@@ -97,11 +108,12 @@ public class SaveImageParameters {
 
     @DataBoundConstructor
     public SaveImageParameters(Boolean saveImage, String templateID, String tag,
-                               Boolean deleteLatest, String description, Boolean suspend,
-                               Boolean waitForBuildToFinish) {
+                               Boolean appendTimestamp, Boolean deleteLatest, String description,
+                               Boolean suspend, Boolean waitForBuildToFinish) {
         this.saveImage = saveImage;
         this.templateID = templateID;
         this.tag = tag;
+        this.appendTimestamp = appendTimestamp;
         this.deleteLatest = deleteLatest;
         this.waitForBuildToFinish = waitForBuildToFinish;
         this.description = description;
@@ -116,6 +128,7 @@ public class SaveImageParameters {
                 jsonObject.optBoolean(saveImageKey, false),
                 jsonObject.optString(templateIDKey, null),
                 jsonObject.optString(tagKey, null),
+                jsonObject.optBoolean(appendTimestampKey, true),
                 jsonObject.optBoolean(deleteLatestKey, false),
                 jsonObject.optString(descriptionKey, null),
                 jsonObject.optBoolean(suspendKey, false),
