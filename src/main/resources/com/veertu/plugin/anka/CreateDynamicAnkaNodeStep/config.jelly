@@ -85,7 +85,7 @@
                 <f:entry title="${%Tag}"  field="pushTag" description="Tag to push (date will be appended to tag string)">
                     <f:textbox />
                 </f:entry>
-                <f:entry title="${%Append Timestamp}"  field="appendTimestamp" description="Append timestamp to tag">
+                <f:entry title="${%Don't append Timestamp}"  field="dontAppendTimestamp" description="Don't append timestamp to tag">
                     <f:checkbox />
                 </f:entry>
                 <f:entry title="${%Description}"  field="description" description="description for the new tag">

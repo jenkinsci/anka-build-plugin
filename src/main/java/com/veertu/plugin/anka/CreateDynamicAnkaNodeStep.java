@@ -249,12 +249,12 @@ public class CreateDynamicAnkaNodeStep extends Step {
     }
 
     public String getPushTag() {
-        return dynamicSlaveProperties.getTag();
+        return dynamicSlaveProperties.getPushTag();
     }
 
     @DataBoundSetter
     public void setPushTag(String tag) {
-        dynamicSlaveProperties.setTag(tag);
+        dynamicSlaveProperties.setPushTag(tag);
     }
 
     public boolean isAppendTimestamp() {
@@ -262,8 +262,8 @@ public class CreateDynamicAnkaNodeStep extends Step {
     }
 
     @DataBoundSetter
-    public void setAppendTimestamp(boolean appendTimestamp) {
-        dynamicSlaveProperties.setAppendTimestamp(appendTimestamp);
+    public void setDontAppendTimestamp(boolean dontAppendTimestamp) {
+        dynamicSlaveProperties.setDontAppendTimestamp(dontAppendTimestamp);
     }
 
     public boolean isDeleteLatest() {

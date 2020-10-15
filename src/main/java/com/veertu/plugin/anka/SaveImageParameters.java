@@ -23,7 +23,7 @@ public class SaveImageParameters {
 
     protected String templateID;
     protected String tag;
-    protected Boolean appendTimestamp;
+    protected Boolean dontAppendTimestamp;
     protected Boolean deleteLatest;
 
 
@@ -50,8 +50,12 @@ public class SaveImageParameters {
         return tag;
     }
 
+    public boolean getDontAppendTimestamp() {
+        return dontAppendTimestamp;
+    }
+
     public boolean isAppendTimestamp() {
-        return appendTimestamp;
+        return !dontAppendTimestamp;
     }
 
     public boolean isDeleteLatest() {
@@ -93,8 +97,8 @@ public class SaveImageParameters {
     }
 
     @DataBoundSetter
-    public void setAppendTimestamp(boolean appendTimestamp) {
-        this.appendTimestamp = appendTimestamp;
+    public void setDontAppendTimestamp(boolean dontAppendTimestamp) {
+        this.dontAppendTimestamp = dontAppendTimestamp;
     }
 
     @DataBoundSetter
@@ -109,11 +113,11 @@ public class SaveImageParameters {
     @DataBoundConstructor
     public SaveImageParameters(Boolean saveImage, String templateID, String tag,
                                Boolean deleteLatest, String description, Boolean suspend,
-                               Boolean waitForBuildToFinish, Boolean appendTimestamp) {
+                               Boolean waitForBuildToFinish, Boolean dontAppendTimestamp) {
         this.saveImage = saveImage;
         this.templateID = templateID;
         this.tag = tag;
-        this.appendTimestamp = appendTimestamp;
+        this.dontAppendTimestamp = dontAppendTimestamp;
         this.deleteLatest = deleteLatest;
         this.waitForBuildToFinish = waitForBuildToFinish;
         this.description = description;

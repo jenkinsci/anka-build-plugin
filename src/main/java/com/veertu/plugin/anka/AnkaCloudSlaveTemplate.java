@@ -48,7 +48,7 @@ public class AnkaCloudSlaveTemplate extends AbstractSlaveTemplate implements Des
             String nameTemplate, int priority, int schedulingTimeout,
             @Nullable Boolean saveImage, @Nullable String templateId,
             @Nullable String pushTag,
-            @Nullable Boolean appendTimestamp,
+            @Nullable Boolean dontAppendTimestamp,
             @Nullable Boolean deleteLatest,
             @Nullable String description, @Nullable Boolean suspend, @Nullable Boolean waitForBuildToFinish,
             @Nullable List<EnvironmentEntry> environments) {
@@ -71,7 +71,7 @@ public class AnkaCloudSlaveTemplate extends AbstractSlaveTemplate implements Des
         setSaveImage(saveImage);
         setTemplateId(templateId);
         setPushTag(pushTag);
-        setAppendTimestamp(appendTimestamp);
+        setDontAppendTimestamp(dontAppendTimestamp);
         setDeleteLatest(deleteLatest);
         setDescription(description);
         setSuspend(suspend);
