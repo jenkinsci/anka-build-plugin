@@ -78,7 +78,7 @@
         </f:block>
 
         <f:section title="Cache Builder" description="Push the vm to the registry when the build is done">
-            <f:optionalBlock inline="true" field="saveImage" title="Cache Builder" checked="${instance.getSaveImageParameters() != null && instance.getSaveImageParameters().getSaveImage() }">
+            <f:optionalBlock inline="true" field="saveImage" title="Cache Builder" checked="${instance.getSaveImageParameters().getSaveImage()}">
                 <f:entry title="${%Target Template}"  field="templateId" description="The template to save the image to">
                     <f:textbox />
                 </f:entry>

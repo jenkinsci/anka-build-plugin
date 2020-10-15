@@ -108,8 +108,8 @@ public class SaveImageParameters {
 
     @DataBoundConstructor
     public SaveImageParameters(Boolean saveImage, String templateID, String tag,
-                               Boolean appendTimestamp, Boolean deleteLatest, String description,
-                               Boolean suspend, Boolean waitForBuildToFinish) {
+                               Boolean deleteLatest, String description, Boolean suspend,
+                               Boolean waitForBuildToFinish, Boolean appendTimestamp) {
         this.saveImage = saveImage;
         this.templateID = templateID;
         this.tag = tag;
@@ -128,11 +128,11 @@ public class SaveImageParameters {
                 jsonObject.optBoolean(saveImageKey, false),
                 jsonObject.optString(templateIDKey, null),
                 jsonObject.optString(tagKey, null),
-                jsonObject.optBoolean(appendTimestampKey, true),
                 jsonObject.optBoolean(deleteLatestKey, false),
                 jsonObject.optString(descriptionKey, null),
                 jsonObject.optBoolean(suspendKey, false),
-                jsonObject.optBoolean(waitForBuildToFinishKey, false)
+                jsonObject.optBoolean(waitForBuildToFinishKey, false),
+                jsonObject.optBoolean(appendTimestampKey, true)
                 );
     }
 
