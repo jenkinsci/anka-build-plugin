@@ -97,7 +97,7 @@ public class SaveImageParameters {
     }
 
     @DataBoundSetter
-    public void setDontAppendTimestamp(boolean dontAppendTimestamp) {
+    public void setDontAppendTimestamp(Boolean dontAppendTimestamp) {
         this.dontAppendTimestamp = dontAppendTimestamp;
     }
 

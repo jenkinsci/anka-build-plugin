@@ -385,7 +385,7 @@ public class AbstractSlaveTemplate {
 
 
     @DataBoundSetter
-    public void setDontAppendTimestamp(boolean appendTimestamp) {
+    public void setDontAppendTimestamp(Boolean appendTimestamp) {
         if (saveImageParameters != null) {
             saveImageParameters.setDontAppendTimestamp(appendTimestamp);
         }
