@@ -379,7 +379,7 @@ public class AbstractSlaveTemplate {
         if (saveImageParameters != null) {
             return saveImageParameters.getDontAppendTimestamp();
         }
-        return false; // default behavior is to have the timestamp since this is the current behavior 15.10.2020 (asaf)
+        return true; // default behavior is to have the timestamp since this is the current behavior 15.10.2020 (asaf)
     }
 
 

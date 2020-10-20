@@ -51,11 +51,17 @@ public class SaveImageParameters {
     }
 
     public boolean getDontAppendTimestamp() {
-        return dontAppendTimestamp;
+        if (dontAppendTimestamp != null) {
+            return dontAppendTimestamp;
+        }
+        return false;
     }
 
     public boolean isAppendTimestamp() {
-        return !dontAppendTimestamp;
+        if (dontAppendTimestamp != null) {
+            return !dontAppendTimestamp;
+        }
+        return true;
     }
 
     public boolean isDeleteLatest() {
