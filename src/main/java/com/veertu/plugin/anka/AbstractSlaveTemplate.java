@@ -39,6 +39,7 @@ public class AbstractSlaveTemplate {
     protected SaveImageParameters saveImageParameters;
     protected String cloudName;
     protected int instanceCapacity;
+    protected boolean isDynamic;
 
 
 
@@ -454,4 +455,15 @@ public class AbstractSlaveTemplate {
 
     }
 
+    public boolean isDynamic() {
+        return this.isDynamic;
+    }
+
+    public void setDynamic(Boolean isDynamic) {
+        if (isDynamic == null) {
+            isDynamic = false;
+        }
+
+        this.isDynamic = isDynamic;
+    }
 }

@@ -1,9 +1,11 @@
 package com.veertu.plugin.anka;
 
+import hudson.model.Node;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 public class DynamicSlaveProperties extends AbstractSlaveTemplate {
 
+    private int schedulingTimeout;
 
     public AnkaCloudSlaveTemplate toSlaveTemplate() {
 
@@ -19,11 +21,15 @@ public class DynamicSlaveProperties extends AbstractSlaveTemplate {
         if (this.getLaunchMethod() == null) {
             ankaCloudSlaveTemplate.setLaunchMethod(LaunchMethod.JNLP);
         }
+
+        ankaCloudSlaveTemplate.setSchedulingTimeout(this.schedulingTimeout);
+
         return ankaCloudSlaveTemplate;
     }
 
-    public AnkaCloudSlaveTemplate toSlaveTemplate(String label) {
+    public AnkaCloudSlaveTemplate toSlaveTemplate(String label, int schedulingTimeout) {
         this.setLabel(label);
+        this.schedulingTimeout = schedulingTimeout;
         return toSlaveTemplate();
     }
 

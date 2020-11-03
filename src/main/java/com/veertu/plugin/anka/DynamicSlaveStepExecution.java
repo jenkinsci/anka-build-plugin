@@ -1,12 +1,9 @@
 package com.veertu.plugin.anka;
 
 import com.veertu.ankaMgmtSdk.AnkaNotFoundException;
-import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
-import hudson.model.Node;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jenkinsci.plugins.workflow.steps.SynchronousNonBlockingStepExecution;
 
-import java.io.IOException;
 import java.util.UUID;
 
 
@@ -30,27 +27,7 @@ public class DynamicSlaveStepExecution extends SynchronousNonBlockingStepExecuti
             throw new AnkaNotFoundException("no available cloud with image " + this.properties.getMasterVmId());
         }
         String label = UUID.randomUUID().toString();
-        AnkaOnDemandSlave slave = null;
-        int timeoutMillis = this.nodeStep.getTimeout() * 1000;
-        long startTime = System.currentTimeMillis();
-        int round = 1;
-        while (true) {
-            try {
-                slave = cloud.StartNewDynamicSlave(this.properties, label);
-                break;
-            } catch (InterruptedException | IOException | AnkaMgmtException e) {
-                if ((System.currentTimeMillis() - startTime) < timeoutMillis){
-                    Thread.sleep(1000 * (round * round ));
-                    round++;
-                    continue;
-                }
-                throw e;
-            }
-
-        }
-        slave.setMode(Node.Mode.EXCLUSIVE);
-
+        cloud.createDynamicTemplate(this.properties, label, this.nodeStep.getTimeout());
         return label;
     }
-
 }

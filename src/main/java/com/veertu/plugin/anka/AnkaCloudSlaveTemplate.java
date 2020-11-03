@@ -50,7 +50,7 @@ public class AnkaCloudSlaveTemplate extends AbstractSlaveTemplate implements Des
             @Nullable String pushTag,
             @Nullable Boolean deleteLatest,
             @Nullable String description, @Nullable Boolean suspend, @Nullable Boolean waitForBuildToFinish,
-            @Nullable List<EnvironmentEntry> environments) {
+            @Nullable List<EnvironmentEntry> environments, @Nullable Boolean isDynamic) {
         saveImageParameters = new SaveImageParameters();
         this.cloudName = cloudName;
         setRemoteFS(remoteFS);
@@ -76,6 +76,7 @@ public class AnkaCloudSlaveTemplate extends AbstractSlaveTemplate implements Des
         setWaitForBuildToFinish(waitForBuildToFinish);
         setEnvironments(environments);
         setMode(Node.Mode.EXCLUSIVE);
+        setDynamic(isDynamic);
         readResolve();
     }
 
@@ -150,6 +151,12 @@ public class AnkaCloudSlaveTemplate extends AbstractSlaveTemplate implements Des
             return DEFAULT_SCHEDULING_TIMEOUT;
         else
             return this.schedulingTimeout;
+    }
+
+    public void setSchedulingTimeout(int timeout) {
+        if (timeout > 0) {
+            this.schedulingTimeout = timeout;
+        }
     }
 
     public void setSaveImageParameters(SaveImageParameters saveImageParameters) {
