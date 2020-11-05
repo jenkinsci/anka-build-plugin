@@ -50,7 +50,7 @@ public class AnkaMgmtCloud extends Cloud {
         return durabilityMode;
     }
 
-    private transient List<AnkaCloudSlaveTemplate> dynamicTemplates;
+    private transient List<DynamicSlaveTemplate> dynamicTemplates;
     private transient ReentrantLock dynamicTemplatesLock = new ReentrantLock();
 
 
@@ -271,7 +271,7 @@ public class AnkaMgmtCloud extends Cloud {
 
     public List<AnkaCloudSlaveTemplate> getTemplates() { return templates; }
 
-    public List<AnkaCloudSlaveTemplate> getDynamicTemplates() {
+    public List<DynamicSlaveTemplate> getDynamicTemplates() {
         return dynamicTemplates;
     }
 
@@ -446,7 +446,6 @@ public class AnkaMgmtCloud extends Cloud {
 
         for (AnkaCloudSlaveTemplate t : this.getDynamicTemplates()) {
             if (this.doesLabelMatch(label, t)) {
-                t.setDynamic(true);
                 return t;
             }
         }
@@ -466,7 +465,7 @@ public class AnkaMgmtCloud extends Cloud {
     @Override
     public boolean canProvision(Label label) {
         AnkaCloudSlaveTemplate template = getTemplate(label);
-        if (template == null){
+        if (template == null) {
             return false;
         }
         int cloudCapacity = getCloudCapacity();
@@ -564,7 +563,7 @@ public class AnkaMgmtCloud extends Cloud {
         return null;
     }
 
-    public void clearDynamicTemplate(AnkaCloudSlaveTemplate template) {
+    public void removeDynamicTemplate(AbstractSlaveTemplate template) {
         // This can be called multiple times upon termination
         try {
             this.dynamicTemplatesLock.lock();
@@ -574,12 +573,9 @@ public class AnkaMgmtCloud extends Cloud {
         }
     }
 
-    public void createDynamicTemplate(DynamicSlaveProperties properties, String label, int timeout) {
+    public void addDynamicTemplate(DynamicSlaveTemplate template) {
         try {
             this.dynamicTemplatesLock.lock();
-            AnkaCloudSlaveTemplate template = properties.toSlaveTemplate(label, timeout);
-            template.setMode(Node.Mode.EXCLUSIVE);
-            template.setLabelSet(Label.parse(label));
             this.dynamicTemplates.add(template);
         } finally {
             dynamicTemplatesLock.unlock();
@@ -628,7 +624,6 @@ public class AnkaMgmtCloud extends Cloud {
             ankaVmInstance = ankaAPI.showInstance(id);
         }
 
-        this.clearDynamicTemplate(node.getTemplate());
     }
 
     public AnkaVmInstance showInstance(String id) throws AnkaMgmtException {

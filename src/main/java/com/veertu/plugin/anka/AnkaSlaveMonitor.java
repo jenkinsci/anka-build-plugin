@@ -2,6 +2,7 @@ package com.veertu.plugin.anka;
 
 import hudson.Extension;
 import hudson.model.AsyncPeriodicWork;
+import hudson.model.Run;
 import hudson.model.TaskListener;
 import jenkins.slaves.iterators.api.NodeIterator;
 
@@ -11,6 +12,9 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import static com.veertu.plugin.anka.AnkaMgmtCloud.getAnkaClouds;
+import static hudson.model.Run.fromExternalizableId;
 
 @Extension
 public class AnkaSlaveMonitor extends AsyncPeriodicWork {
@@ -36,7 +40,7 @@ public class AnkaSlaveMonitor extends AsyncPeriodicWork {
     private Long recurrencePeriod;
 
     public AnkaSlaveMonitor() {
-        super("Anka Live Nodes Monitor");
+        super("Anka Monitor");
         recurrencePeriod = TimeUnit.MINUTES.toMillis(monitorRecurrenceMinutes);
         register(this);
     }
@@ -61,6 +65,39 @@ public class AnkaSlaveMonitor extends AsyncPeriodicWork {
     @Override
     protected void execute(TaskListener listener) throws IOException, InterruptedException {
         removeDeadNodes();
+        cleanDynamicTemplates();
+    }
+
+    private void cleanDynamicTemplates() {
+        LOGGER.log(Level.INFO, "AnkaSlaveMonitor cleaning dynamic templates...");
+        List<AnkaMgmtCloud> clouds = getAnkaClouds();
+        for (AnkaMgmtCloud cloud : clouds) {
+            List<DynamicSlaveTemplate> templatesToRemove = new ArrayList<>();
+            List<DynamicSlaveTemplate> dynamicTemplates = cloud.getDynamicTemplates();
+            for (DynamicSlaveTemplate template : dynamicTemplates) {
+                try {
+                    String jobId = template.getBuildId();
+                    if (jobId.equals("")) {
+                        LOGGER.log(Level.WARNING, "dynamic template with label {0} has no build id assigned",
+                                new Object[]{template.getLabel()});
+                        continue;
+                    }
+                    Run r = fromExternalizableId(jobId);
+                    if (r == null || !r.isBuilding() ) {
+                        throw new Exception("catch me");
+                    }
+                } catch (Exception e) {
+                    templatesToRemove.add(template);
+                }
+            }
+            if (templatesToRemove.size() > 0) {
+                for (DynamicSlaveTemplate t : templatesToRemove) {
+                    LOGGER.log(Level.INFO, "AnkaSlaveMonitor clearing dynamic template {0} from cloud {1}",
+                            new Object[]{t.getLabel(), cloud.getCloudName()});
+                    cloud.removeDynamicTemplate(t);
+                }
+            }
+        }
     }
 
     private void removeDeadNodes() {

@@ -50,7 +50,7 @@ public class AnkaCloudSlaveTemplate extends AbstractSlaveTemplate implements Des
             @Nullable String pushTag,
             @Nullable Boolean deleteLatest,
             @Nullable String description, @Nullable Boolean suspend, @Nullable Boolean waitForBuildToFinish,
-            @Nullable List<EnvironmentEntry> environments, @Nullable Boolean isDynamic) {
+            @Nullable List<EnvironmentEntry> environments) {
         saveImageParameters = new SaveImageParameters();
         this.cloudName = cloudName;
         setRemoteFS(remoteFS);
@@ -76,7 +76,6 @@ public class AnkaCloudSlaveTemplate extends AbstractSlaveTemplate implements Des
         setWaitForBuildToFinish(waitForBuildToFinish);
         setEnvironments(environments);
         setMode(Node.Mode.EXCLUSIVE);
-        setDynamic(isDynamic);
         readResolve();
     }
 
@@ -173,7 +172,6 @@ public class AnkaCloudSlaveTemplate extends AbstractSlaveTemplate implements Des
         return Jenkins.get().getDescriptor(getClass());
 
     }
-
 
     public static class EnvironmentEntry extends AbstractDescribableImpl<EnvironmentEntry> {
         public String name, value;

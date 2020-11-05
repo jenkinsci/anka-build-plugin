@@ -148,9 +148,6 @@ public abstract class AbstractAnkaSlave extends Slave {
                         LOGGER.log(Level.INFO, "Node {0} Instance {1}, removing node since instance is terminated or not found", new Object[]{getNodeName(), instanceId});
                         Jenkins.get().removeNode(this); // only agree to remove the node after the instance doesn't
                                                            // exist or is not started
-                        if (this.template.isDynamic()) {
-                            this.cloud.clearDynamicTemplate(this.template);
-                        }
                     }
                 }
             } catch (AnkaMgmtException e) {
@@ -306,6 +303,8 @@ public abstract class AbstractAnkaSlave extends Slave {
                 saveImageParams.getSaveImage()) {
             AnkaMgmtCloud.markFuture(cloud, this);
         }
+
+        this.cloud.removeDynamicTemplate(this.template);
     }
 
     public void setBuildId(String buildId) {
