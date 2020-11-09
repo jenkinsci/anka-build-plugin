@@ -74,22 +74,28 @@ public class AnkaSlaveMonitor extends AsyncPeriodicWork {
         for (AnkaMgmtCloud cloud : clouds) {
             List<DynamicSlaveTemplate> templatesToRemove = new ArrayList<>();
             List<DynamicSlaveTemplate> dynamicTemplates = cloud.getDynamicTemplates();
+
             for (DynamicSlaveTemplate template : dynamicTemplates) {
+                String jobId = template.getBuildId();
+                if (jobId.equals("")) {
+                    LOGGER.log(Level.WARNING, "dynamic template with label {0} has no build id assigned",
+                            new Object[]{template.getLabel()});
+                    continue;
+                }
+
+                Run run = null;
                 try {
-                    String jobId = template.getBuildId();
-                    if (jobId.equals("")) {
-                        LOGGER.log(Level.WARNING, "dynamic template with label {0} has no build id assigned",
-                                new Object[]{template.getLabel()});
-                        continue;
+                    run = fromExternalizableId(jobId);
+                } catch (IllegalArgumentException e) {
+                    LOGGER.log(Level.WARNING, "invalid job id {0} stored in dynamic template (label {1})",
+                            new Object[]{jobId, template.getLabel()});
+                } finally {
+                    if (run == null || !run.isBuilding()) {
+                        templatesToRemove.add(template);
                     }
-                    Run r = fromExternalizableId(jobId);
-                    if (r == null || !r.isBuilding() ) {
-                        throw new Exception("catch me");
-                    }
-                } catch (Exception e) {
-                    templatesToRemove.add(template);
                 }
             }
+
             if (templatesToRemove.size() > 0) {
                 for (DynamicSlaveTemplate t : templatesToRemove) {
                     LOGGER.log(Level.INFO, "AnkaSlaveMonitor clearing dynamic template {0} from cloud {1}",
