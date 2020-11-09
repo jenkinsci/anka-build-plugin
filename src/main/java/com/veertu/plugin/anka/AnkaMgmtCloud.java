@@ -45,13 +45,11 @@ public class AnkaMgmtCloud extends Cloud {
     private transient ReentrantLock nodeNumLock = new ReentrantLock();
     private transient SaveImageRequestsHolder saveImageRequestsHolder = SaveImageRequestsHolder.getInstance();
     private int vmPollTime;
+    private transient List<DynamicSlaveTemplate> dynamicTemplates;
 
     public String getDurabilityMode() {
         return durabilityMode;
     }
-
-    private transient List<DynamicSlaveTemplate> dynamicTemplates;
-
 
     @DataBoundSetter
     public void setDurabilityMode(String durabilityMode) {
@@ -270,7 +268,11 @@ public class AnkaMgmtCloud extends Cloud {
     public List<AnkaCloudSlaveTemplate> getTemplates() { return templates; }
 
     public List<DynamicSlaveTemplate> getDynamicTemplates() {
-        return dynamicTemplates;
+        // Returns a copy of the array since SynchronizedList is not iteration safe
+
+        synchronized (this.dynamicTemplates) {
+            return new ArrayList<>(this.dynamicTemplates);
+        }
     }
 
     public List<NodeGroup> getNodeGroups() {

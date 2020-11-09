@@ -72,10 +72,9 @@ public class AnkaSlaveMonitor extends AsyncPeriodicWork {
         LOGGER.log(Level.INFO, "AnkaSlaveMonitor cleaning dynamic templates...");
         List<AnkaMgmtCloud> clouds = getAnkaClouds();
         for (AnkaMgmtCloud cloud : clouds) {
-            List<DynamicSlaveTemplate> templatesToRemove = new ArrayList<>();
-            List<DynamicSlaveTemplate> dynamicTemplates = cloud.getDynamicTemplates();
 
-            for (DynamicSlaveTemplate template : dynamicTemplates) {
+            for (DynamicSlaveTemplate template : cloud.getDynamicTemplates()) {
+
                 String jobId = template.getBuildId();
                 if (jobId.equals("")) {
                     LOGGER.log(Level.WARNING, "dynamic template with label {0} has no build id assigned",
@@ -91,16 +90,8 @@ public class AnkaSlaveMonitor extends AsyncPeriodicWork {
                             new Object[]{jobId, template.getLabel()});
                 } finally {
                     if (run == null || !run.isBuilding()) {
-                        templatesToRemove.add(template);
+                        cloud.removeDynamicTemplate(template);
                     }
-                }
-            }
-
-            if (templatesToRemove.size() > 0) {
-                for (DynamicSlaveTemplate t : templatesToRemove) {
-                    LOGGER.log(Level.INFO, "AnkaSlaveMonitor clearing dynamic template {0} from cloud {1}",
-                            new Object[]{t.getLabel(), cloud.getCloudName()});
-                    cloud.removeDynamicTemplate(t);
                 }
             }
         }
