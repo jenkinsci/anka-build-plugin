@@ -51,7 +51,6 @@ public class AnkaMgmtCloud extends Cloud {
     }
 
     private transient List<DynamicSlaveTemplate> dynamicTemplates;
-    private transient ReentrantLock dynamicTemplatesLock = new ReentrantLock();
 
 
     @DataBoundSetter
@@ -117,7 +116,7 @@ public class AnkaMgmtCloud extends Cloud {
             this.rootCA = null;
         }
 
-        this.dynamicTemplates = new ArrayList<>();
+        this.dynamicTemplates = Collections.synchronizedList(new ArrayList<>());
 
         Log("Init Anka Cloud");
         this.skipTLSVerification = skipTLSVerification;
@@ -163,10 +162,9 @@ public class AnkaMgmtCloud extends Cloud {
 
     protected Object readResolve() {
         this.nodeNumLock = new ReentrantLock();
-        this.dynamicTemplatesLock = new ReentrantLock();
         createAnkaAPIObject();
         if (this.dynamicTemplates == null) {
-            this.dynamicTemplates = new ArrayList<>();
+            this.dynamicTemplates = Collections.synchronizedList(new ArrayList<>());
         }
         return this;
     }
@@ -565,21 +563,11 @@ public class AnkaMgmtCloud extends Cloud {
 
     public void removeDynamicTemplate(AbstractSlaveTemplate template) {
         // This can be called multiple times upon termination
-        try {
-            this.dynamicTemplatesLock.lock();
-            this.dynamicTemplates.remove(template);  // Fails silently
-        } finally {
-            this.dynamicTemplatesLock.unlock();
-        }
+        this.dynamicTemplates.remove(template);  // Fails silently
     }
 
     public void addDynamicTemplate(DynamicSlaveTemplate template) {
-        try {
-            this.dynamicTemplatesLock.lock();
-            this.dynamicTemplates.add(template);
-        } finally {
-            dynamicTemplatesLock.unlock();
-        }
+        this.dynamicTemplates.add(template);
     }
 
     public void saveImage(AbstractAnkaSlave node) throws AnkaMgmtException {
