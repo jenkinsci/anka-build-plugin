@@ -39,11 +39,7 @@ public class AbstractSlaveTemplate {
     protected SaveImageParameters saveImageParameters;
     protected String cloudName;
     protected int instanceCapacity;
-
-
-
     protected int idleMinutes = 1;
-
 
     public AbstractSlaveTemplate() {
         this.retentionStrategy = new RunOnceCloudRetentionStrategy(idleMinutes);

@@ -152,6 +152,12 @@ public class AnkaCloudSlaveTemplate extends AbstractSlaveTemplate implements Des
             return this.schedulingTimeout;
     }
 
+    public void setSchedulingTimeout(int timeout) {
+        if (timeout > 0) {
+            this.schedulingTimeout = timeout;
+        }
+    }
+
     public void setSaveImageParameters(SaveImageParameters saveImageParameters) {
         this.saveImageParameters = saveImageParameters;
     }
@@ -166,7 +172,6 @@ public class AnkaCloudSlaveTemplate extends AbstractSlaveTemplate implements Des
         return Jenkins.get().getDescriptor(getClass());
 
     }
-
 
     public static class EnvironmentEntry extends AbstractDescribableImpl<EnvironmentEntry> {
         public String name, value;
