@@ -19,7 +19,6 @@ import org.kohsuke.stapler.DataBoundSetter;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 
@@ -42,10 +41,11 @@ public class AnkaMgmtCloud extends Cloud {
     private final String rootCA;
 
     private final boolean skipTLSVerification;
-    private int   cloudInstanceCap;
+    private int cloudInstanceCap;
     private transient ReentrantLock nodeNumLock = new ReentrantLock();
     private transient SaveImageRequestsHolder saveImageRequestsHolder = SaveImageRequestsHolder.getInstance();
     private int vmPollTime;
+    private transient List<DynamicSlaveTemplate> dynamicTemplates;
 
     public String getDurabilityMode() {
         return durabilityMode;
@@ -114,6 +114,8 @@ public class AnkaMgmtCloud extends Cloud {
             this.rootCA = null;
         }
 
+        this.dynamicTemplates = Collections.synchronizedList(new ArrayList<>());
+
         Log("Init Anka Cloud");
         this.skipTLSVerification = skipTLSVerification;
 
@@ -159,10 +161,11 @@ public class AnkaMgmtCloud extends Cloud {
     protected Object readResolve() {
         this.nodeNumLock = new ReentrantLock();
         createAnkaAPIObject();
+        if (this.dynamicTemplates == null) {
+            this.dynamicTemplates = Collections.synchronizedList(new ArrayList<>());
+        }
         return this;
     }
-
-
 
     private CertCredentials lookUpCredentials(String credentialsId) {
         List<CertCredentials> credentials = lookupCredentials(CertCredentials.class, Jenkins.get(), null, new ArrayList<DomainRequirement>());
@@ -220,7 +223,7 @@ public class AnkaMgmtCloud extends Cloud {
     }
 
     public NodeCountResponse getNumOfRunningNodesPerLabel(Label label) {
-        AnkaCloudSlaveTemplate templateFromLabel = getTemplateFromLabel(label);
+        AnkaCloudSlaveTemplate templateFromLabel = getTemplate(label);
         int numRunningNodes = 0;
         int runningTemplateNodes = 0;
         if (templateFromLabel != null) {
@@ -235,8 +238,6 @@ public class AnkaMgmtCloud extends Cloud {
         }
         return new NodeCountResponse(numRunningNodes, runningTemplateNodes);
     }
-
-
 
     public List<AnkaVmTemplate> listVmTemplates() {
         if (ankaAPI == null) {
@@ -265,6 +266,14 @@ public class AnkaMgmtCloud extends Cloud {
     }
 
     public List<AnkaCloudSlaveTemplate> getTemplates() { return templates; }
+
+    public List<DynamicSlaveTemplate> getDynamicTemplates() {
+        // Returns a copy of the array since SynchronizedList is not iteration safe
+
+        synchronized (this.dynamicTemplates) {
+            return new ArrayList<>(this.dynamicTemplates);
+        }
+    }
 
     public List<NodeGroup> getNodeGroups() {
         if (ankaAPI == null) {
@@ -390,6 +399,7 @@ public class AnkaMgmtCloud extends Cloud {
         return newSlaves;
 
     }
+
     private List<AbstractAnkaSlave> createNewLightWeightSlaves(AnkaCloudSlaveTemplate template, int number) throws AnkaMgmtException, IOException, Descriptor.FormException {
         List<AbstractAnkaSlave> newSlaves = new ArrayList<>();
         for (int i = 0; i < number; i++) {
@@ -417,26 +427,31 @@ public class AnkaMgmtCloud extends Cloud {
         return newSlaves;
     }
 
+    private boolean doesLabelMatch(final Label label, final AnkaCloudSlaveTemplate t) {
+        if (t.getMode() == Node.Mode.NORMAL) {
+            return (label == null || label.matches(t.getLabelSet()));
+        } else if (t.getMode() == Node.Mode.EXCLUSIVE) {
+            return (label != null && label.matches(t.getLabelSet()));
+        }
+        return false;
+    }
 
     public AnkaCloudSlaveTemplate getTemplate(final Label label) {
 
         for (AnkaCloudSlaveTemplate t : this.templates) {
-
-            if (t.getMode() == Node.Mode.NORMAL) {
-
-                if (label == null || label.matches(t.getLabelSet())) {
-                    return t;
-                }
-            } else if (t.getMode() == Node.Mode.EXCLUSIVE) {
-
-                if (label != null && label.matches(t.getLabelSet())) {
-                    return t;
-                }
+            if (this.doesLabelMatch(label, t)) {
+                return t;
             }
         }
+
+        for (AnkaCloudSlaveTemplate t : this.getDynamicTemplates()) {
+            if (this.doesLabelMatch(label, t)) {
+                return t;
+            }
+        }
+
         return null;
     }
-
 
     private boolean hasMasterVm(String templateId) {
         for (AnkaVmTemplate t: this.listVmTemplates()){
@@ -449,8 +464,8 @@ public class AnkaMgmtCloud extends Cloud {
 
     @Override
     public boolean canProvision(Label label) {
-        AnkaCloudSlaveTemplate template = getTemplateFromLabel(label);
-        if (template == null){
+        AnkaCloudSlaveTemplate template = getTemplate(label);
+        if (template == null) {
             return false;
         }
         int cloudCapacity = getCloudCapacity();
@@ -466,27 +481,6 @@ public class AnkaMgmtCloud extends Cloud {
         return true;
     }
 
-
-    public AnkaCloudSlaveTemplate getTemplateFromLabel(final Label label) {
-
-        for (AnkaCloudSlaveTemplate t : this.templates) {
-
-            if (t.getMode() == Node.Mode.NORMAL) {
-
-                if (label == null || label.matches(t.getLabelSet())) {
-                    return t;
-                }
-            } else if (t.getMode() == Node.Mode.EXCLUSIVE) {
-
-                if (label != null && label.matches(t.getLabelSet())) {
-                    return t;
-                }
-            }
-        }
-        return null;
-    }
-
-
     private static void InternalLog(Slave slave, SlaveComputer slaveComputer, TaskListener listener, String format, Object... args) {
         String s = "";
         if (slave != null)
@@ -500,8 +494,6 @@ public class AnkaMgmtCloud extends Cloud {
         MgmtLogger.log(Level.INFO, s);
     }
 
-
-
     public static void Log(String msg) {
         InternalLog(null, null, null, msg, null);
     }
@@ -509,7 +501,6 @@ public class AnkaMgmtCloud extends Cloud {
     public static void Log(String format, Object... args) {
         InternalLog(null, null, null, format, args);
     }
-
 
     public static void Log(Slave slave, TaskListener listener, String msg) {
         InternalLog(slave, null, listener, msg, null);
@@ -572,23 +563,18 @@ public class AnkaMgmtCloud extends Cloud {
         return null;
     }
 
-    public AnkaOnDemandSlave StartNewDynamicSlave(DynamicSlaveProperties properties, String label) throws InterruptedException, IOException, Descriptor.FormException, AnkaMgmtException, ExecutionException {
-        AnkaCloudSlaveTemplate template = properties.toSlaveTemplate(label);
-        List<AbstractAnkaSlave> newSlaves = createNewSlaves(template, 1);
-        for (AbstractAnkaSlave slave: newSlaves) {
-            AnkaPlannedNodeCreator.createPlannedNode(this, template, slave);
-            Jenkins.get().addNode(slave);
-            return (AnkaOnDemandSlave) slave;
-        }
-        return null;
+    public void removeDynamicTemplate(AbstractSlaveTemplate template) {
+        // This can be called multiple times upon termination
+        this.dynamicTemplates.remove(template);  // Fails silently
     }
 
-
+    public void addDynamicTemplate(DynamicSlaveTemplate template) {
+        this.dynamicTemplates.add(template);
+    }
 
     public void saveImage(AbstractAnkaSlave node) throws AnkaMgmtException {
         ImageSaver.saveImage(this, node);
     }
-
 
     public void updateInstance(String vmId, String name, String jenkinsNodeLink, String jobIdentifier) throws AnkaMgmtException {
         ankaAPI.updateInstance(vmId, name, jenkinsNodeLink, jobIdentifier);
@@ -627,6 +613,7 @@ public class AnkaMgmtCloud extends Cloud {
             }
             ankaVmInstance = ankaAPI.showInstance(id);
         }
+
     }
 
     public AnkaVmInstance showInstance(String id) throws AnkaMgmtException {

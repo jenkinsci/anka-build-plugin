@@ -2,6 +2,7 @@ package com.veertu.plugin.anka;
 
 import hudson.Extension;
 import hudson.model.AsyncPeriodicWork;
+import hudson.model.Run;
 import hudson.model.TaskListener;
 import jenkins.slaves.iterators.api.NodeIterator;
 
@@ -11,6 +12,9 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import static com.veertu.plugin.anka.AnkaMgmtCloud.getAnkaClouds;
+import static hudson.model.Run.fromExternalizableId;
 
 @Extension
 public class AnkaSlaveMonitor extends AsyncPeriodicWork {
@@ -36,7 +40,7 @@ public class AnkaSlaveMonitor extends AsyncPeriodicWork {
     private Long recurrencePeriod;
 
     public AnkaSlaveMonitor() {
-        super("Anka Live Nodes Monitor");
+        super("Anka Monitor");
         recurrencePeriod = TimeUnit.MINUTES.toMillis(monitorRecurrenceMinutes);
         register(this);
     }
@@ -61,6 +65,36 @@ public class AnkaSlaveMonitor extends AsyncPeriodicWork {
     @Override
     protected void execute(TaskListener listener) throws IOException, InterruptedException {
         removeDeadNodes();
+        cleanDynamicTemplates();
+    }
+
+    private void cleanDynamicTemplates() {
+        LOGGER.log(Level.INFO, "AnkaSlaveMonitor cleaning dynamic templates...");
+        List<AnkaMgmtCloud> clouds = getAnkaClouds();
+        for (AnkaMgmtCloud cloud : clouds) {
+
+            for (DynamicSlaveTemplate template : cloud.getDynamicTemplates()) {
+
+                String jobId = template.getBuildId();
+                if (jobId.equals("")) {
+                    LOGGER.log(Level.WARNING, "dynamic template with label {0} has no build id assigned",
+                            new Object[]{template.getLabel()});
+                    continue;
+                }
+
+                Run run = null;
+                try {
+                    run = fromExternalizableId(jobId);
+                } catch (IllegalArgumentException e) {
+                    LOGGER.log(Level.WARNING, "invalid job id {0} stored in dynamic template (label {1})",
+                            new Object[]{jobId, template.getLabel()});
+                } finally {
+                    if (run == null || !run.isBuilding()) {
+                        cloud.removeDynamicTemplate(template);
+                    }
+                }
+            }
+        }
     }
 
     private void removeDeadNodes() {

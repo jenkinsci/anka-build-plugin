@@ -27,261 +27,261 @@ import java.util.Set;
 
 public class CreateDynamicAnkaNodeStep extends Step {
 
-    private final DynamicSlaveProperties dynamicSlaveProperties;
+    private final DynamicSlaveTemplate dynamicSlaveTemplate;
     private int timeout = 1200;
 
 
     public String getMasterVmId() {
-        return dynamicSlaveProperties.getMasterVmId();
+        return dynamicSlaveTemplate.getMasterVmId();
     }
 
     @DataBoundSetter
     public void setMasterVmId(String masterVmId) {
-        this.dynamicSlaveProperties.setMasterVmId(masterVmId);
+        this.dynamicSlaveTemplate.setMasterVmId(masterVmId);
     }
 
     public String getTag() {
-        return dynamicSlaveProperties.getTag();
+        return dynamicSlaveTemplate.getTag();
     }
 
     @DataBoundSetter
     public void setTag(String tag) {
-        dynamicSlaveProperties.setTag(tag);
+        dynamicSlaveTemplate.setTag(tag);
     }
 
     public int getLaunchDelay() {
-        return dynamicSlaveProperties.getLaunchDelay();
+        return dynamicSlaveTemplate.getLaunchDelay();
     }
 
     @DataBoundSetter
     public void setLaunchDelay(int launchDelay) {
-        dynamicSlaveProperties.setLaunchDelay(launchDelay);
+        dynamicSlaveTemplate.setLaunchDelay(launchDelay);
     }
 
     public String getRemoteFS() {
-        return dynamicSlaveProperties.getRemoteFS();
+        return dynamicSlaveTemplate.getRemoteFS();
     }
 
     @DataBoundSetter
     public void setRemoteFS(String remoteFS) {
-        dynamicSlaveProperties.setRemoteFS(remoteFS);
+        dynamicSlaveTemplate.setRemoteFS(remoteFS);
     }
 
     public String getLabelString() {
-        return dynamicSlaveProperties.getLabel();
+        return dynamicSlaveTemplate.getLabel();
     }
 
     @DataBoundSetter
     public void setLabelString(String labelString) {
-        dynamicSlaveProperties.setLabel(labelString);
+        dynamicSlaveTemplate.setLabel(labelString);
     }
 
     public String getTemplateDescription() {
-        return dynamicSlaveProperties.getTemplateDescription();
+        return dynamicSlaveTemplate.getTemplateDescription();
     }
 
     @DataBoundSetter
     public void setTemplateDescription(String templateDescription) {
-        dynamicSlaveProperties.setTemplateDescription(templateDescription);
+        dynamicSlaveTemplate.setTemplateDescription(templateDescription);
     }
 
     public int getNumberOfExecutors() {
-        return dynamicSlaveProperties.getNumberOfExecutors();
+        return dynamicSlaveTemplate.getNumberOfExecutors();
     }
 
     @DataBoundSetter
     public void setNumberOfExecutors(int numberOfExecutors) {
-        dynamicSlaveProperties.setNumberOfExecutors(numberOfExecutors);
+        dynamicSlaveTemplate.setNumberOfExecutors(numberOfExecutors);
     }
 
     public Node.Mode getMode() {
-        return dynamicSlaveProperties.getMode();
+        return dynamicSlaveTemplate.getMode();
     }
 
     @DataBoundSetter
     public void setMode(Node.Mode mode) {
-        this.dynamicSlaveProperties.setMode(mode);
+        this.dynamicSlaveTemplate.setMode(mode);
     }
 
     public String getCredentialsId() {
-        return dynamicSlaveProperties.getCredentialsId();
+        return dynamicSlaveTemplate.getCredentialsId();
     }
 
     @DataBoundSetter
     public void setCredentialsId(String credentialsId) {
-        dynamicSlaveProperties.setCredentialsId(credentialsId);
+        dynamicSlaveTemplate.setCredentialsId(credentialsId);
     }
 
     public String getGroup() {
-        return dynamicSlaveProperties.getGroup();
+        return dynamicSlaveTemplate.getGroup();
     }
 
     @DataBoundSetter
     public void setGroup(String group) {
-        dynamicSlaveProperties.setGroup(group);
+        dynamicSlaveTemplate.setGroup(group);
     }
 
     public String getExtraArgs() {
-        return dynamicSlaveProperties.getExtraArgs();
+        return dynamicSlaveTemplate.getExtraArgs();
     }
 
     @DataBoundSetter
     public void setExtraArgs(String extraArgs) {
-        dynamicSlaveProperties.setExtraArgs(extraArgs);
+        dynamicSlaveTemplate.setExtraArgs(extraArgs);
     }
 
     public String getLaunchMethod() {
-        return dynamicSlaveProperties.getLaunchMethod();
+        return dynamicSlaveTemplate.getLaunchMethod();
     }
 
     @DataBoundSetter
     public void setLaunchMethod(String launchMethod) {
-        dynamicSlaveProperties.setLaunchMethod(launchMethod);
+        dynamicSlaveTemplate.setLaunchMethod(launchMethod);
     }
 
     public boolean isKeepAliveOnError() {
-        return dynamicSlaveProperties.isKeepAliveOnError();
+        return dynamicSlaveTemplate.isKeepAliveOnError();
     }
 
     @DataBoundSetter
     public void setKeepAliveOnError(boolean keepAliveOnError) {
-        dynamicSlaveProperties.setKeepAliveOnError(keepAliveOnError);
+        dynamicSlaveTemplate.setKeepAliveOnError(keepAliveOnError);
     }
 
     public int getSSHPort() {
-        return dynamicSlaveProperties.getSSHPort();
+        return dynamicSlaveTemplate.getSSHPort();
     }
 
     @DataBoundSetter
     public void setSSHPort(int SSHPort) {
-        dynamicSlaveProperties.setSSHPort(SSHPort);
+        dynamicSlaveTemplate.setSSHPort(SSHPort);
     }
 
     public List<AnkaCloudSlaveTemplate.EnvironmentEntry> getEnvironments() {
-        return dynamicSlaveProperties.getEnvironments();
+        return dynamicSlaveTemplate.getEnvironments();
     }
 
     @DataBoundSetter
     public void setEnvironments(List<AnkaCloudSlaveTemplate.EnvironmentEntry> environments) {
-        dynamicSlaveProperties.setEnvironments(environments);
+        dynamicSlaveTemplate.setEnvironments(environments);
     }
 
     public RetentionStrategy getRetentionStrategy() {
-        return dynamicSlaveProperties.getRetentionStrategy();
+        return dynamicSlaveTemplate.getRetentionStrategy();
     }
 
     @DataBoundSetter
     public void setRetentionStrategy(RetentionStrategy retentionStrategy) {
-        dynamicSlaveProperties.setRetentionStrategy(retentionStrategy);
+        dynamicSlaveTemplate.setRetentionStrategy(retentionStrategy);
     }
 
     public String getNameTemplate() {
-        return dynamicSlaveProperties.getNameTemplate();
+        return dynamicSlaveTemplate.getNameTemplate();
     }
 
     @DataBoundSetter
     public void setNameTemplate(String nameTemplate) {
-        dynamicSlaveProperties.setNameTemplate(nameTemplate);
+        dynamicSlaveTemplate.setNameTemplate(nameTemplate);
     }
 
     public String getJavaArgs() {
-        return dynamicSlaveProperties.getJavaArgs();
+        return dynamicSlaveTemplate.getJavaArgs();
     }
 
     @DataBoundSetter
     public void setJavaArgs(String javaArgs) {
-        dynamicSlaveProperties.setJavaArgs(javaArgs);
+        dynamicSlaveTemplate.setJavaArgs(javaArgs);
     }
 
     public String getJnlpJenkinsOverrideUrl() {
-        return dynamicSlaveProperties.getJnlpJenkinsOverrideUrl();
+        return dynamicSlaveTemplate.getJnlpJenkinsOverrideUrl();
     }
 
     @DataBoundSetter
     public void setJnlpJenkinsOverrideUrl(String jnlpJenkinsOverrideUrl) {
-        dynamicSlaveProperties.setJnlpJenkinsOverrideUrl(jnlpJenkinsOverrideUrl);
+        dynamicSlaveTemplate.setJnlpJenkinsOverrideUrl(jnlpJenkinsOverrideUrl);
     }
 
     public String getJnlpTunnel() {
-        return dynamicSlaveProperties.getJnlpTunnel();
+        return dynamicSlaveTemplate.getJnlpTunnel();
     }
 
     @DataBoundSetter
     public void setJnlpTunnel(String jnlpTunnel) {
-        dynamicSlaveProperties.setJnlpTunnel(jnlpTunnel);
+        dynamicSlaveTemplate.setJnlpTunnel(jnlpTunnel);
     }
 
     public int getPriority() {
-        return dynamicSlaveProperties.getPriority();
+        return dynamicSlaveTemplate.getPriority();
     }
 
     @DataBoundSetter
     public void setPriority(int priority) {
-        dynamicSlaveProperties.setPriority(priority);
+        dynamicSlaveTemplate.setPriority(priority);
     }
 
 
     public Boolean getSuspend() {
-        return dynamicSlaveProperties.getSuspend();
+        return dynamicSlaveTemplate.getSuspend();
     }
 
     @DataBoundSetter
     public void setSuspend(boolean suspend) {
-        dynamicSlaveProperties.setSuspend(suspend);
+        dynamicSlaveTemplate.setSuspend(suspend);
     }
 
     public String getTemplateId() {
-        return dynamicSlaveProperties.getTemplateId();
+        return dynamicSlaveTemplate.getTemplateId();
     }
 
     @DataBoundSetter
     public void setTemplateId(String templateId) {
-        dynamicSlaveProperties.setTemplateId(templateId);
+        dynamicSlaveTemplate.setTemplateId(templateId);
     }
 
     public Boolean getSaveImage() {
-        return dynamicSlaveProperties.getSaveImage();
+        return dynamicSlaveTemplate.getSaveImage();
     }
 
     @DataBoundSetter
     public void setSaveImage(Boolean saveImage) {
-        dynamicSlaveProperties.setSaveImage(saveImage);
+        dynamicSlaveTemplate.setSaveImage(saveImage);
     }
 
     public String getPushTag() {
-        return dynamicSlaveProperties.getPushTag();
+        return dynamicSlaveTemplate.getPushTag();
     }
 
     @DataBoundSetter
     public void setPushTag(String tag) {
-        dynamicSlaveProperties.setPushTag(tag);
+        dynamicSlaveTemplate.setPushTag(tag);
     }
 
     public boolean isAppendTimestamp() {
-        return dynamicSlaveProperties.isAppendTimestamp();
+        return dynamicSlaveTemplate.isAppendTimestamp();
     }
 
     @DataBoundSetter
     public void setDontAppendTimestamp(boolean dontAppendTimestamp) {
-        dynamicSlaveProperties.setDontAppendTimestamp(dontAppendTimestamp);
+        dynamicSlaveTemplate.setDontAppendTimestamp(dontAppendTimestamp);
     }
 
     public boolean isDeleteLatest() {
-        return dynamicSlaveProperties.isDeleteLatest();
+        return dynamicSlaveTemplate.isDeleteLatest();
     }
 
     @DataBoundSetter
     public void setDeleteLatest(boolean deleteLatest) {
-        dynamicSlaveProperties.setDeleteLatest(deleteLatest);
+        dynamicSlaveTemplate.setDeleteLatest(deleteLatest);
     }
 
     public String getDescription() {
-        return dynamicSlaveProperties.getDescription();
+        return dynamicSlaveTemplate.getDescription();
     }
 
     @DataBoundSetter
     public void setDescription(String description) {
-        dynamicSlaveProperties.setDescription(description);
+        dynamicSlaveTemplate.setDescription(description);
     }
 
     @DataBoundSetter
@@ -289,17 +289,15 @@ public class CreateDynamicAnkaNodeStep extends Step {
         this.timeout = timeout;
     }
 
-    public int getTimeout() {
-        return timeout;
-    }
+    public int getTimeout() { return timeout; }
 
     @DataBoundConstructor
     public CreateDynamicAnkaNodeStep(String masterVmId) {
-        this.dynamicSlaveProperties = new DynamicSlaveProperties(masterVmId);
+        this.dynamicSlaveTemplate = new DynamicSlaveTemplate(masterVmId);
     }
 
-    public DynamicSlaveProperties getDynamicSlaveProperties() {
-        return dynamicSlaveProperties;
+    public DynamicSlaveTemplate getDynamicSlaveTemplate() {
+        return dynamicSlaveTemplate;
     }
 
     public StepExecution start(StepContext context) throws Exception {
@@ -334,7 +332,7 @@ public class CreateDynamicAnkaNodeStep extends Step {
                 return new ListBoxModel();
             }
             final List<StandardUsernameCredentials> credentials = CredentialsProvider.lookupCredentials(StandardUsernameCredentials.class,
-                    context, ACL.SYSTEM, DynamicSlaveProperties.HTTP_SCHEME, DynamicSlaveProperties.HTTPS_SCHEME);
+                    context, ACL.SYSTEM, DynamicSlaveTemplate.HTTP_SCHEME, DynamicSlaveTemplate.HTTPS_SCHEME);
             StandardUsernameListBoxModel listBox = new StandardUsernameListBoxModel();
             for (StandardUsernameCredentials cred: credentials) {
                 listBox.with(cred);

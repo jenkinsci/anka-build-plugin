@@ -303,6 +303,8 @@ public abstract class AbstractAnkaSlave extends Slave {
                 saveImageParams.getSaveImage()) {
             AnkaMgmtCloud.markFuture(cloud, this);
         }
+
+        this.cloud.removeDynamicTemplate(this.template);
     }
 
     public void setBuildId(String buildId) {
