@@ -368,22 +368,22 @@ public class AbstractSlaveTemplate {
         if (saveImageParameters != null) {
             return saveImageParameters.isAppendTimestamp();
         }
-        return false; // default behavior is to have the timestamp since this is the current behavior 15.10.2020 (asaf)
+        return true; // default behavior is to have the timestamp since this is the current behavior 15.10.2020 (asaf)
     }
 
     public boolean getDontAppendTimestamp() {
         if (saveImageParameters != null) {
             return saveImageParameters.getDontAppendTimestamp();
         }
-        return true; // default behavior is to have the timestamp since this is the current behavior 15.10.2020 (asaf)
+        return false; // default behavior is to have the timestamp since this is the current behavior 15.10.2020 (asaf)
     }
 
 
 
     @DataBoundSetter
-    public void setDontAppendTimestamp(Boolean appendTimestamp) {
+    public void setDontAppendTimestamp(Boolean dontAppendTimestamp) {
         if (saveImageParameters != null) {
-            saveImageParameters.setDontAppendTimestamp(appendTimestamp);
+            saveImageParameters.setDontAppendTimestamp(dontAppendTimestamp);
         }
     }
 

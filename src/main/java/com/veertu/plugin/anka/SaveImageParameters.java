@@ -9,7 +9,7 @@ public class SaveImageParameters {
     public static String saveImageKey = "saveImage";
     public static String templateIDKey = "templateId";
     public static String tagKey = "tag";
-    public static String appendTimestampKey = "appendTimestamp";
+    public static String dontAppendTimestampKey = "dontAppendTimestamp";
     public static String deleteLatestKey = "deleteLatest";
     public static String descriptionKey = "description";
     public static String suspendKey = "suspend";
@@ -142,7 +142,7 @@ public class SaveImageParameters {
                 jsonObject.optString(descriptionKey, null),
                 jsonObject.optBoolean(suspendKey, false),
                 jsonObject.optBoolean(waitForBuildToFinishKey, false),
-                jsonObject.optBoolean(appendTimestampKey, true)
+                jsonObject.optBoolean(dontAppendTimestampKey, false)
                 );
     }
 
@@ -155,6 +155,7 @@ public class SaveImageParameters {
         jsonObject.put(descriptionKey, description);
         jsonObject.put(suspendKey, suspend);
         jsonObject.put(waitForBuildToFinishKey, waitForBuildToFinish);
+        jsonObject.put(dontAppendTimestampKey, dontAppendTimestamp);
         return jsonObject;
     }
 
