@@ -22,6 +22,18 @@
         <f:textbox clazz="required number" default="0" />
     </f:entry>
     <f:advanced>
+        <f:entry title="${%Launch Timeout}" field="launchTimeout" description="Launch timeout in seconds">
+                <f:textbox clazz="number" default="2000"/>
+        </f:entry>
+        <f:entry title="${%Launch Retries}" field="maxLaunchRetries" description="Launch retries">
+                <f:textbox clazz="number" default="5"/>
+        </f:entry>
+        <f:entry title="${%Launch Retry Wait Time}" field="launchRetryWaitTime" description="The number of seconds to wait between retries">
+                <f:textbox clazz="number" default="5"/>
+        </f:entry>
+        <f:entry title="${%Launch Delay In Seconds}" field="sshLaunchDelaySeconds" description="The number of seconds to wait before starting launch">
+                <f:textbox clazz="number" default="15"/>
+        </f:entry>
         <f:entry title="${%Monitor recurrence}" field="monitorRecurrenceMinutes" description="Number of minutes to check for dead instances (global). min 1 minute">
             <f:textbox clazz="number" default="10"/>
         </f:entry>

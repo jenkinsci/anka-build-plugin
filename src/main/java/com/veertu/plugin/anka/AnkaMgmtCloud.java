@@ -46,6 +46,58 @@ public class AnkaMgmtCloud extends Cloud {
     private transient SaveImageRequestsHolder saveImageRequestsHolder = SaveImageRequestsHolder.getInstance();
     private int vmPollTime;
     private transient List<DynamicSlaveTemplate> dynamicTemplates;
+    private int launchTimeout;
+    private int maxLaunchRetries;
+    private int launchRetryWaitTime;
+    private int sshLaunchDelaySeconds;
+
+    public int getLaunchTimeout() {
+        if (launchTimeout <= 0) {
+            return AnkaLauncher.defaultLaunchTimeoutSeconds;
+        }
+        return launchTimeout;
+    }
+
+    @DataBoundSetter
+    public void setLaunchTimeout(int launchTimeout) {
+        this.launchTimeout = launchTimeout;
+    }
+
+    public int getMaxLaunchRetries() {
+        if (maxLaunchRetries <= 0) {
+            return AnkaLauncher.defaultMaxNumRetries;
+        }
+        return maxLaunchRetries;
+    }
+
+    @DataBoundSetter
+    public void setMaxLaunchRetries(int maxLaunchRetries) {
+        this.maxLaunchRetries = maxLaunchRetries;
+    }
+
+    public int getLaunchRetryWaitTime() {
+        if (launchRetryWaitTime <= 0) {
+            return AnkaLauncher.defaultRetryWaitTime;
+        }
+        return launchRetryWaitTime;
+    }
+
+    @DataBoundSetter
+    public void setLaunchRetryWaitTime(int launchRetryWaitTime) {
+        this.launchRetryWaitTime = launchRetryWaitTime;
+    }
+
+    public int getSshLaunchDelaySeconds() {
+        if (sshLaunchDelaySeconds <= 0) {
+            return AnkaLauncher.defaultSSHLaunchDelay;
+        }
+        return sshLaunchDelaySeconds;
+    }
+
+    @DataBoundSetter
+    public void setSshLaunchDelaySeconds(int sshLaunchDelaySeconds) {
+        this.sshLaunchDelaySeconds = sshLaunchDelaySeconds;
+    }
 
     public String getDurabilityMode() {
         return durabilityMode;
@@ -374,7 +426,9 @@ public class AnkaMgmtCloud extends Cloud {
                 newInstanceId = ankaAPI.startVM(template.getMasterVmId(), template.getTag(), startUpScript,
                         template.getGroup(), template.getPriority(),
                         nodeName, AnkaOnDemandSlave.getJenkinsNodeLink(nodeName));
-                AnkaLauncher launcher = new AnkaLauncher(this, template, newInstanceId);
+                AnkaLauncher launcher = new AnkaLauncher(this, template, newInstanceId,
+                                                            this.launchTimeout, this.maxLaunchRetries,
+                                                            this.launchRetryWaitTime, this.sshLaunchDelaySeconds);
                 slave = new AnkaOnDemandSlave(this, nodeName, template.getDescription(),
                         template.getRemoteFS(), template.getNumberOfExecutors(), template.getMode(),
                         template.getLabelString(), launcher, template.getNodeProperties(), template, newInstanceId);
@@ -412,7 +466,9 @@ public class AnkaMgmtCloud extends Cloud {
                 newInstanceId = ankaAPI.startVM(template.getMasterVmId(), template.getTag(), startUpScript,
                         template.getGroup(), template.getPriority(),
                         nodeName, AnkaOnDemandSlave.getJenkinsNodeLink(nodeName));
-                AnkaLauncher launcher = new AnkaLauncher(this, template, newInstanceId);
+                AnkaLauncher launcher = new AnkaLauncher(this, template, newInstanceId,
+                                                            this.launchTimeout, this.maxLaunchRetries,
+                                                            this.launchRetryWaitTime, this.sshLaunchDelaySeconds);
                 slave = new AnkaOnDemandSlave(this, nodeName, template.getDescription(),
                         template.getRemoteFS(), template.getNumberOfExecutors(), template.getMode(),
                         template.getLabelString(), launcher, template.getNodeProperties(), template, newInstanceId);

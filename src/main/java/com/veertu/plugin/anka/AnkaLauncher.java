@@ -14,18 +14,36 @@ public class AnkaLauncher extends DelegatingComputerLauncher {
     private final AnkaMgmtCloud cloud;
     private final AnkaCloudSlaveTemplate template;
     private final String instanceId;
+    private int launchTimeoutSeconds = 2000;
+    private int maxRetries = 5;
+    private int retryWaitTime = 5;
+    private int sshLaunchDelaySeconds = 15;
 
 
-    protected static final int launchTimeoutSeconds = 2000;
-    protected static final int maxNumRetries = 5;
-    protected static final int retryWaitTime = 5;
-    protected static final int sshLaunchDelay = 15 * 1000;  // 15 seconds for ssh delay
+    protected static final int defaultLaunchTimeoutSeconds = 2000;
+    protected static final int defaultMaxNumRetries = 5;
+    protected static final int defaultRetryWaitTime = 5;
+    protected static final int defaultSSHLaunchDelay = 15;  // 15 seconds for ssh delay
 
-    public AnkaLauncher(AnkaMgmtCloud cloud, AnkaCloudSlaveTemplate template, String instanceId) {
+    public AnkaLauncher(AnkaMgmtCloud cloud, AnkaCloudSlaveTemplate template, String instanceId ,
+                        int launchTimeoutSeconds, int maxRetries, int retryWaitTime, int sshLaunchDelaySeconds){
         super(null);
         this.cloud = cloud;
-        this.template = template;
+        this. template = template;
         this.instanceId = instanceId;
+        if (launchTimeoutSeconds > 0) {
+            this.launchTimeoutSeconds = launchTimeoutSeconds;
+        }
+        if (maxRetries > 0) {
+            this.maxRetries = maxRetries;
+        }
+        if (retryWaitTime > 0) {
+            this.retryWaitTime = retryWaitTime;
+        }
+        if (sshLaunchDelaySeconds > 0) {
+            this.sshLaunchDelaySeconds = sshLaunchDelaySeconds;
+        }
+
         ComputerLauncher launcher;
         if (template.getLaunchMethod().equalsIgnoreCase(LaunchMethod.JNLP)) {
             launcher = new JNLPLauncher(template.getJnlpTunnel(),
@@ -35,13 +53,19 @@ public class AnkaLauncher extends DelegatingComputerLauncher {
             launcher = new SSHLauncher("", 0,
                     template.getCredentialsId(),
                     template.getJavaArgs(), null, null, null,
-                    launchTimeoutSeconds, maxNumRetries, retryWaitTime, null);
+                    launchTimeoutSeconds, maxRetries, retryWaitTime, null);
         } else {
             throw new RuntimeException("Unknown launch method");
         }
         this.launcher = launcher;
 
     }
+    public AnkaLauncher(AnkaMgmtCloud cloud, AnkaCloudSlaveTemplate template, String instanceId) {
+        this(cloud, template, instanceId, defaultLaunchTimeoutSeconds,
+                defaultMaxNumRetries, defaultRetryWaitTime, defaultSSHLaunchDelay);
+    }
+
+
 
     @Override
     public boolean isLaunchSupported() {
@@ -74,8 +98,8 @@ public class AnkaLauncher extends DelegatingComputerLauncher {
                         this.launcher = new SSHLauncher(hosIp, vmInfo.getForwardedPort(template.SSHPort),
                                 template.getCredentialsId(),
                                 template.getJavaArgs(), null, null, null,
-                                launchTimeoutSeconds, maxNumRetries, retryWaitTime, null);
-                        Thread.sleep(sshLaunchDelay);
+                                launchTimeoutSeconds, maxRetries, retryWaitTime, null);
+                        Thread.sleep(sshLaunchDelaySeconds * 1000);
                         listener.getLogger().println(String.format("Launching SSH connection for %s", instanceId));
                         this.launcher.launch(computer, listener);
                         ankaCloudComputer.reportLaunchFinished();
@@ -85,7 +109,7 @@ public class AnkaLauncher extends DelegatingComputerLauncher {
                         int numRetries = 0;
                         while (true) {
                             try {
-                                if (numRetries > maxNumRetries) {
+                                if (numRetries > maxRetries) {
                                     break;
                                 }
                                 this.launcher.launch(computer, listener);
@@ -94,12 +118,12 @@ public class AnkaLauncher extends DelegatingComputerLauncher {
                                     break;
                                 }
                             } catch (IOException | InterruptedException e) {
-                                if (numRetries >= maxNumRetries) {
+                                if (numRetries >= maxRetries) {
                                     throw e;
                                 }
                             } finally {
                                 numRetries++;
-                                Thread.sleep(5000);
+                                Thread.sleep(retryWaitTime * 1000);
                             }
                         }
 
