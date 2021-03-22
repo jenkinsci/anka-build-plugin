@@ -1,9 +1,9 @@
     <j:jelly xmlns:j="jelly:core"  xmlns:f="/lib/form" xmlns:c="/lib/credentials">
-
-    <table wdith="100%">
-        <f:invisibleEntry >
-            <f:textbox value="${cloud.getCloudName()}" field="cloudName" />
-        </f:invisibleEntry>
+        <table >
+            <f:invisibleEntry title="cloudName" field="cloudName">
+                <f:textbox value="${cloud.getCloudName()}"  />
+            </f:invisibleEntry>
+        </table>
         <f:entry title="${%Template}" field="masterVmId" description="The snapshot to install jenkins slave on it.
                                                                         java is assumed to be pre-installed">
             <f:select />
@@ -132,6 +132,4 @@
               <f:textbox clazz="number" default="1"/>
             </f:entry>
           </f:advanced>
-    </table>
-
 </j:jelly>
