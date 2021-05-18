@@ -1,44 +1,32 @@
     <j:jelly xmlns:j="jelly:core"  xmlns:f="/lib/form" xmlns:c="/lib/credentials">
 
-            <f:entry title="cloudName" field="cloudName">
-                <f:textbox value="${cloud.getCloudName()}" disabled="true"  />
-            </f:entry>
-
-        <f:entry title="${%Template}" field="masterVmId" description="The snapshot to install jenkins slave on it.
-                                                                        java is assumed to be pre-installed">
-            <f:select />
-        </f:entry>
-        <f:entry title="${%Template Version Tag}" field="tag" description="The tag to use for this vm template">
-            <f:select />
+        <f:entry title="Cloud Name" field="cloudName" description="The Anka Build Cloud this Node Template/Label is attached to">
+            <f:textbox value="${cloud.getCloudName()}" disabled="true" />
         </f:entry>
 
-
-
-        <f:entry title="${%Description}" field="templateDescription">
-            <f:textbox />
-        </f:entry>
-
-        <f:entry title="${%# of Executors}" field="numberOfExecutors" description="This is the number of builds which can run on the same slave">
-            <f:textbox clazz="required number" default="1" />
-        </f:entry>
-
-        <f:entry title="${%Remote FS Root}" field="remoteFS" description="Where jenkins files and job workspace will be place in the slave">
-            <f:textbox clazz="required" default="/Users/jenkins/"/>
-        </f:entry>
-
-        <f:entry title="${%Labels}" field="label" description="The Label which the slave will be spun upon it">
+        <f:entry title="${%Target Label}" field="label" description="The label that jobs will target in order to start and utilize the started Jenkins Node/Agent">
             <f:textbox clazz="required" />
         </f:entry>
 
-        <f:entry title="${%Keep Alive on Error}"  field="keepAliveOnError" description="don't shutdown the vm if the build had an error">
-            <f:checkbox checked="${instance.isKeepAliveOnError()?'true':'false'}" field="keepAliveOnError" />
+        <f:entry title="${%Node/Agent Name}" field="nameTemplate" description="A string to include in the name of the started Jenkins Node/Agent">
+            <f:textbox default="" />
         </f:entry>
 
+        <f:entry title="${%Anka VM Template}" field="masterVmId" description="The Anka VM Template to use when starting the Jenkins Node/Agent (Java is assumed to be pre-installed)">
+            <f:select />
+        </f:entry>
+        <f:entry title="${%Anka VM Template's Tag}" field="tag" description="The Anka VM Template's Tag to use">
+            <f:select />
+        </f:entry>
 
-        <f:entry title="${%Launch Method}" field="launchMethod" description="slave launch method">
+        <f:entry title="${%Description (optional)}" field="templateDescription">
+            <f:textbox />
+        </f:entry>
+
+        <f:entry title="${%Launch Method}" field="launchMethod" description="Launch Method Jenkins will use when jobs want to perform actions inside of the Node/Agent">
             <table width="100%">
                 <f:radioBlock inline="true" name="launchMethod" value="ssh" title="SSH" checked="${instance.launchMethodString != 'jnlp'}">
-                    <f:entry title="${%Clone's user (SSH)}" description="The user and password to connect to chosen template" field="credentialsId" >
+                    <f:entry title="${%Credential}" description="The user and password to connect to the Node/Agent" field="credentialsId" >
                         <c:select/>
                     </f:entry>
 
@@ -62,13 +50,24 @@
             </table>
         </f:entry>
 
+        <f:entry title="Maximum Allowed Nodes/Agents" description="The number of Jenkins Nodes/Agents this template and label is allowed to start (0 is unlimited)" field="instanceCapacity">
+            <f:textbox clazz="required number" default="0" />
+        </f:entry>
 
-        <f:entry title="${%Slave name template}" field="nameTemplate" description="Name template for a created slave">
-            <f:textbox default="" />
+        <f:entry title="${%Allowed Executors}" field="numberOfExecutors" description="This is the number of jobs/builds which can run on the started Jenkins Node/Agent that uses this Template">
+            <f:textbox clazz="required number" default="1" />
+        </f:entry>
+
+        <f:entry title="${%Anka VM Workspace Path}" field="remoteFS" description="Where Jenkins will store the files/workspace on the started Node/Agent">
+            <f:textbox clazz="required" default="/Users/anka/"/>
+        </f:entry>
+
+        <f:entry title="${%Keep Alive on Error}" field="keepAliveOnError" description="Keep the Node/Agent alive if the job running on it fails">
+            <f:checkbox checked="${instance.isKeepAliveOnError()?'true':'false'}" field="keepAliveOnError" />
         </f:entry>
 
         <f:block>
-            <f:entry title="${%Environment variables}">
+            <f:entry title="${%Environment Variables}" description="These will be available inside of the started Node/Agent/Anka VM">
                 <f:repeatable field="environments">
                     <table width="100%">
                         <f:entry title="${%Name}" field="name">
@@ -87,31 +86,28 @@
             </f:entry>
         </f:block>
 
-        <f:entry title="Template instance capacity" description="The number of instances this template is allowed to run (0 is unlimited)" field="instanceCapacity">
-            <f:textbox clazz="required number" default="0" />
-        </f:entry>
         <j:if test="${(cloud.isPushSupported())}">
-         <f:section title="Cache Builder" description="Push the vm to the registry when the build is done">
-          <f:optionalBlock inline="true" field="saveImage" title="Cache Builder" checked="${instance.getSaveImage()}">
-               <f:entry title="${%Target Template}"  field="templateId" description="The template to save the image to">
+         <f:section title="Anka VM Template/Tag Creation" description="Pushes a new Anka VM Tag to the registry when the build finishes">
+          <f:optionalBlock inline="true" field="saveImage" title="Enabled" checked="${instance.getSaveImage()}">
+               <f:entry title="${%Target Anka VM Template}"  field="templateId" description="The Anka VM Template to save the new Tag to">
                    <f:select />
                </f:entry>
-               <f:entry title="${%Tag}"  field="pushTag" description="Tag to push (date will be appended to tag string by default)">
+               <f:entry title="${%Tag Name}"  field="pushTag" description="Tag Name to use (date will be appended to tag string by default)">
                    <f:textbox />
                </f:entry>
-               <f:entry title="${%Don't append Timestamp}"  field="dontAppendTimestamp" description="Don't append timestamp to tag">
+               <f:entry title="${%Disable Timestamp Append}"  field="dontAppendTimestamp" description="Don't append timestamp to Tag Name">
                    <f:checkbox />
                </f:entry>
-               <f:entry title="${%Description}"  field="description" description="description for the new tag">
+               <f:entry title="${%Description}"  field="description" description="Description for the new Tag">
                    <f:textbox />
                </f:entry>
-              <f:entry title="${%Suspend}" name="suspend" field="suspend" description="Suspend the image before pushing it to registry">
+              <f:entry title="${%Suspend Tag}" name="suspend" field="suspend" description="Suspend the Tag before pushing it to registry">
                  <f:checkbox  />
               </f:entry>
               <f:entry title="${%Delete Latest Tag}" name="deleteLatest" field="deleteLatest" description="Delete the latest tag in the registry before pushing">
                  <f:checkbox  />
                </f:entry>
-               <f:entry title="${%Wait For Build Finish (pipeline)}" name="waitForBuildToFinish" field="waitForBuildToFinish"
+               <f:entry title="${%Wait For Build Finish (pipeline targeting)}" name="waitForBuildToFinish" field="waitForBuildToFinish"
                         description="When using pipeline, check this box if you want the vm to wait for the job's completion before pushing the new image to the registry. You probably should not use this option if you are setting 'currentBuild.result' with try-catch. Also, using ankaGetSaveImageResult is redundant">
                  <f:checkbox  />
                </f:entry>
@@ -119,16 +115,16 @@
             </f:section>
            </j:if>
           <f:advanced>
-            <f:entry title="${%Node Group}" field="group" description="The node group the vm will run on (enterprise only)">
+            <f:entry title="${%Node Group}" field="group" description="The Anka Build Cloud Node group the Anka VM is started on (enterprise only)">
                 <f:select />
             </f:entry>
-            <f:entry title="${%Priority}" field="priority" description="The job's priority, lowest is more urgent (enterprise only)">
+            <f:entry title="${%Priority}" field="priority" description="The Anka Build Cloud VM start priority. Lower numbers get a higher priority (enterprise only)">
                   <f:textbox clazz="number" default="0" />
             </f:entry>
-            <f:entry title="${%Scheduling Timeout}" field="schedulingTimeout" description="Seconds for timeout when node is in scheduling state">
+            <f:entry title="${%Scheduling Timeout}" field="schedulingTimeout" description="Seconds the "scheduling" Anka VM is allowed to wait in the Anka Build Cloud Controller queue">
                   <f:textbox clazz="number" default="${descriptor.schedulingTimeout}"/>
             </f:entry>
-            <f:entry title="${%Idle Check Timeout}" field="idleMinutes" description="Number of minutes between computer checks">
+            <f:entry title="${%Idle Check Timeout}" field="idleMinutes" description="Number of minutes between idle Anka VM checks">
               <f:textbox clazz="number" default="1"/>
             </f:entry>
           </f:advanced>
