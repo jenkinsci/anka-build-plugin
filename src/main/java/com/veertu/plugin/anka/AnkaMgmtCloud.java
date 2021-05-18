@@ -694,7 +694,7 @@ public class AnkaMgmtCloud extends Cloud {
 
         @Override
         public String getDisplayName() {
-            return "Anka Cloud";
+            return "Anka Build Plugin Cloud";
         }
 
         public ListBoxModel doFillCredentialsIdItems(@AncestorInPath ItemGroup context) {
