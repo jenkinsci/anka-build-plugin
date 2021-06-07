@@ -127,7 +127,7 @@
       </f:entry>
       <f:entry title="Skip TLS Verification" field="skipTLSVerification">
         <f:checkbox checked="${instance.getSkipTLSVerification()?'true':'false'}" field="skipTLSVerification" />
-        <f:entry title="Root CA Certificate" field="rootCA" description="For validating self signed certificates">
+        <f:entry title="Controller URL Root CA Certificate" field="rootCA" description="For validating the Controller URL self-signed certificate">
           <f:textarea clazz="string"  />
         </f:entry>
       </f:entry>
