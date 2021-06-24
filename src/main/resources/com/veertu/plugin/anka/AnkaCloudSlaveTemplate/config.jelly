@@ -1,6 +1,6 @@
 <j:jelly xmlns:j="jelly:core"  xmlns:f="/lib/form" xmlns:c="/lib/credentials">
   <f:entry title="Cloud Name" field="cloudName" description="The Anka Build Cloud this Node Template/Label is attached to">
-      <f:textbox value="${cloud.getCloudName()}" disabled="true" />
+      <f:textbox value="${cloudName}" disabled="true" />
   </f:entry>
 
   <f:entry title="${%Target Label}" field="label" description="The label that jobs will target in order to start and utilize the started Jenkins Node/Agent">
@@ -85,7 +85,6 @@
       </f:entry>
   </f:block>
   <hr />
-  <j:if test="${(cloud.isPushSupported())}">
     <h4>Anka VM Template/Tag Creation</h4>
     <f:section style="font-size: 10px;" description="Pushes a new Anka VM Tag to the registry when the build finishes">
       <f:optionalBlock inline="true" field="saveImage" title="Enabled" checked="${instance.getSaveImage()}">
@@ -102,17 +101,16 @@
             <f:textbox />
         </f:entry>
         <f:entry title="${%Suspend Tag}" name="suspend" field="suspend" description="Suspend the Tag before pushing it to registry">
-            <f:checkbox  />
+            <f:checkbox />
         </f:entry>
         <f:entry title="${%Delete Latest Tag}" name="deleteLatest" field="deleteLatest" description="Delete the latest tag in the registry before pushing">
-            <f:checkbox  />
+            <f:checkbox />
         </f:entry>
         <f:entry title="${%Wait For Build Finish}" name="waitForBuildToFinish" field="waitForBuildToFinish" description="When using pipeline, check this box if you want the vm to wait for the job's completion before pushing the new image to the registry. You probably should not use this option if you are setting 'currentBuild.result' with try-catch. Also, using ankaGetSaveImageResult is redundant">
-            <f:checkbox  />
+            <f:checkbox />
         </f:entry>
       </f:optionalBlock>
     </f:section>
-  </j:if>
   <hr />
   <f:advanced>
       <f:entry title="${%Node Group}" field="group" description="The Anka Build Cloud Node group the Anka VM is started on (enterprise only)">

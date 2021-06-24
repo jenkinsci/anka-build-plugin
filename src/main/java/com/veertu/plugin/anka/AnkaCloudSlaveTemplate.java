@@ -258,8 +258,15 @@ public class AnkaCloudSlaveTemplate extends AbstractSlaveTemplate implements Des
             AnkaMgmtCloud cloud = (AnkaMgmtCloud) Jenkins.get().getCloud(cloudName);
             ListBoxModel models = new ListBoxModel();
             models.add("Choose Node Group Or Leave Empty for all", null);
-            for (NodeGroup nodeGroup: getNodeGroups(cloud)) {
-                models.add(nodeGroup.getName(), nodeGroup.getId());
+            if (! cloud.isOnline()) {
+                for (String groupId : cloud.getExistingGroupIds()) {
+                    models.add(groupId);
+                }
+            }
+            else {
+                for (NodeGroup nodeGroup: getNodeGroups(cloud)) {
+                    models.add(nodeGroup.getName(), nodeGroup.getId());
+                }
             }
             return models;
         }
@@ -268,9 +275,18 @@ public class AnkaCloudSlaveTemplate extends AbstractSlaveTemplate implements Des
             AnkaMgmtCloud cloud = (AnkaMgmtCloud) Jenkins.get().getCloud(cloudName);
             ListBoxModel models = new ListBoxModel();
             models.add("Choose Vm template", null);
-            if (cloud != null) {
-                for (AnkaVmTemplate temp: cloud.listVmTemplates()){
-                    models.add(String.format("%s(%s)", temp.getName(), temp.getId()), temp.getId());
+            if (! cloud.isOnline()) {
+                if (! cloud.isOnline()) {
+                    for (String id: cloud.getExistingTemplateIds()) {
+                        models.add(id);
+                    }
+                }
+            }
+            else {
+                if (cloud != null) {
+                    for (AnkaVmTemplate temp: cloud.listVmTemplates()){
+                        models.add(String.format("%s(%s)", temp.getName(), temp.getId()), temp.getId());
+                    }
                 }
             }
             return models;
@@ -284,9 +300,16 @@ public class AnkaCloudSlaveTemplate extends AbstractSlaveTemplate implements Des
             AnkaMgmtCloud cloud = (AnkaMgmtCloud) Jenkins.get().getCloud(cloudName);
             ListBoxModel models = new ListBoxModel();
             models.add("Choose a Tag or leave empty for latest", null);
-            if (cloud != null && masterVmId != null && masterVmId.length() != 0) {
-                for (String tagName: cloud.getTemplateTags(masterVmId)){
-                    models.add(tagName, tagName);
+            if (! cloud.isOnline()) {
+                for (String tagName: cloud.getExistingTags()){
+                    models.add(tagName);
+                }
+            }
+            else {
+                if (cloud != null && masterVmId != null && masterVmId.length() != 0) {
+                    for (String tagName: cloud.getTemplateTags(masterVmId)){
+                        models.add(tagName, tagName);
+                    }
                 }
             }
             return models;

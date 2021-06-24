@@ -78,6 +78,9 @@
       margin: 5px;
     }
 
+    .hide-me {
+      display: none;
+    }
   </style>
   <div class="anka-build-plugin-head-group">
     <div class="anka-build-plugin-head">
@@ -141,34 +144,33 @@
         <!-- templates section-->
         <f:block>
             <j:set var="cloud" value="${instance}"/>
-                <j:if test="${!(cloud!=null)}">
-                    <b>
-                        <div>Jenkins Node/Agent Templates and Labels will appear here if the cloud is reachable (ensure the Anka Build Cloud hostname or IP is reachable from Jenkins).</div>
-                        <div>After configuring the Anka Build Cloud, click apply and refresh.</div>
-                    </b>
-                </j:if>
-                <j:if test="${instance!=null}">
-                    <j:if test="${instance.isOnline()}">
-                        <j:set var="cloudName" value="${instance.getCloudName()}"/>
-                        <div class="anka-build-plugin-template">
-                          <f:optionalBlock inline="true" title="Show Agent/Node Templates" checked="true">
-                            <f:entry description="${%List of Cloud Templates used to create Jenkins Agents/Nodes}">
-                              <f:repeatable field="templates">
-                                <st:include page="config.jelly" class="${descriptor.clazz}"/>
-                                <div class="repeatable-delete show-if-only">
-                                  <f:repeatableDeleteButton />
-                                </div>
-                              </f:repeatable>
-                            </f:entry>
-                          </f:optionalBlock>
-                        </div>
-                    </j:if>
-                    <j:if test="${!instance.isOnline()}">
-                        <b>
-                          Anka Build Cloud "${instance.getCloudName()}" is offline or Jenkins cannot connect to it
-                        </b>
-                    </j:if>
-                </j:if>
+            <j:if test="${cloud==null}">
+                <b>
+                    <div>Jenkins Node/Agent Templates and Labels will appear here if the cloud is reachable (ensure the Anka Build Cloud hostname or IP is reachable from Jenkins).</div>
+                    <div>After configuring the Anka Build Cloud, click apply and refresh.</div>
+                </b>
+            </j:if>
+            <j:if test="${cloud!=null}">
+              <j:set var="isCloudOnline" value="${cloud.isOnline()}"/>
+              <j:set var="cloudName" value="${cloud.getCloudName()}"/>
+              <j:if test="${!isCloudOnline}">
+                  <b>
+                    Anka Build Cloud "${cloudName}" is offline or Jenkins cannot connect to it
+                  </b>
+              </j:if>
+              <div class="${isCloudOnline?'':'hide-me'}">
+                <f:optionalBlock inline="true" title="Show Agent/Node Templates" checked="${isCloudOnline}" disabled="${!isCloudOnline}">
+                  <f:entry description="${%List of Cloud Templates used to create Jenkins Agents/Nodes}">
+                    <f:repeatable field="templates">
+                      <st:include page="config.jelly" class="${descriptor.clazz}"/>
+                      <div class="repeatable-delete show-if-only ">
+                        <f:repeatableDeleteButton />
+                      </div>
+                    </f:repeatable>
+                  </f:entry>
+                </f:optionalBlock>
+              </div>
+            </j:if>
         </f:block>
     </f:section>
   </div>

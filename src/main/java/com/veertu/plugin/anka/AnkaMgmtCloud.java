@@ -684,6 +684,50 @@ public class AnkaMgmtCloud extends Cloud {
         return this.vmPollTime;
     }
 
+    public Set<String> getExistingTemplateIds() {
+        Set<String> l = new HashSet<String>();
+        for (AnkaCloudSlaveTemplate t : this.templates) {
+            String id = t.getMasterVmId();
+            if (id != null) {
+                l.add(id);
+            }
+
+            id = t.getTemplateId();
+            if (id != null) {
+                l.add(id);
+            }
+        }
+        return l;
+    }
+
+    public Set<String> getExistingGroupIds() {
+        Set<String> l = new HashSet<String>();
+        for (AnkaCloudSlaveTemplate t : this.templates) {
+            String id = t.getGroup();
+            if (id != null) {
+                l.add(id);
+            }
+        }
+        return l;
+    }
+
+    public Set<String> getExistingTags() {
+        Set<String> l = new HashSet<String>();
+        for (AnkaCloudSlaveTemplate t : this.templates) {
+            String id = t.getTag();
+            if (id != null) {
+                l.add(id);
+            }
+
+            id = t.getPushTag();
+            if (id != null) {
+                l.add(id);
+            }
+        }
+        return l;
+    }
+
+
     @DataBoundSetter
     public void setVmPollTime(int milliseconds) {
         vmPollTime =milliseconds;
