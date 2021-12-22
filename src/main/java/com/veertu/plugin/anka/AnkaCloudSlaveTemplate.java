@@ -12,6 +12,8 @@ import hudson.model.labels.LabelAtom;
 import hudson.security.ACL;
 import hudson.security.AccessControlled;
 import hudson.util.ListBoxModel;
+import hudson.Util;
+import hudson.util.FormValidation;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.kohsuke.stapler.*;
@@ -257,7 +259,7 @@ public class AnkaCloudSlaveTemplate extends AbstractSlaveTemplate implements Des
         public ListBoxModel doFillGroupItems(@QueryParameter String cloudName) {
             AnkaMgmtCloud cloud = (AnkaMgmtCloud) Jenkins.get().getCloud(cloudName);
             ListBoxModel models = new ListBoxModel();
-            models.add("Choose Node Group Or Leave Empty for all", null);
+            models.add("Choose Node Group Or Leave Empty for all", "");
             if (! cloud.isOnline()) {
                 for (String groupId : cloud.getExistingGroupIds()) {
                     models.add(groupId);
@@ -274,7 +276,7 @@ public class AnkaCloudSlaveTemplate extends AbstractSlaveTemplate implements Des
         public ListBoxModel doFillMasterVmIdItems(@QueryParameter String cloudName) {
             AnkaMgmtCloud cloud = (AnkaMgmtCloud) Jenkins.get().getCloud(cloudName);
             ListBoxModel models = new ListBoxModel();
-            models.add("Choose Vm template", null);
+            models.add("Choose Vm template", "");
             if (! cloud.isOnline()) {
                 if (! cloud.isOnline()) {
                     for (String id: cloud.getExistingTemplateIds()) {
@@ -299,7 +301,7 @@ public class AnkaCloudSlaveTemplate extends AbstractSlaveTemplate implements Des
         public ListBoxModel doFillTagItems(@QueryParameter String cloudName , @QueryParameter String masterVmId) {
             AnkaMgmtCloud cloud = (AnkaMgmtCloud) Jenkins.get().getCloud(cloudName);
             ListBoxModel models = new ListBoxModel();
-            models.add("Choose a Tag or leave empty for latest", null);
+            models.add("Choose a Tag or leave empty for latest", "");
             if (! cloud.isOnline()) {
                 for (String tagName: cloud.getExistingTags()){
                     models.add(tagName);
