@@ -566,6 +566,15 @@ public class AnkaMgmtCommunicator {
                         throw e;
                     }
                     int responseCode = response.getStatusLine().getStatusCode();
+                    if (responseCode != 200) {
+                        HttpEntity entity = response.getEntity();
+                        if (entity != null) {
+                            StringBuffer result = readHttpEntity(entity);
+                            AnkaMgmtCloud.Log(response.getStatusLine().toString() + "\n" + result.toString());
+                        } else {
+                            AnkaMgmtCloud.Log(response.getStatusLine().toString());
+                        }
+                    }
                     if (responseCode == 401) {
                         throw new AnkaUnAuthenticatedRequestException("Authentication Required");
                     }
@@ -582,14 +591,7 @@ public class AnkaMgmtCommunicator {
                     }
                     HttpEntity entity = response.getEntity();
                     if (entity != null) {
-                        BufferedReader rd = new BufferedReader(
-                                new InputStreamReader(entity.getContent()));
-                        StringBuffer result = new StringBuffer();
-                        String line = "";
-                        while ((line = rd.readLine()) != null) {
-                            result.append(line);
-                        }
-                        rd.close();
+                        StringBuffer result = readHttpEntity(entity);
                         JSONObject jsonResponse = new JSONObject(result.toString());
                         return jsonResponse;
                     }
@@ -629,6 +631,18 @@ public class AnkaMgmtCommunicator {
             }
         }
 
+    }
+
+    protected StringBuffer readHttpEntity(HttpEntity entity) throws IOException {
+        BufferedReader rd = new BufferedReader(
+                new InputStreamReader(entity.getContent()));
+        StringBuffer result = new StringBuffer();
+        String line = "";
+        while ((line = rd.readLine()) != null) {
+            result.append(line);
+        }
+        rd.close();
+        return result;
     }
 
     protected CloseableHttpClient getHttpClient() throws CertificateException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException, IOException {
