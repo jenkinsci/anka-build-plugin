@@ -5,16 +5,16 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>3.57</version>
+    <version>4.25</version>
     <relativePath />
   </parent>
   <artifactId>anka-build</artifactId>
-  <version>2.6.1-SNAPSHOT</version>
+  <version>2.7.0-SNAPSHOT</version>
   <packaging>hpi</packaging>
 
   <properties>
     <!-- Baseline Jenkins version you use to build the plugin. Users must have this version or newer to run. -->
-    <jenkins.version>2.150.1</jenkins.version>
+    <jenkins.version>2.277.4</jenkins.version>
     <!-- Java Level to use. Java 7 required when using core >= 1.612 -->
     <java.level>8</java.level>
     <!-- Jenkins Test Harness version you use to test the plugin. -->
@@ -76,97 +76,97 @@
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>structs</artifactId>
-      <version>1.19</version>
+      <version>308.v852b473a2b8c</version>
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins.workflow</groupId>
       <artifactId>workflow-step-api</artifactId>
-      <version>2.19</version>
+      <version>615.vb09dac339255</version>
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins.workflow</groupId>
       <artifactId>workflow-cps</artifactId>
-      <version>2.39</version>
+      <version>2648.va9433432b33c</version>
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins.workflow</groupId>
       <artifactId>workflow-job</artifactId>
-      <version>2.11.2</version>
+      <version>1145.v7f2433caa07f</version>
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins.workflow</groupId>
       <artifactId>workflow-basic-steps</artifactId>
-      <version>2.6</version>
+      <version>2.24</version>
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins.workflow</groupId>
       <artifactId>workflow-durable-task-step</artifactId>
-      <version>2.13</version>
+      <version>2.39</version>
 
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins.workflow</groupId>
       <artifactId>workflow-api</artifactId>
-      <version>2.30</version>
+      <version>1108.v57edf648f5d4</version>
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins.workflow</groupId>
       <artifactId>workflow-support</artifactId>
-      <version>3.2</version>
+      <version>3.8</version>
     </dependency>
 
 
     <dependency>
       <groupId>org.json</groupId>
       <artifactId>json</artifactId>
-      <version>20160212</version>
+      <version>20211205</version>
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>apache-httpcomponents-client-4-api</artifactId>
-      <version>4.5.10-2.0</version>
+      <version>4.5.13-1.0</version>
     </dependency>
 
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>ssh-slaves</artifactId>
-      <version>1.30.4</version>
+      <version>1.31.3</version>
     </dependency>
 
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>trilead-api</artifactId>
-      <version>1.0.3</version>
+      <version>1.0.13</version>
     </dependency>
 
 
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>bouncycastle-api</artifactId>
-      <version>2.18</version>
+      <version>2.25</version>
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>scm-api</artifactId>
-      <version>2.2.6</version>
+      <version>2.6.5</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>script-security</artifactId>
-      <version>1.39</version>
+      <version>1118.vba21ca2e3286</version>
       <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>node-iterator-api</artifactId>
-      <version>1.5.0</version>
+      <version>1.5.1</version>
     </dependency>
     <dependency>
       <groupId>javax.xml.bind</groupId>
       <artifactId>jaxb-api</artifactId>
-      <version>2.3.0</version>
+      <version>2.4.0-b180830.0359</version>
     </dependency>
   </dependencies>
 
@@ -197,7 +197,7 @@
       <plugin>
         <groupId>com.github.spotbugs</groupId>
         <artifactId>spotbugs-maven-plugin</artifactId>
-        <version>4.2.1</version>
+        <version>4.5.2</version>
         <configuration>
           <omitVisitors>FindDeadLocalStores,UnreadFields</omitVisitors>
         </configuration>
