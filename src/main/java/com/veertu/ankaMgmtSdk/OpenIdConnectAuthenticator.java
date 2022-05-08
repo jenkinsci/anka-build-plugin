@@ -21,7 +21,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import javax.net.ssl.SSLContext;
-import javax.xml.bind.DatatypeConverter;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -30,6 +29,7 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
 
 public class OpenIdConnectAuthenticator {
@@ -184,7 +184,7 @@ public class OpenIdConnectAuthenticator {
 
     private NameValuePair makeAuthorization() {
         String authorizationPair = String.format("%s:%s", clientId, clientSecret);
-        String encoded = DatatypeConverter.printBase64Binary(authorizationPair.getBytes());
+        String encoded = Base64.getEncoder().encodeToString(authorizationPair.getBytes());
         return new BasicNameValuePair("Authorization", String.format("Basic %s", encoded));
     }
 
