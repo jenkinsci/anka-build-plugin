@@ -49,6 +49,10 @@ public class AnkaCloudComputer extends SlaveComputer {
         return afterFirstConnection;
     }
 
+    public boolean isLaunching() {
+        return launching;
+    }
+
     public void firstConnectionAttempted() {
         afterFirstConnection = true;
     }

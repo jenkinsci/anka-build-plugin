@@ -29,7 +29,7 @@ public class AnkaLauncher extends DelegatingComputerLauncher {
                         int launchTimeoutSeconds, int maxRetries, int retryWaitTime, int sshLaunchDelaySeconds){
         super(null);
         this.cloud = cloud;
-        this. template = template;
+        this.template = template;
         this.instanceId = instanceId;
         if (launchTimeoutSeconds > 0) {
             this.launchTimeoutSeconds = launchTimeoutSeconds;
@@ -148,7 +148,36 @@ public class AnkaLauncher extends DelegatingComputerLauncher {
 
     }
 
-    public void launchFinished() {
+    @Override
+    public void afterDisconnect(SlaveComputer computer, TaskListener listener) {
+        // Deadlock can occur if this is called while launcher is still in progress
+        // Here we wait gracefully for the launching to finish
+        
+        int maxWaitingTime = 180;  // 3 minutes
 
+        if (!(computer instanceof AnkaCloudComputer)) {
+            throw new RuntimeException("This is not a an Anka Computer");
+        }
+        AnkaCloudComputer ankaCloudComputer = (AnkaCloudComputer) computer;
+        int timeWaited = 0;
+
+        while (true) {
+            if (! ankaCloudComputer.isLaunching())
+                break;
+
+            if (timeWaited > maxWaitingTime) {
+                listener.getLogger().println("afterDisconnect hook: waiting for launcher to finish timed out");
+                break;
+            }
+
+            try {
+                timeWaited += 1;
+                Thread.sleep(1000);
+            }
+            catch (InterruptedException e) {
+                listener.getLogger().println("afterDisconnect hook: waiting for launcher to finish interrupted");
+            }
+        }
+        this.launcher.afterDisconnect(computer, listener);
     }
 }
