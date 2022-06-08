@@ -47,6 +47,14 @@ import java.util.concurrent.TimeUnit;
 
 import static org.apache.http.conn.ssl.SSLConnectionSocketFactory.getDefaultHostnameVerifier;
 
+import jenkins.model.Jenkins;
+import org.apache.http.impl.client.BasicCredentialsProvider;
+import hudson.ProxyConfiguration;
+import hudson.util.Secret;
+import org.apache.http.HttpHost;
+import org.apache.http.client.CredentialsProvider;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.auth.AuthScope;
 
 /**
  * Created by asafgur on 09/05/2017.
@@ -60,6 +68,7 @@ public class AnkaMgmtCommunicator {
     protected String rootCA;
     protected transient RoundRobin roundRobin;
     protected int maxConnections = 50;
+    protected CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
 
     protected int connectionKeepAliveSeconds = 120;
     protected transient CloseableHttpClient httpClient;
@@ -505,8 +514,6 @@ public class AnkaMgmtCommunicator {
         return doRequest(method, url, null, reqTimeout);
     }
 
-
-
     protected JSONObject doRequest(RequestMethod method, String path, JSONObject requestBody, int reqTimeout) throws IOException, AnkaMgmtException {
         int retry = 0;
         CloseableHttpResponse response = null;
@@ -658,7 +665,24 @@ public class AnkaMgmtCommunicator {
         RequestConfig.Builder requestBuilder = RequestConfig.custom();
         requestBuilder = requestBuilder.setConnectTimeout(reqTimeout);
         requestBuilder = requestBuilder.setConnectionRequestTimeout(reqTimeout);
-        requestBuilder.setSocketTimeout(reqTimeout);
+        requestBuilder = requestBuilder.setSocketTimeout(reqTimeout);
+
+        Jenkins jenkins = Jenkins.get();
+        if (jenkins != null) {
+            ProxyConfiguration proxyConfig = jenkins.proxy;
+            if (proxyConfig != null) {
+                String proxyHost = proxyConfig.getName();
+                Integer proxyPort = proxyConfig.getPort();
+                String proxyUserName = proxyConfig.getUserName();
+
+                requestBuilder = requestBuilder.setProxy(new HttpHost(proxyConfig.getName(), proxyConfig.getPort()));
+                if (proxyUserName != null && proxyUserName != "") {
+                    Secret proxySecret = proxyConfig.getSecretPassword();
+                    credentialsProvider.setCredentials(new AuthScope(proxyHost, proxyPort), new UsernamePasswordCredentials(proxyUserName, Secret.toString(proxySecret)));
+                }
+            }
+        }
+
         return requestBuilder.build();
     }
 
@@ -689,6 +713,8 @@ public class AnkaMgmtCommunicator {
         builder.setMaxConnTotal(maxConnections);
         builder.setMaxConnPerRoute(maxConnections);
         builder.setConnectionTimeToLive(connectionKeepAliveSeconds, TimeUnit.SECONDS);
+        builder.setDefaultCredentialsProvider(credentialsProvider);
+
         CloseableHttpClient httpClient = builder.setDefaultRequestConfig(defaultRequestConfig).build();
         return httpClient;
 
