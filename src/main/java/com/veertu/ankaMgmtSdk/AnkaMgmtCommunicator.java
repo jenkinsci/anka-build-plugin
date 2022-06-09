@@ -7,6 +7,7 @@ import com.veertu.plugin.anka.MetadataKeys;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.config.RequestConfig.Builder;
 import org.apache.http.client.methods.*;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.config.RegistryBuilder;
@@ -34,6 +35,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import java.io.*;
 import java.net.NoRouteToHostException;
+import java.net.Proxy;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -152,7 +154,6 @@ public class AnkaMgmtCommunicator {
         return templates;
     }
 
-
     public List<String> getTemplateTags(String templateId) throws AnkaMgmtException {
         List<String> tags = new ArrayList<String>();
         String url = String.format("/api/v1/registry/vm?id=%s", templateId);
@@ -175,7 +176,6 @@ public class AnkaMgmtCommunicator {
         }
         return tags;
     }
-
 
     public List<NodeGroup> getNodeGroups() throws AnkaMgmtException {
         List<NodeGroup> groups = new ArrayList<>();
@@ -201,7 +201,6 @@ public class AnkaMgmtCommunicator {
         }
         return groups;
     }
-
 
     public String startVm(String templateId, String tag, String nameTemplate, String startUpScript, String groupId, int priority,
                           String name, String externalId) throws AnkaMgmtException {
@@ -285,7 +284,6 @@ public class AnkaMgmtCommunicator {
             return false;
         }
     }
-
 
     public List<AnkaVmInstance> list() throws AnkaMgmtException {
         List<AnkaVmInstance> vms = new ArrayList<>();
@@ -557,7 +555,7 @@ public class AnkaMgmtCommunicator {
                             request = new HttpGet(url);
                             break;
                     }
-                    request.setConfig(makeRequestConfig(reqTimeout));
+                    request.setConfig(makeRequestConfig(reqTimeout, host));
                     this.addHeaders(request);
                     try {
                         long startTime = System.currentTimeMillis();
@@ -661,35 +659,48 @@ public class AnkaMgmtCommunicator {
         }
     }
 
-    protected RequestConfig makeRequestConfig(int reqTimeout) {
+    protected RequestConfig makeRequestConfig(int reqTimeout, String host) {
         RequestConfig.Builder requestBuilder = RequestConfig.custom();
         requestBuilder = requestBuilder.setConnectTimeout(reqTimeout);
         requestBuilder = requestBuilder.setConnectionRequestTimeout(reqTimeout);
         requestBuilder = requestBuilder.setSocketTimeout(reqTimeout);
+        requestBuilder = this.handleJenkinsProxy(requestBuilder, host);
+        return requestBuilder.build();
+    }
+
+    private Builder handleJenkinsProxy(Builder requestBuilder, String host) {
+        if (host == null)
+            return requestBuilder;
 
         Jenkins jenkins = Jenkins.get();
-        if (jenkins != null) {
-            ProxyConfiguration proxyConfig = jenkins.proxy;
-            if (proxyConfig != null) {
-                String proxyHost = proxyConfig.getName();
-                Integer proxyPort = proxyConfig.getPort();
-                String proxyUserName = proxyConfig.getUserName();
+        if (jenkins == null)
+            return requestBuilder;
+            
+        ProxyConfiguration proxyConfig = jenkins.proxy;
+        if (proxyConfig == null)
+            return requestBuilder;
+            
+        Proxy proxy = proxyConfig.createProxy(host);
+        if (proxy == Proxy.NO_PROXY)  // host is in exceptions list
+            return requestBuilder;
 
-                requestBuilder = requestBuilder.setProxy(new HttpHost(proxyConfig.getName(), proxyConfig.getPort()));
-                if (proxyUserName != null && proxyUserName != "") {
-                    Secret proxySecret = proxyConfig.getSecretPassword();
-                    credentialsProvider.setCredentials(new AuthScope(proxyHost, proxyPort), new UsernamePasswordCredentials(proxyUserName, Secret.toString(proxySecret)));
-                }
-            }
+        String proxyHost = proxyConfig.getName();
+        int proxyPort = proxyConfig.getPort();
+        requestBuilder = requestBuilder.setProxy(new HttpHost(proxyHost, proxyPort));
+
+        String proxyUserName = proxyConfig.getUserName();
+        if (proxyUserName != null && proxyUserName != "") {
+            Secret proxySecret = proxyConfig.getSecretPassword();
+            credentialsProvider.setCredentials(new AuthScope(proxyHost, proxyPort), new UsernamePasswordCredentials(proxyUserName, Secret.toString(proxySecret)));
         }
 
-        return requestBuilder.build();
+        return requestBuilder;
     }
 
     protected CloseableHttpClient makeHttpClient() throws KeyStoreException, NoSuchAlgorithmException,
             KeyManagementException, CertificateException, IOException, UnrecoverableKeyException {
 
-        RequestConfig defaultRequestConfig = makeRequestConfig(timeout);
+        RequestConfig defaultRequestConfig = makeRequestConfig(timeout, null);
         HttpClientBuilder builder = HttpClientBuilder.create();
         KeyStore keystore = this.getKeyStore();
         if (rootCA != null) {
