@@ -577,7 +577,7 @@ public class AnkaMgmtCommunicator {
                         HttpEntity entity = response.getEntity();
                         if (entity != null) {
                             StringBuffer result = readHttpEntity(entity);
-                            AnkaMgmtCloud.Log(response.getStatusLine().toString() + "\n" + result.toString());
+                            AnkaMgmtCloud.Log("response error. status line: %s, response: %s", response.getStatusLine().toString(), result.toString());
                         } else {
                             AnkaMgmtCloud.Log(response.getStatusLine().toString());
                         }
