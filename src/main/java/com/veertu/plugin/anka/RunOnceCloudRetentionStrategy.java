@@ -10,6 +10,7 @@ import hudson.model.ExecutorListener;
 import hudson.model.Queue;
 import hudson.slaves.RetentionStrategy;
 import jenkins.model.Jenkins;
+import org.jenkinsci.Symbol;
 import org.kohsuke.accmod.Restricted;
 import org.kohsuke.accmod.restrictions.NoExternalUse;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -194,7 +195,11 @@ public class RunOnceCloudRetentionStrategy extends RetentionStrategy<AnkaCloudCo
     @Restricted(NoExternalUse.class)
     public static final DescriptorImpl DESCRIPTOR = new DescriptorImpl();
 
+    /**
+     * JENKINS-69035: runOnceCloud is not unique. Keeping it as a legacy to not break compatibility.
+     */
     @Extension
+    @Symbol({"ankaRunOnceCloud", "runOnceCloud"})
     public static final class DescriptorImpl extends Descriptor<RetentionStrategy<?>> {
         @Override
         public String getDisplayName() {
