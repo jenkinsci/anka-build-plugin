@@ -1,0 +1,53 @@
+jenkins:
+  systemMessage: "Hello World"
+  agentProtocols:
+    - "JNLP4-connect"
+  clouds:
+    - ankaMgmt:
+        ankaMgmtUrl: "https://company-anka"
+        cloudInstanceCap: 100
+        cloudName: "Company anka"
+        connectionKeepAliveSeconds: 60
+        launchRetryWaitTime: 10
+        launchTimeout: 60
+        maxLaunchRetries: 10
+        skipTLSVerification: false
+        sshLaunchDelaySeconds: 60
+        vmPollTime: 3000
+        templates:
+          - cloudName: "Company anka"
+            credentialsId: "anka-creds"
+            deleteLatest: false
+            description: "windows anka template"
+            dontAppendTimestamp: false
+            environments:
+              - name: "test-name"
+                value: "test-value"
+            keepAliveOnError: false
+            label: "windows anka"
+            launchDelay: 0
+            launchMethod: "ssh"
+            masterVmId: "xxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+            mode: NORMAL
+            nameTemplate: "windows-anka"
+            numberOfExecutors: 1
+            priority: 0
+            pushTag: "test-tag"
+            remoteFS: "C:/jenkins"
+            retentionStrategy:
+              runOnceCloud:
+                idleMinutes: 5
+            saveImage: false
+            saveImageParameters:
+              deleteLatest: false
+              description: "windows anka template"
+              dontAppendTimestamp: false
+              saveImage: false
+              suspend: false
+              tag: "test-tag"
+              templateID: "xxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+              waitForBuildToFinish: false
+            schedulingTimeout: 1800
+            suspend: false
+            templateId: "xxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+            waitForBuildToFinish: false
