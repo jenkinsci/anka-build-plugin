@@ -38,7 +38,7 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
         String randomString = RandomStringUtils.randomAlphanumeric(5);
         String nameTemplate = template.getNameTemplate();
         if (nameTemplate != null && !nameTemplate.isEmpty()) {
-            nameTemplate = nameTemplate.replace("$intance_id", "");
+            nameTemplate = nameTemplate.replace("$instance_id", "");
             nameTemplate = nameTemplate.replace("$node_id", "");
             nameTemplate = nameTemplate.replace("$node_name", "");
             nameTemplate = nameTemplate.replace("$template_name", "");
