@@ -54,8 +54,8 @@ public class ConfigurationAsCodeTest {
     }
     
     private void validateCasCLoading(AnkaMgmtCloud cloud) {
-        assertThat(cloud.getCloudName(), is("Company anka"));
-        assertThat(cloud.getAnkaMgmtUrl(), is("https://company-anka"));
+        assertThat(cloud.getCloudName(), is("Veertu anka"));
+        assertThat(cloud.getAnkaMgmtUrl(), is("https://veertu-anka"));
         assertThat(cloud.getCloudCapacity(), is(100));
         assertThat(cloud.getLaunchRetryWaitTime(), is(10));
         assertThat(cloud.getMaxLaunchRetries(), is(10));
@@ -68,9 +68,9 @@ public class ConfigurationAsCodeTest {
         AnkaCloudSlaveTemplate template = templates.get(0);
         assertThat(template, notNullValue());
         
-        assertThat(template.getCloudName(), is("Company anka"));
+        assertThat(template.getCloudName(), is("Veertu anka"));
         assertThat(template.getCredentialsId(), is("anka-creds"));
-        assertThat(template.getDescription(), is("windows anka template"));
+        assertThat(template.getDescription(), is("macos anka template"));
         assertThat(template.isDeleteLatest(), is(false));
         assertThat(template.getDontAppendTimestamp(), is(false));
         assertThat(template.getKeepAliveOnError(), is(false));
@@ -81,16 +81,16 @@ public class ConfigurationAsCodeTest {
         assertThat(environment.name, is("test-name"));
         assertThat(environment.value, is("test-value"));
         
-        assertThat(template.getLabelString(), is("windows anka"));
+        assertThat(template.getLabelString(), is("macos anka"));
         assertThat(template.getLaunchDelay(), is(0));
         assertThat(template.getLaunchMethod(), is("ssh"));
         assertThat(template.getMasterVmId(), is("xxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"));
         assertThat(template.getMode(), is(Mode.NORMAL));
-        assertThat(template.getNameTemplate(), is("windows-anka"));
+        assertThat(template.getNameTemplate(), is("macos-anka"));
         assertThat(template.getNumberOfExecutors(), is(1));
         assertThat(template.getPriority(), is(0));
         assertThat(template.getPushTag(), is("test-tag"));
-        assertThat(template.getRemoteFS(), is("C:/jenkins"));
+        assertThat(template.getRemoteFS(), is("/Users/anka"));
         
         RetentionStrategy<?> retentionStrategy = template.getRetentionStrategy();
         assertThat(retentionStrategy, notNullValue());
@@ -102,7 +102,7 @@ public class ConfigurationAsCodeTest {
         
         SaveImageParameters saveImageParameters = template.getSaveImageParameters();
         assertThat(saveImageParameters, notNullValue());
-        assertThat(saveImageParameters.getDescription(), is("windows anka template"));
+        assertThat(saveImageParameters.getDescription(), is("macos anka template"));
         assertThat(saveImageParameters.isDeleteLatest(), is(false));
         assertThat(saveImageParameters.getDontAppendTimestamp(), is(false));
         assertThat(saveImageParameters.getTag(), is("test-tag"));

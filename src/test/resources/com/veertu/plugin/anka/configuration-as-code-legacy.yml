@@ -4,9 +4,9 @@ jenkins:
     - "JNLP4-connect"
   clouds:
     - ankaMgmt:
-        ankaMgmtUrl: "https://company-anka"
+        ankaMgmtUrl: "https://veertu-anka"
         cloudInstanceCap: 100
-        cloudName: "Company anka"
+        cloudName: "Veertu anka"
         connectionKeepAliveSeconds: 60
         launchRetryWaitTime: 10
         launchTimeout: 60
@@ -15,32 +15,32 @@ jenkins:
         sshLaunchDelaySeconds: 60
         vmPollTime: 3000
         templates:
-          - cloudName: "Company anka"
+          - cloudName: "Veertu anka"
             credentialsId: "anka-creds"
             deleteLatest: false
-            description: "windows anka template"
+            description: "macos anka template"
             dontAppendTimestamp: false
             environments:
               - name: "test-name"
                 value: "test-value"
             keepAliveOnError: false
-            label: "windows anka"
+            label: "macos anka"
             launchDelay: 0
             launchMethod: "ssh"
             masterVmId: "xxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
             mode: NORMAL
-            nameTemplate: "windows-anka"
+            nameTemplate: "macos-anka"
             numberOfExecutors: 1
             priority: 0
             pushTag: "test-tag"
-            remoteFS: "C:/jenkins"
+            remoteFS: "/Users/anka"
             retentionStrategy:
               runOnceCloud:
                 idleMinutes: 5
             saveImage: false
             saveImageParameters:
               deleteLatest: false
-              description: "windows anka template"
+              description: "macos anka template"
               dontAppendTimestamp: false
               saveImage: false
               suspend: false
