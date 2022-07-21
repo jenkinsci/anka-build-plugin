@@ -6,7 +6,7 @@ jenkins:
     - ankaMgmt:
         ankaMgmtUrl: "https://veertu-anka"
         cloudInstanceCap: 100
-        cloudName: "Veerut anka"
+        cloudName: "Veertu anka"
         connectionKeepAliveSeconds: 60
         launchRetryWaitTime: 10
         launchTimeout: 60

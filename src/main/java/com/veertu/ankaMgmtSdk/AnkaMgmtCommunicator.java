@@ -604,7 +604,7 @@ public class AnkaMgmtCommunicator {
                 } catch (ConnectionPoolTimeoutException e) {
                     throw e; // keep on retrying
                 } catch (HttpHostConnectException | ConnectTimeoutException | ClientException | SSLException | NoRouteToHostException e) {
-                    AnkaMgmtCloud.Log("Got client exception: %s", e.getMessage());
+                    AnkaMgmtCloud.Log("Got client exception for http request. Method: %s, Path: %s, Body: %s. Error: %s", method, path, requestBody.toString(), e.getMessage());
 
                     // don't retry on client exception, timeouts or host exceptions
                     throw e;
