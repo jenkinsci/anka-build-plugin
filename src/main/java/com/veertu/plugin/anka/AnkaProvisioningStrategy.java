@@ -57,9 +57,10 @@ public class AnkaProvisioningStrategy extends NodeProvisioner.Strategy {
             AnkaMgmtCloud.Log("Available capacity=%s, currentDemand=%s", availableCapacity, currentDemand);
             if (currentDemand > availableCapacity) {
                 Jenkins jenkinsInstance = Jenkins.get();
+                Cloud.CloudState cloudState = new Cloud.CloudState(label, strategyState.getAdditionalPlannedCapacity());
                 for (Cloud cloud : jenkinsInstance.clouds) {
-                    if (cloud instanceof AnkaMgmtCloud && cloud.canProvision(label)) {
-                        Collection<NodeProvisioner.PlannedNode> plannedNodes = cloud.provision(label, currentDemand - availableCapacity);
+                    if (cloud instanceof AnkaMgmtCloud && cloud.canProvision(cloudState)) {
+                        Collection<NodeProvisioner.PlannedNode> plannedNodes = cloud.provision(cloudState, currentDemand - availableCapacity);
                         AnkaMgmtCloud.Log(String.format("Planned %d new nodes", plannedNodes.size()));
                         strategyState.recordPendingLaunches(plannedNodes);
                         availableCapacity += plannedNodes.size();

@@ -341,7 +341,8 @@ public class AnkaMgmtCloud extends Cloud {
     }
 
     @Override
-    public Collection<NodeProvisioner.PlannedNode> provision(Label label, int excessWorkload) {
+    public Collection<NodeProvisioner.PlannedNode> provision(CloudState state, int excessWorkload) {
+        Label label = state.getLabel();
         List<NodeProvisioner.PlannedNode> plannedNodes = new ArrayList<>();
 
         Jenkins jenkinsInstance = Jenkins.get();
@@ -519,7 +520,8 @@ public class AnkaMgmtCloud extends Cloud {
     }
 
     @Override
-    public boolean canProvision(Label label) {
+    public boolean canProvision(CloudState state) {
+        Label label = state.getLabel();
         AnkaCloudSlaveTemplate template = getTemplate(label);
         if (template == null) {
             return false;
