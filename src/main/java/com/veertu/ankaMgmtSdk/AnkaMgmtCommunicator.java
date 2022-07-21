@@ -4,7 +4,6 @@ import com.veertu.RoundRobin;
 import com.veertu.ankaMgmtSdk.exceptions.*;
 import com.veertu.plugin.anka.AnkaMgmtCloud;
 import com.veertu.plugin.anka.MetadataKeys;
-import org.apache.commons.codec.binary.Base64;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.config.RequestConfig.Builder;
@@ -43,6 +42,7 @@ import java.security.*;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -212,7 +212,7 @@ public class AnkaMgmtCommunicator {
         if (nameTemplate != null)
             jsonObject.put("name_template", nameTemplate);
         if (startUpScript != null) {
-            String b64Script = Base64.encodeBase64String(startUpScript.getBytes());
+            String b64Script = Base64.getEncoder().encodeToString(startUpScript.getBytes());
             jsonObject.put("startup_script", b64Script);
         }
         if (groupId != null) {
@@ -343,7 +343,7 @@ public class AnkaMgmtCommunicator {
         jsonObject.put("description", description);
         jsonObject.put("suspend", suspend);
         if (shutdownScript != null && !shutdownScript.isEmpty()) {
-            String b64Script = Base64.encodeBase64String(shutdownScript.getBytes());
+            String b64Script = Base64.getEncoder().encodeToString(shutdownScript.getBytes());
             jsonObject.put("script", b64Script);
         }
         if (revertBeforePush) {
