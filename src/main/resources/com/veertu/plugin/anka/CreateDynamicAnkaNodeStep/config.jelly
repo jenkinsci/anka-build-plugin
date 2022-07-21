@@ -53,7 +53,7 @@
         </f:entry>
 
 
-        <f:entry title="${%Slave name template}" field="nameTemplate" description="Interoperable name template for a created Jenkins node. Available vars: $cloud_name, $label, $template_id, $tag, $ts (timestamp)">
+        <f:entry title="${%Jenkins Node Name Template}" field="nameTemplate" description="Interoperable name template for a created Jenkins node. Available vars: $cloud_name, $label, $template_id, $tag, $ts (timestamp)">
             <f:textbox />
         </f:entry>
 

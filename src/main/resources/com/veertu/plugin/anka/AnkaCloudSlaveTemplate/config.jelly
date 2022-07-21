@@ -7,7 +7,7 @@
       <f:textbox clazz="required" />
   </f:entry>
 
-  <f:entry title="${%Jenkins Node/Agent Name}" field="nameTemplate" description="Interoperable name template for a created Jenkins node. Available vars: $cloud_name, $label, $template_id, $tag, $ts (timestamp)">
+  <f:entry title="${%Jenkins Node Name Template}" field="nameTemplate" description="A string to include in the name of the started Jenkins Node/Agent">
       <f:textbox default="" />
   </f:entry>
 
