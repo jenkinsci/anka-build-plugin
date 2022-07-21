@@ -61,7 +61,7 @@
       <f:textbox clazz="required" default="/Users/anka/"/>
   </f:entry>
 
-  <f:entry title="${%Keep Alive on Error}" field="keepAliveOnError" description="Keep the Jenkins Node/Agent (and Anka VM on the Anka Node) alive if the job running on it fails">
+  <f:entry title="${%Keep Alive on Error}" field="keepAliveOnError" description="Keep the Jenkins Node/Agent (and Anka VM on the Anka Node) alive if the job running on it fails. Available for Freestyle jobs only.">
       <f:checkbox checked="${instance.isKeepAliveOnError()?'true':'false'}" field="keepAliveOnError" />
   </f:entry>
 
