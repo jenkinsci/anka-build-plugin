@@ -33,7 +33,7 @@
     }
 
     div[descriptorid="com.veertu.plugin.anka.AnkaMgmtCloud"] .yui-button {
-      width: 50%;
+      width: 25%;
     }
 
     div[descriptorid="com.veertu.plugin.anka.AnkaMgmtCloud"] .yui-button button {
@@ -46,11 +46,14 @@
     .anka-build-plugin-head {
       display: flex;
       flex-wrap: wrap;
+      flex-direction: column;
     }
 
     .anka-build-plugin-head-security {
       display: flex;
       flex-wrap: wrap;
+      flex-direction: column;
+      align-content: flex-start;
     }
 
     .anka-build-plugin-head-advanced .tbody {
