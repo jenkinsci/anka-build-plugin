@@ -167,7 +167,7 @@
                   <f:entry description="${%List of Cloud Templates used to create Jenkins Agents/Nodes}">
                     <f:repeatable field="templates">
                       <st:include page="config.jelly" class="${descriptor.clazz}"/>
-                      <div class="repeatable-delete show-if-only ">
+                      <div class="show-if-only ">
                         <f:repeatableDeleteButton />
                       </div>
                     </f:repeatable>
