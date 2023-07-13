@@ -71,7 +71,6 @@
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
-      flex-direction: column;
     }
   
     .anka-build-plugin-templates-list .repeated-chunk {
