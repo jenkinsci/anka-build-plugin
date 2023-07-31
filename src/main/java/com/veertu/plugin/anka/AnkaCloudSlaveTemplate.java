@@ -48,6 +48,7 @@ public class AnkaCloudSlaveTemplate extends AbstractSlaveTemplate implements Des
             String launchMethod,
             String group,
             String nameTemplate, int priority, int schedulingTimeout,
+            int vcpu, int vram,
             @Nullable Boolean saveImage, @Nullable String templateId,
             @Nullable String pushTag,
             @Nullable Boolean dontAppendTimestamp,
