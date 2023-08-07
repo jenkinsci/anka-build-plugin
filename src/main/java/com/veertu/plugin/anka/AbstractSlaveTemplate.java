@@ -36,6 +36,8 @@ public class AbstractSlaveTemplate {
     protected String jnlpJenkinsOverrideUrl;
     protected String jnlpTunnel;
     protected int priority;
+    protected String vcpu;
+    protected String vram;
     protected SaveImageParameters saveImageParameters;
     protected String cloudName;
     protected int instanceCapacity;
@@ -288,6 +290,24 @@ public class AbstractSlaveTemplate {
     public void setPriority(int priority) {
         this.priority = priority;
     }
+
+    public String getVcpu() {
+        return valOrNull(vcpu);
+    }
+
+    @DataBoundSetter
+    public void setVcpu(String vcpu) {
+        this.vcpu = vcpu;
+    }
+    public String getVram() {
+        return valOrNull(vram);
+    }
+
+    @DataBoundSetter
+    public void setVram(String vram) {
+        this.vram = vram;
+    }
+
 
     protected String valOrNull(String val) {
         if (val == null || val.isEmpty()) {
