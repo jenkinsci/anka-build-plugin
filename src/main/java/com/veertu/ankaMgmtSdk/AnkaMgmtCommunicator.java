@@ -203,7 +203,7 @@ public class AnkaMgmtCommunicator {
     }
 
     public String startVm(String templateId, String tag, String nameTemplate, String startUpScript, String groupId, int priority,
-                          String name, String externalId, int vcpu, int vram) throws AnkaMgmtException {
+                          String name, String externalId, String vcpu, String vram) throws AnkaMgmtException {
         String url = "/api/v1/vm";
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("vmid", templateId);
@@ -227,11 +227,11 @@ public class AnkaMgmtCommunicator {
         if (externalId != null) {
             jsonObject.put("external_id", externalId);
         }
-        if (vcpu > 0) {
-            jsonObject.put("vcpu", vcpu);
+        if (vcpu != null) {
+            jsonObject.put("vcpu", Integer.parseInt(vcpu));
         }
-        if (vram > 0) {
-            jsonObject.put("vram", vram);
+        if (vram != null) {
+            jsonObject.put("vram", Integer.parseInt(vram));
         }
         JSONObject jsonResponse = null;
         try {
