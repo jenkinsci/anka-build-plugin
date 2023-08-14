@@ -61,6 +61,8 @@ public class AnkaCloudSlaveTemplate extends AbstractSlaveTemplate implements Des
         setMasterVmId(masterVmId);
         setTag(tag);
         setLabel(label);
+        setVcpu(vcpu);
+        setVram(vram);
         setTemplateDescription(templateDescription);
         setNumberOfExecutors(numberOfExecutors);
         setLaunchDelay(launchDelay);
