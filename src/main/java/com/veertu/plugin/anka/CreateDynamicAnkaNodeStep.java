@@ -220,21 +220,21 @@ public class CreateDynamicAnkaNodeStep extends Step {
         dynamicSlaveTemplate.setPriority(priority);
     }
 
-    public String getVcpu(String vcpu) {
+    public int getVcpu(int vcpu) {
         return dynamicSlaveTemplate.getVcpu();
     }
 
     @DataBoundSetter
-    public void setVcpu(String vcpu) {
+    public void setVcpu(int vcpu) {
         dynamicSlaveTemplate.setVcpu(vcpu);
     }
     
-    public String getVram(String vram) {
+    public int getVram(int vram) {
         return dynamicSlaveTemplate.getVram();
     }
 
     @DataBoundSetter
-    public void setVram(String vram) {
+    public void setVram(int vram) {
         dynamicSlaveTemplate.setVram(vram);
     }
 

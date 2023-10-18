@@ -19,12 +19,12 @@
       <f:select />
   </f:entry>
 
-  <f:entry title="${%Anka VCPU}" field="vcpu" description="The # of cpu cores in the Anka VM">
-      <f:textbox default="" />
+  <f:entry title="${%Anka VCPU}" field="vcpu" description="The # of cpu cores in the Anka VM (0 for no change). Requires template to be in stopped state">
+      <f:textbox clazz="required number" default="0" />
   </f:entry>
 
-  <f:entry title="${%Anka VRAM}" field="vram" description="The amount of RAM in the Anka VM (in MB)">
-      <f:textbox default="" />
+  <f:entry title="${%Anka VRAM}" field="vram" description="The amount of RAM (in MB) in the Anka VM (0 for no change). Requires template to be in stopped state">
+      <f:textbox clazz="required number" default="0" />
   </f:entry>
 
   <f:entry title="${%Node/Agent Description}" field="templateDescription">

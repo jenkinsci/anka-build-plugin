@@ -50,4 +50,6 @@ jenkins:
             schedulingTimeout: 1800
             suspend: false
             templateId: "xxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+            vcpu: 0
+            vram: 0
             waitForBuildToFinish: false
