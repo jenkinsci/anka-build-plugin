@@ -33,24 +33,27 @@
     }
 
     div[descriptorid="com.veertu.plugin.anka.AnkaMgmtCloud"] .yui-button {
-      width: 100%;
+      width: 25%;
     }
 
     div[descriptorid="com.veertu.plugin.anka.AnkaMgmtCloud"] .yui-button button {
       border-radius: 0px !important;
       margin: 0px !important;
       border-width: 1px;
-      width: 100%;
+      width: 10%;
     }
 
     .anka-build-plugin-head {
       display: flex;
       flex-wrap: wrap;
+      flex-direction: column;
     }
 
     .anka-build-plugin-head-security {
       display: flex;
       flex-wrap: wrap;
+      flex-direction: column;
+      align-content: flex-start;
     }
 
     .anka-build-plugin-head-advanced .tbody {
@@ -163,7 +166,7 @@
                   <f:entry description="${%List of Cloud Templates used to create Jenkins Agents/Nodes}">
                     <f:repeatable field="templates">
                       <st:include page="config.jelly" class="${descriptor.clazz}"/>
-                      <div class="repeatable-delete show-if-only ">
+                      <div class="show-if-only ">
                         <f:repeatableDeleteButton />
                       </div>
                     </f:repeatable>
