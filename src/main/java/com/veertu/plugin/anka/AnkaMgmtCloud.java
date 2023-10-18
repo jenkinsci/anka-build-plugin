@@ -426,7 +426,7 @@ public class AnkaMgmtCloud extends Cloud {
             try {
                 newInstanceId = ankaAPI.startVM(template.getMasterVmId(), template.getTag(), startUpScript,
                         template.getGroup(), template.getPriority(),
-                        nodeName, AnkaOnDemandSlave.getJenkinsNodeLink(nodeName));
+                        nodeName, AnkaOnDemandSlave.getJenkinsNodeLink(nodeName), template.getVcpu(), template.getVram());
                 AnkaLauncher launcher = new AnkaLauncher(this, template, newInstanceId,
                                                             this.launchTimeout, this.maxLaunchRetries,
                                                             this.launchRetryWaitTime, this.sshLaunchDelaySeconds);
@@ -466,7 +466,7 @@ public class AnkaMgmtCloud extends Cloud {
             try {
                 newInstanceId = ankaAPI.startVM(template.getMasterVmId(), template.getTag(), startUpScript,
                         template.getGroup(), template.getPriority(),
-                        nodeName, AnkaOnDemandSlave.getJenkinsNodeLink(nodeName));
+                        nodeName, AnkaOnDemandSlave.getJenkinsNodeLink(nodeName), template.getVcpu(), template.getVram());
                 AnkaLauncher launcher = new AnkaLauncher(this, template, newInstanceId,
                                                             this.launchTimeout, this.maxLaunchRetries,
                                                             this.launchRetryWaitTime, this.sshLaunchDelaySeconds);
