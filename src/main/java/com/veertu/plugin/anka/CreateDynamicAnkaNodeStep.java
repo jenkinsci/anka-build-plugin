@@ -40,6 +40,15 @@ public class CreateDynamicAnkaNodeStep extends Step {
         this.dynamicSlaveTemplate.setMasterVmId(masterVmId);
     }
 
+    public String getCloudName() {
+        return dynamicSlaveTemplate.getCloudName();
+    }
+
+    @DataBoundSetter
+    public void setCloudName(String cloudName) {
+        this.dynamicSlaveTemplate.setCloudName(cloudName);
+    }
+
     public String getTag() {
         return dynamicSlaveTemplate.getTag();
     }

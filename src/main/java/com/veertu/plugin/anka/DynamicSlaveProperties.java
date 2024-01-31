@@ -7,7 +7,7 @@ public class DynamicSlaveProperties extends AbstractSlaveTemplate {
 
     public AnkaCloudSlaveTemplate toSlaveTemplate() {
 
-        AnkaCloudSlaveTemplate ankaCloudSlaveTemplate = new AnkaCloudSlaveTemplate("");
+        AnkaCloudSlaveTemplate ankaCloudSlaveTemplate = new AnkaCloudSlaveTemplate();
         ankaCloudSlaveTemplate.setProperties(this);
         ankaCloudSlaveTemplate.setSaveImageParameters(this.saveImageParameters);
         if (this.getRemoteFS() == null) {

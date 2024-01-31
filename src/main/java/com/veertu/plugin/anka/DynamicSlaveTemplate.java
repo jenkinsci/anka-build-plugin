@@ -16,7 +16,6 @@ public class DynamicSlaveTemplate extends AnkaCloudSlaveTemplate {
 
     @DataBoundConstructor
     public DynamicSlaveTemplate(String masterVmId) {
-        super("");
         this.setSaveImageParameters(this.saveImageParameters);
         if (this.getRemoteFS() == null) {
             this.setRemoteFS("/Users/anka/");

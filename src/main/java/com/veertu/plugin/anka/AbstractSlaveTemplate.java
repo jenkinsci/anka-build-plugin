@@ -65,10 +65,13 @@ public class AbstractSlaveTemplate {
         this.instanceCapacity = instanceCapacity;
     }
 
-
-
     public String getCloudName() {
         return cloudName;
+    }
+
+    @DataBoundSetter
+    public void setCloudName(String cloudName) {
+        this.cloudName = cloudName;
     }
 
     public String getDisplayName() {
