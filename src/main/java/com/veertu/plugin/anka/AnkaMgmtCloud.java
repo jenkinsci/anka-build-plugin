@@ -510,7 +510,7 @@ public class AnkaMgmtCloud extends Cloud {
         return null;
     }
 
-    private boolean hasMasterVm(String templateId) {
+    public boolean hasMasterVm(String templateId) {
         for (AnkaVmTemplate t: this.listVmTemplates()){
             if (t.getId().equals(templateId)) {
                 return true;

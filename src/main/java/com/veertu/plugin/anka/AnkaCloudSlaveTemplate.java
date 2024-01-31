@@ -86,9 +86,7 @@ public class AnkaCloudSlaveTemplate extends AbstractSlaveTemplate implements Des
         readResolve();
     }
 
-    public AnkaCloudSlaveTemplate(
-            final String cloudName) {
-        this.cloudName = cloudName;
+    public AnkaCloudSlaveTemplate() {
         saveImageParameters = new SaveImageParameters();
         readResolve();
     }
@@ -104,9 +102,15 @@ public class AnkaCloudSlaveTemplate extends AbstractSlaveTemplate implements Des
 
     public String getDisplayName() {
         StringBuilder sb = new StringBuilder();
-        if (cloudName != null) {
-            sb.append(cloudName).append(" ");
+        if (cloudName != null && labelString != null) {
+            sb.append(cloudName).append(" ").append(labelString);
+            return sb.toString();
         }
+
+        if (cloudName != null) {
+            sb.append(cloudName);
+        }
+
         if (labelString != null) {
             sb.append(labelString);
         }
@@ -120,16 +124,6 @@ public class AnkaCloudSlaveTemplate extends AbstractSlaveTemplate implements Des
 
     public static SchemeRequirement getHTTPS_SCHEME() {
         return HTTPS_SCHEME;
-    }
-
-
-    public String getCloudName() {
-        return cloudName;
-    }
-
-    @DataBoundSetter
-    public void setCloudName(String cloudName) {
-        this.cloudName = cloudName;
     }
 
     public Set<LabelAtom> getLabelSet() {

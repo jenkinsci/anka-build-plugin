@@ -13,7 +13,7 @@ import java.util.UUID;
 public class DynamicSlaveStepExecution extends SynchronousNonBlockingStepExecution<String> {
 
 
-//    private final transient DynamicSlaveProperties properties;
+    //    private final transient DynamicSlaveProperties properties;
     private final transient DynamicSlaveTemplate template;
     private final transient CreateDynamicAnkaNodeStep nodeStep;
     private final StepContext context;
@@ -45,11 +45,40 @@ public class DynamicSlaveStepExecution extends SynchronousNonBlockingStepExecuti
         this.template.setBuildId(buildId);
         this.template.setMode(Node.Mode.EXCLUSIVE);
 
-        AnkaMgmtCloud cloud = AnkaMgmtCloud.getCloudThatHasImage(this.template.getMasterVmId());
-        if (cloud == null) {
-            throw new AnkaNotFoundException("no available cloud with image " + this.template.getMasterVmId());
+        if (this.template.getCloudName() != null) {
+            if (this.template.getCloudName().isEmpty()) {
+                throw new Exception("cloudName can not be empty");
+            }
+
+            AnkaMgmtCloud ankaCloud = AnkaMgmtCloud.get(this.template.getCloudName());
+            if (ankaCloud == null) {
+                throw new AnkaNotFoundException(
+                        String.format("Anka cloud \"%s\" doesn't exist: ",
+                                this.template.getCloudName())
+                );
+            }
+
+            if (!ankaCloud.hasMasterVm(this.template.getMasterVmId())) {
+                throw new AnkaNotFoundException(
+                        String.format("Anka cloud \"%s\" doesn't have vm with id \"%s\"",
+                                this.template.getCloudName(), this.template.getMasterVmId())
+                );
+            }
+
+            ankaCloud.addDynamicTemplate(this.template);
+            return label;
         }
-        cloud.addDynamicTemplate(this.template);
+
+        AnkaMgmtCloud ankaCloud = AnkaMgmtCloud.getCloudThatHasImage(this.template.getMasterVmId());
+        if (ankaCloud == null) {
+            throw new AnkaNotFoundException(
+                    String.format("none of the Anka clouds has vm with id \"%s\"",
+                            this.template.getMasterVmId()));
+        }
+
+        this.template.setCloudName(ankaCloud.getCloudName());
+        ankaCloud.addDynamicTemplate(this.template);
+
         return label;
     }
 }
