@@ -2,6 +2,7 @@
 version: '2'
 services:
   jenkins:
+    restart: always
     image: jenkins/jenkins:lts
     container_name: jenkins
     user: jenkins
