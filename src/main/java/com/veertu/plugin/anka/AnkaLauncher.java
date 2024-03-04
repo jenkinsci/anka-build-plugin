@@ -18,6 +18,7 @@ public class AnkaLauncher extends DelegatingComputerLauncher {
     private int maxRetries = 5;
     private int retryWaitTime = 5;
     private int sshLaunchDelaySeconds = 15;
+    private int vmIPAssignWaitSeconds = 10;
 
 
     protected static final int defaultLaunchTimeoutSeconds = 2000;
@@ -89,18 +90,58 @@ public class AnkaLauncher extends DelegatingComputerLauncher {
             if (instance.isStarted()) {
                 listener.getLogger().println(String.format("Instance %s is Started", instanceId));
                 AnkaVmInfo vmInfo = instance.getVmInfo();
-                if (vmInfo != null ){
+                if (vmInfo != null) {
                     if (template.getLaunchMethod().equalsIgnoreCase(LaunchMethod.SSH)) {
-                        String hosIp = vmInfo.getHostIp();
-                        if (hosIp == null ) {
+                        Thread.sleep(sshLaunchDelaySeconds * 1000);
+
+                        String ip;
+                        int port = vmInfo.getForwardedPort(template.SSHPort);
+
+                        if (port != 0) {
+                            listener.getLogger().println("SSH port forwarding detected, host's ip will be used");
+                            ip = vmInfo.getHostIp();
+
+                        } else {
+                            listener.getLogger().println("No SSH port forwarding detected, assuming bridged interface, VM's ip will be used");
+                            ip = vmInfo.getVmIp();
+                            port = template.SSHPort;
+
+                            int retries = 0;
+                            while ((ip == null || ip.isEmpty()) && retries++ < 3) {
+                                listener.getLogger().printf("Waiting for VM's IP to be assigned, retying attempt %d...%n", retries);
+
+                                Thread.sleep(vmIPAssignWaitSeconds * 1000L);
+                                instance = cloud.showInstance(instanceId);
+                                if (instance == null) {
+                                    listener.getLogger().printf("Instance %s no longer exists%n", instanceId);
+                                    return;
+                                }
+
+                                vmInfo = instance.getVmInfo();
+                                if (vmInfo == null) {
+                                    listener.getLogger().printf("Failed to get VM info for %s%n", instanceId);
+                                    continue;
+                                }
+
+                                ip = vmInfo.getVmIp();
+                            }
+                        }
+
+                        if (ip == null || ip.isEmpty()) {
+                            listener.getLogger().println("Failed to get IP for SSH connection");
                             return;
                         }
-                        this.launcher = new SSHLauncher(hosIp, vmInfo.getForwardedPort(template.SSHPort),
-                                template.getCredentialsId(),
-                                template.getJavaArgs(), null, null, null,
-                                launchTimeoutSeconds, maxRetries, retryWaitTime, null);
-                        Thread.sleep(sshLaunchDelaySeconds * 1000);
-                        listener.getLogger().println(String.format("Launching SSH connection for %s", instanceId));
+
+                        if (port == 0) {
+                            listener.getLogger().println("Failed to get port for SSH connection");
+                            return;
+                        }
+
+                        this.launcher = new SSHLauncher(ip, port, template.getCredentialsId(), template.getJavaArgs(),
+                                null, null, null, launchTimeoutSeconds, maxRetries, retryWaitTime, null);
+
+                        listener.getLogger().printf("Launching SSH connection to %s:%d for instance %s%n",
+                                ip, port, instanceId);
                         this.launcher.launch(computer, listener);
                         ankaCloudComputer.reportLaunchFinished();
 
