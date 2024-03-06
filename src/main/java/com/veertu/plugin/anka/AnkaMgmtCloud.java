@@ -575,10 +575,7 @@ public class AnkaMgmtCloud extends Cloud {
     public boolean isOnline() {
         try {
             AnkaCloudStatus status = ankaAPI.getStatus();
-            if (status.getStatus().toLowerCase().equals("running")) {
-                return true;
-            }
-            return false;
+            return status.getStatus().equalsIgnoreCase("running");
         } catch (AnkaMgmtException e) {
             return false;
         }
