@@ -597,7 +597,7 @@ public class AnkaMgmtCommunicator {
                         throw new AnkaUnauthorizedRequestException("Not authorized to perform this request");
                     }
                     if (responseCode >= 400) {
-                        throw new ClientException(request.getMethod() + request.getURI().toString() + "Bad Request");
+                        throw new ClientException(String.format("Request %s %s failed with status code %d", request.getMethod(), request.getURI().toString(), responseCode));
                     }
 
                     if (responseCode != 200) {
