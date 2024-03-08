@@ -17,6 +17,8 @@ import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.conn.socket.PlainConnectionSocketFactory;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.conn.ssl.TrustAllStrategy;
+import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
@@ -766,8 +768,13 @@ public class AnkaMgmtCommunicator {
 
     protected TrustStrategy getTrustStrategy() {
         if (skipTLSVerification) {
-            return utils.strategyLambda();
+            return TrustAllStrategy.INSTANCE;
         }
+
+        if (rootCA != null) {
+            return TrustSelfSignedStrategy.INSTANCE;
+        }
+
         return null;
     }
 
