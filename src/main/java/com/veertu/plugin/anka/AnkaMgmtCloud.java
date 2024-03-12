@@ -160,7 +160,7 @@ public class AnkaMgmtCloud extends Cloud {
             this.templates = templates;
         }
         this.credentialsId = credentialsId;
-        if (rootCA != null && !rootCA.isEmpty()) {
+        if (rootCA != null && !rootCA.trim().isEmpty()) {
             this.rootCA = rootCA;
         } else {
             this.rootCA = null;
