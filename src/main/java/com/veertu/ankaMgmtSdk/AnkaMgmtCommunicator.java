@@ -15,7 +15,10 @@ import org.apache.http.conn.ConnectionPoolTimeoutException;
 import org.apache.http.conn.HttpHostConnectException;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.conn.socket.PlainConnectionSocketFactory;
+import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.conn.ssl.TrustAllStrategy;
+import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
@@ -30,6 +33,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import java.io.*;
@@ -593,7 +597,7 @@ public class AnkaMgmtCommunicator {
                         throw new AnkaUnauthorizedRequestException("Not authorized to perform this request");
                     }
                     if (responseCode >= 400) {
-                        throw new ClientException(request.getMethod() + request.getURI().toString() + "Bad Request");
+                        throw new ClientException(String.format("Request %s %s failed with status code %d", request.getMethod(), request.getURI().toString(), responseCode));
                     }
 
                     if (responseCode != 200) {
@@ -750,14 +754,27 @@ public class AnkaMgmtCommunicator {
         RegistryBuilder<ConnectionSocketFactory> reg = RegistryBuilder.
                 <ConnectionSocketFactory>create()
                 .register("http", PlainConnectionSocketFactory.getSocketFactory())
-                .register("https", new SSLConnectionSocketFactory(sslContext, getDefaultHostnameVerifier()));
+                .register("https", new SSLConnectionSocketFactory(sslContext, getHostnameVerifier()));
         return new PoolingHttpClientConnectionManager(reg.build());
+    }
+
+    private HostnameVerifier getHostnameVerifier() {
+        if (skipTLSVerification) {
+            return NoopHostnameVerifier.INSTANCE;
+        }
+
+        return getDefaultHostnameVerifier();
     }
 
     protected TrustStrategy getTrustStrategy() {
         if (skipTLSVerification) {
-            return utils.strategyLambda();
+            return TrustAllStrategy.INSTANCE;
         }
+
+        if (rootCA != null) {
+            return TrustSelfSignedStrategy.INSTANCE;
+        }
+
         return null;
     }
 
