@@ -143,7 +143,7 @@ public abstract class AbstractAnkaSlave extends Slave {
                     if (instance != null) {
                         state = instance.getSessionState();
                     }
-                    LOGGER.log(Level.INFO, "Node {0} Instance {1}, insuring termination before node removal, state: ", new Object[]{getNodeName(), instanceId, state});
+                    LOGGER.log(Level.INFO, "Node {0} Instance {1}, ensuring termination before node removal, state: ", new Object[]{getNodeName(), instanceId, state});
                     if (instance == null || instance.isTerminatingOrTerminated()) {
                         LOGGER.log(Level.INFO, "Node {0} Instance {1}, removing node since instance is terminated or not found", new Object[]{getNodeName(), instanceId});
                         Jenkins.get().removeNode(this); // only agree to remove the node after the instance doesn't
