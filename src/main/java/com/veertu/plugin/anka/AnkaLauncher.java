@@ -188,8 +188,4 @@ public class AnkaLauncher extends DelegatingComputerLauncher {
         }
 
     }
-
-    public void launchFinished() {
-
-    }
 }
