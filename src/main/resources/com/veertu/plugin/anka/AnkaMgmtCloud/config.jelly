@@ -111,6 +111,12 @@
         <f:entry title="${%Launch Delay (seconds)}" field="sshLaunchDelaySeconds" description="The number of seconds to wait before starting the launch process">
                 <f:textbox clazz="number" default="15"/>
         </f:entry>
+        <f:entry title="${%VM IP Assign Wait Time (seconds)}" field="vmIPAssignWaitSeconds" description="Number of seconds to wait for the VM IP to be assigned (works only for VMs with bridged network adapter)">
+          <f:textbox clazz="number" default="10"/>
+        </f:entry>
+        <f:entry title="${%VM IP Assign Retries}" field="vmIPAssignRetries" description="Number of retries to read the assigned VM IP (works only for VMs with bridged network adapter)">
+          <f:textbox clazz="number" default="6"/>
+        </f:entry>
         <f:entry title="${%Monitor Recurrence (minute)}" field="monitorRecurrenceMinutes" description="Number of minutes to check for dead instances (global). min 1 minute">
             <f:textbox clazz="number" default="10"/>
         </f:entry>
