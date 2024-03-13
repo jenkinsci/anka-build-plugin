@@ -39,8 +39,7 @@ public class ClientCertAuthenticator {
             X509CertificateHolder holder = (X509CertificateHolder)reader.readObject();
             Certificate certificate = new JcaX509CertificateConverter().setProvider(bouncyCastleProvider).getCertificate(holder);
             reader = new PEMParser(new StringReader(clientCertKey));
-            PEMKeyPair kp = (PEMKeyPair) reader.readObject();
-            PrivateKeyInfo info = kp.getPrivateKeyInfo();
+            PrivateKeyInfo info = (PrivateKeyInfo) reader.readObject();
 
             PrivateKey rsaPrivateKey = new JcaPEMKeyConverter().setProvider(bouncyCastleProvider).getPrivateKey(info);
 
