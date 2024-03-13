@@ -96,6 +96,7 @@ public class AnkaLauncher extends DelegatingComputerLauncher {
                 AnkaVmInfo vmInfo = instance.getVmInfo();
                 if (vmInfo != null) {
                     if (template.getLaunchMethod().equalsIgnoreCase(LaunchMethod.SSH)) {
+                        listener.getLogger().printf("Waiting for SSH to be ready (Launch Delay (seconds): %d)...%n", sshLaunchDelaySeconds);
                         Thread.sleep(sshLaunchDelaySeconds * 1000L);
 
                         String ip;
@@ -112,9 +113,9 @@ public class AnkaLauncher extends DelegatingComputerLauncher {
 
                             int retries = 0;
                             while ((ip == null || ip.isEmpty()) && retries++ < vmIPAssignRetries) {
-                                listener.getLogger().printf("Waiting for VM's IP to be assigned, retying attempt %d...%n", retries);
-
+                                listener.getLogger().printf("Waiting for VM's IP to be assigned (VM IP Assign Wait Time (seconds): %d), attempt #%d...%n", vmIPAssignWaitSeconds, retries);
                                 Thread.sleep(vmIPAssignWaitSeconds * 1000L);
+
                                 instance = cloud.showInstance(instanceId);
                                 if (instance == null) {
                                     listener.getLogger().printf("Instance %s no longer exists%n", instanceId);
