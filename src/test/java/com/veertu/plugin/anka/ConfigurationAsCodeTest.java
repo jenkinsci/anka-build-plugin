@@ -61,6 +61,8 @@ public class ConfigurationAsCodeTest {
         assertThat(cloud.getMaxLaunchRetries(), is(10));
         assertThat(cloud.getSkipTLSVerification(), is(false));
         assertThat(cloud.getSshLaunchDelaySeconds(), is(60));
+        assertThat(cloud.getVmIPAssignWaitSeconds(), is(15));
+        assertThat(cloud.getVmIPAssignRetries(), is(4));
         assertThat(cloud.getVmPollTime(), is(3000));
         
         List<? extends AnkaCloudSlaveTemplate> templates = cloud.getTemplates();
@@ -115,8 +117,6 @@ public class ConfigurationAsCodeTest {
         assertThat(template.getSuspend(), is(false));
         assertThat(template.getTemplateId(), is("xxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"));
         assertThat(template.getWaitForBuildToFinish(), is(false));
-        
-        
     }
     
     private void validateCasCExport() throws Exception {
@@ -126,6 +126,5 @@ public class ConfigurationAsCodeTest {
         String exported = toYamlString(cloud);
         String expected = toStringFromYamlFile(this, "expected_output.yml");
         assertThat(exported, is(expected));
-        
     }
 }

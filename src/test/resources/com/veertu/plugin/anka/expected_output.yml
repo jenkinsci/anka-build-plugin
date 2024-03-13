@@ -47,4 +47,6 @@
       vcpu: 0
       vram: 0
       waitForBuildToFinish: false
+    vmIPAssignRetries: 4
+    vmIPAssignWaitSeconds: 15
     vmPollTime: 3000
