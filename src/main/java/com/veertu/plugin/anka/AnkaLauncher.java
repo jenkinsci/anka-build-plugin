@@ -5,12 +5,21 @@ import com.veertu.ankaMgmtSdk.AnkaVmInstance;
 import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
 import hudson.model.TaskListener;
 import hudson.plugins.sshslaves.SSHLauncher;
-import hudson.slaves.*;
+import hudson.slaves.ComputerLauncher;
+import hudson.slaves.DelegatingComputerLauncher;
+import hudson.slaves.JNLPLauncher;
+import hudson.slaves.SlaveComputer;
 
 import java.io.IOException;
 
 public class AnkaLauncher extends DelegatingComputerLauncher {
 
+    protected static final int defaultLaunchTimeoutSeconds = 2000;
+    protected static final int defaultMaxNumRetries = 5;
+    protected static final int defaultRetryWaitTime = 5;
+    protected static final int defaultSSHLaunchDelay = 15;  // 15 seconds for ssh delay
+    protected static final int defaultVmIPAssignWaitSeconds = 10;  // 15 seconds for ssh delay
+    protected static final int defaultVmIPAssignRetries = 6;  // 15 seconds for ssh delay
     private final AnkaMgmtCloud cloud;
     private final AnkaCloudSlaveTemplate template;
     private final String instanceId;
@@ -19,18 +28,12 @@ public class AnkaLauncher extends DelegatingComputerLauncher {
     private int retryWaitTime = 5;
     private int sshLaunchDelaySeconds = 15;
     private int vmIPAssignWaitSeconds = 10;
+    private int vmIPAssignRetries = 6;
 
-
-    protected static final int defaultLaunchTimeoutSeconds = 2000;
-    protected static final int defaultMaxNumRetries = 5;
-    protected static final int defaultRetryWaitTime = 5;
-    protected static final int defaultSSHLaunchDelay = 15;  // 15 seconds for ssh delay
-
-    public AnkaLauncher(AnkaMgmtCloud cloud, AnkaCloudSlaveTemplate template, String instanceId ,
-                        int launchTimeoutSeconds, int maxRetries, int retryWaitTime, int sshLaunchDelaySeconds){
+    public AnkaLauncher(AnkaMgmtCloud cloud, AnkaCloudSlaveTemplate template, String instanceId, int launchTimeoutSeconds, int maxRetries, int retryWaitTime, int sshLaunchDelaySeconds, int vmIPAssignWaitSeconds, int vmIPAssignRetries) {
         super(null);
         this.cloud = cloud;
-        this. template = template;
+        this.template = template;
         this.instanceId = instanceId;
         if (launchTimeoutSeconds > 0) {
             this.launchTimeoutSeconds = launchTimeoutSeconds;
@@ -44,28 +47,29 @@ public class AnkaLauncher extends DelegatingComputerLauncher {
         if (sshLaunchDelaySeconds > 0) {
             this.sshLaunchDelaySeconds = sshLaunchDelaySeconds;
         }
+        if (vmIPAssignWaitSeconds > 0) {
+            this.vmIPAssignWaitSeconds = vmIPAssignWaitSeconds;
+        }
+        if (vmIPAssignRetries > 0) {
+            this.vmIPAssignRetries = vmIPAssignRetries;
+        }
 
         ComputerLauncher launcher;
         if (template.getLaunchMethod().equalsIgnoreCase(LaunchMethod.JNLP)) {
-            launcher = new JNLPLauncher(template.getJnlpTunnel(),
-                    template.getExtraArgs());
+            launcher = new JNLPLauncher(template.getJnlpTunnel(), template.getExtraArgs());
         } else if (template.getLaunchMethod().equalsIgnoreCase(LaunchMethod.SSH)) {
             // place holder for ssh, todo: create class
-            launcher = new SSHLauncher("", 0,
-                    template.getCredentialsId(),
-                    template.getJavaArgs(), null, null, null,
-                    launchTimeoutSeconds, maxRetries, retryWaitTime, null);
+            launcher = new SSHLauncher("", 0, template.getCredentialsId(), template.getJavaArgs(), null, null, null, launchTimeoutSeconds, maxRetries, retryWaitTime, null);
         } else {
             throw new RuntimeException("Unknown launch method");
         }
         this.launcher = launcher;
 
     }
-    public AnkaLauncher(AnkaMgmtCloud cloud, AnkaCloudSlaveTemplate template, String instanceId) {
-        this(cloud, template, instanceId, defaultLaunchTimeoutSeconds,
-                defaultMaxNumRetries, defaultRetryWaitTime, defaultSSHLaunchDelay);
-    }
 
+    public AnkaLauncher(AnkaMgmtCloud cloud, AnkaCloudSlaveTemplate template, String instanceId) {
+        this(cloud, template, instanceId, defaultLaunchTimeoutSeconds, defaultMaxNumRetries, defaultRetryWaitTime, defaultSSHLaunchDelay, defaultVmIPAssignWaitSeconds, defaultVmIPAssignRetries);
+    }
 
 
     @Override
@@ -86,13 +90,13 @@ public class AnkaLauncher extends DelegatingComputerLauncher {
             if (instance == null) {
                 return;
             }
-            listener.getLogger().println(String.format("Instance %s is %s", instanceId, instance.getSessionState()));
+            listener.getLogger().printf("Instance %s is %s%n", instanceId, instance.getSessionState());
             if (instance.isStarted()) {
-                listener.getLogger().println(String.format("Instance %s is Started", instanceId));
+                listener.getLogger().printf("Instance %s is Started%n", instanceId);
                 AnkaVmInfo vmInfo = instance.getVmInfo();
                 if (vmInfo != null) {
                     if (template.getLaunchMethod().equalsIgnoreCase(LaunchMethod.SSH)) {
-                        Thread.sleep(sshLaunchDelaySeconds * 1000);
+                        Thread.sleep(sshLaunchDelaySeconds * 1000L);
 
                         String ip;
                         int port = vmInfo.getForwardedPort(template.SSHPort);
@@ -107,7 +111,7 @@ public class AnkaLauncher extends DelegatingComputerLauncher {
                             port = template.SSHPort;
 
                             int retries = 0;
-                            while ((ip == null || ip.isEmpty()) && retries++ < 3) {
+                            while ((ip == null || ip.isEmpty()) && retries++ < vmIPAssignRetries) {
                                 listener.getLogger().printf("Waiting for VM's IP to be assigned, retying attempt %d...%n", retries);
 
                                 Thread.sleep(vmIPAssignWaitSeconds * 1000L);
@@ -137,16 +141,14 @@ public class AnkaLauncher extends DelegatingComputerLauncher {
                             return;
                         }
 
-                        this.launcher = new SSHLauncher(ip, port, template.getCredentialsId(), template.getJavaArgs(),
-                                null, null, null, launchTimeoutSeconds, maxRetries, retryWaitTime, null);
+                        this.launcher = new SSHLauncher(ip, port, template.getCredentialsId(), template.getJavaArgs(), null, null, null, launchTimeoutSeconds, maxRetries, retryWaitTime, null);
 
-                        listener.getLogger().printf("Launching SSH connection to %s:%d for instance %s%n",
-                                ip, port, instanceId);
+                        listener.getLogger().printf("Launching SSH connection to %s:%d for instance %s%n", ip, port, instanceId);
                         this.launcher.launch(computer, listener);
                         ankaCloudComputer.reportLaunchFinished();
 
                     } else if (template.getLaunchMethod().equalsIgnoreCase(LaunchMethod.JNLP)) {
-                        listener.getLogger().println(String.format("Launching JNLP for %s", instanceId));
+                        listener.getLogger().printf("Launching JNLP for %s%n", instanceId);
                         int numRetries = 0;
                         while (true) {
                             try {
@@ -164,12 +166,12 @@ public class AnkaLauncher extends DelegatingComputerLauncher {
                                 }
                             } finally {
                                 numRetries++;
-                                Thread.sleep(retryWaitTime * 1000);
+                                Thread.sleep(retryWaitTime * 1000L);
                             }
                         }
 
                     } else {
-                        listener.getLogger().println(String.format("Unknown launcher for %s", instanceId));
+                        listener.getLogger().printf("Unknown launcher for %s%n", instanceId);
                         return;
                     }
                     AbstractAnkaSlave node = (AbstractAnkaSlave) computer.getNode();
@@ -179,7 +181,7 @@ public class AnkaLauncher extends DelegatingComputerLauncher {
 
                 }
             } else {
-                listener.getLogger().println(String.format("Instance %s is in state %s", instanceId, instance.getSessionState()));
+                listener.getLogger().printf("Instance %s is in state %s%n", instanceId, instance.getSessionState());
             }
         } catch (AnkaMgmtException e) {
             throw new IOException(e);

@@ -32,15 +32,15 @@ import static java.lang.Thread.sleep;
 public class AnkaMgmtCloud extends Cloud {
 
 
-    private final List<AnkaCloudSlaveTemplate> templates;
     private static final transient java.util.logging.Logger MgmtLogger = java.util.logging.Logger.getLogger("anka-host");
+    private final List<AnkaCloudSlaveTemplate> templates;
     private final String ankaMgmtUrl;
-    private transient AnkaAPI ankaAPI;
     private final String credentialsId;
-
     private final String rootCA;
-
     private final boolean skipTLSVerification;
+    protected int maxConnections = 50;
+    protected int connectionKeepAliveSeconds = 120;
+    private transient AnkaAPI ankaAPI;
     private int cloudInstanceCap;
     private transient ReentrantLock nodeNumLock = new ReentrantLock();
     private transient SaveImageRequestsHolder saveImageRequestsHolder = SaveImageRequestsHolder.getInstance();
@@ -50,6 +50,96 @@ public class AnkaMgmtCloud extends Cloud {
     private int maxLaunchRetries;
     private int launchRetryWaitTime;
     private int sshLaunchDelaySeconds;
+    private int vmIPAssignWaitSeconds;
+    private int vmIPAssignRetries;
+    private String durabilityMode = "durable";
+
+    @DataBoundConstructor
+    public AnkaMgmtCloud(String ankaMgmtUrl, String cloudName, String credentialsId, String rootCA, boolean skipTLSVerification, List<AnkaCloudSlaveTemplate> templates, int cloudInstanceCap) {
+        super(cloudName);
+        if (cloudInstanceCap < 0) {
+            this.cloudInstanceCap = 0; // zero means unlimited
+        }
+        this.cloudInstanceCap = cloudInstanceCap;
+        this.ankaMgmtUrl = ankaMgmtUrl;
+        if (templates == null) {
+            this.templates = Collections.emptyList();
+        } else {
+            this.templates = templates;
+        }
+        this.credentialsId = credentialsId;
+        if (rootCA != null && !rootCA.trim().isEmpty()) {
+            this.rootCA = rootCA;
+        } else {
+            this.rootCA = null;
+        }
+
+        this.dynamicTemplates = Collections.synchronizedList(new ArrayList<>());
+
+        Log("Init Anka Cloud");
+        this.skipTLSVerification = skipTLSVerification;
+
+        createAnkaAPIObject();
+    }
+
+    public static void markFuture(AnkaMgmtCloud cloud, AbstractAnkaSlave abstractAnkaSlave) {
+        ImageSaver.markFuture(cloud, abstractAnkaSlave);
+    }
+
+    private static void InternalLog(Slave slave, SlaveComputer slaveComputer, TaskListener listener, String format, Object... args) {
+        String s = "";
+        if (slave != null) s = String.format("[%s] ", slave.getNodeName());
+        if (slaveComputer != null) s = String.format("[%s] ", slaveComputer.getName());
+        s = s + String.format(format, args);
+        s = s + "\n";
+        if (listener != null) listener.getLogger().print(s);
+        MgmtLogger.log(Level.INFO, s);
+    }
+
+    public static void Log(String msg) {
+        InternalLog(null, null, null, msg, null);
+    }
+
+    public static void Log(String format, Object... args) {
+        InternalLog(null, null, null, format, args);
+    }
+
+    public static void Log(Slave slave, TaskListener listener, String msg) {
+        InternalLog(slave, null, listener, msg, null);
+    }
+
+    public static void Log(SlaveComputer slave, TaskListener listener, String format, Object... args) {
+        InternalLog(null, slave, listener, format, args);
+    }
+
+    public static List<AnkaMgmtCloud> getAnkaClouds() {
+        List<AnkaMgmtCloud> clouds = new ArrayList<AnkaMgmtCloud>();
+        final Jenkins jenkins = Jenkins.get();
+        for (Cloud cloud : jenkins.clouds) {
+            if (cloud instanceof AnkaMgmtCloud) {
+                AnkaMgmtCloud ankaCloud = (AnkaMgmtCloud) cloud;
+                clouds.add(ankaCloud);
+            }
+        }
+        return clouds;
+    }
+
+    public static AnkaMgmtCloud getCloudThatHasImage(String masterVMID) {
+        final Jenkins jenkins = Jenkins.get();
+        for (Cloud cloud : jenkins.clouds) {
+            if (cloud instanceof AnkaMgmtCloud) {
+                AnkaMgmtCloud ankaCloud = (AnkaMgmtCloud) cloud;
+                if (ankaCloud.hasMasterVm(masterVMID)) {
+                    return ankaCloud;
+                }
+            }
+        }
+        return null;
+    }
+
+    public static AnkaMgmtCloud get(String cloudName) {
+        return (AnkaMgmtCloud) Jenkins.get().getCloud(cloudName);
+    }
 
     public int getLaunchTimeout() {
         if (launchTimeout <= 0) {
@@ -99,6 +189,30 @@ public class AnkaMgmtCloud extends Cloud {
         this.sshLaunchDelaySeconds = sshLaunchDelaySeconds;
     }
 
+    public int getVmIPAssignWaitSeconds() {
+        if (vmIPAssignWaitSeconds <= 0) {
+            return AnkaLauncher.defaultVmIPAssignWaitSeconds;
+        }
+        return vmIPAssignWaitSeconds;
+    }
+
+    @DataBoundSetter
+    public void setVmIPAssignWaitSeconds(int vmIPAssignWaitSeconds) {
+        this.vmIPAssignWaitSeconds = vmIPAssignWaitSeconds;
+    }
+
+    public int getVmIPAssignRetries() {
+        if (vmIPAssignRetries <= 0) {
+            return AnkaLauncher.defaultVmIPAssignRetries;
+        }
+        return vmIPAssignRetries;
+    }
+
+    @DataBoundSetter
+    public void setVmIPAssignRetries(int vmIPAssignRetries) {
+        this.vmIPAssignRetries = vmIPAssignRetries;
+    }
+
     public String getDurabilityMode() {
         return durabilityMode;
     }
@@ -107,8 +221,6 @@ public class AnkaMgmtCloud extends Cloud {
     public void setDurabilityMode(String durabilityMode) {
         this.durabilityMode = durabilityMode;
     }
-
-    private String durabilityMode = "durable";
 
     public int getMonitorRecurrenceMinutes() {
         return AnkaSlaveMonitor.getMonitorRecurrenceMinutes();
@@ -128,8 +240,6 @@ public class AnkaMgmtCloud extends Cloud {
         this.maxConnections = maxConnections;
     }
 
-    protected int maxConnections = 50;
-
     public int getConnectionKeepAliveSeconds() {
         return connectionKeepAliveSeconds;
     }
@@ -139,42 +249,7 @@ public class AnkaMgmtCloud extends Cloud {
         this.connectionKeepAliveSeconds = connectionKeepAliveSeconds;
     }
 
-    protected int connectionKeepAliveSeconds = 120;
-
-    @DataBoundConstructor
-    public AnkaMgmtCloud(String ankaMgmtUrl,
-                     String cloudName,
-                     String credentialsId,
-                     String rootCA,
-                     boolean skipTLSVerification,
-                     List<AnkaCloudSlaveTemplate> templates, int cloudInstanceCap) {
-        super(cloudName);
-        if (cloudInstanceCap < 0) {
-            this.cloudInstanceCap = 0; // zero means unlimited
-        }
-        this.cloudInstanceCap = cloudInstanceCap;
-        this.ankaMgmtUrl = ankaMgmtUrl;
-        if (templates == null) {
-            this.templates = Collections.emptyList();
-        } else {
-            this.templates = templates;
-        }
-        this.credentialsId = credentialsId;
-        if (rootCA != null && !rootCA.trim().isEmpty()) {
-            this.rootCA = rootCA;
-        } else {
-            this.rootCA = null;
-        }
-
-        this.dynamicTemplates = Collections.synchronizedList(new ArrayList<>());
-
-        Log("Init Anka Cloud");
-        this.skipTLSVerification = skipTLSVerification;
-
-        createAnkaAPIObject();
-    }
-
-    private void createAnkaAPIObject(){
+    private void createAnkaAPIObject() {
         if (maxConnections == 0) {
             maxConnections = 50;
         }
@@ -185,14 +260,12 @@ public class AnkaMgmtCloud extends Cloud {
             vmPollTime = 5000;
         }
         CertCredentials credentials = lookUpCredentials(credentialsId);
-        if (credentials != null && credentials.getClientCertificate() != null &&
-                !credentials.getClientCertificate().isEmpty() && credentials.getClientKey() != null &&
-                !credentials.getClientKey().isEmpty()) {
+        if (credentials != null && credentials.getClientCertificate() != null && !credentials.getClientCertificate().isEmpty() && credentials.getClientKey() != null && !credentials.getClientKey().isEmpty()) {
             if (ankaMgmtUrl.contains(",")) {
                 String[] mgmtURLS = ankaMgmtUrl.split(",");
-                ankaAPI = new AnkaAPI(Arrays.asList(mgmtURLS), skipTLSVerification, credentials.getClientCertificate() , credentials.getClientKey(), AuthType.CERTIFICATE, this.rootCA);
+                ankaAPI = new AnkaAPI(Arrays.asList(mgmtURLS), skipTLSVerification, credentials.getClientCertificate(), credentials.getClientKey(), AuthType.CERTIFICATE, this.rootCA);
             } else {
-                ankaAPI = new AnkaAPI(ankaMgmtUrl, skipTLSVerification, credentials.getClientCertificate() , credentials.getClientKey(), AuthType.CERTIFICATE, this.rootCA);
+                ankaAPI = new AnkaAPI(ankaMgmtUrl, skipTLSVerification, credentials.getClientCertificate(), credentials.getClientKey(), AuthType.CERTIFICATE, this.rootCA);
             }
         } else {
             if (ankaMgmtUrl.contains(",")) {
@@ -206,10 +279,6 @@ public class AnkaMgmtCloud extends Cloud {
         this.ankaAPI.setConnectionKeepAliveSeconds(connectionKeepAliveSeconds);
     }
 
-    public static void markFuture(AnkaMgmtCloud cloud, AbstractAnkaSlave abstractAnkaSlave) {
-        ImageSaver.markFuture(cloud, abstractAnkaSlave);
-    }
-
     protected Object readResolve() {
         this.nodeNumLock = new ReentrantLock();
         createAnkaAPIObject();
@@ -221,7 +290,7 @@ public class AnkaMgmtCloud extends Cloud {
 
     private CertCredentials lookUpCredentials(String credentialsId) {
         List<CertCredentials> credentials = lookupCredentials(CertCredentials.class, Jenkins.get(), null, new ArrayList<DomainRequirement>());
-        for (CertCredentials creds: credentials) {
+        for (CertCredentials creds : credentials) {
             if (creds.getId().equals(credentialsId)) {
                 return creds;
             }
@@ -253,6 +322,10 @@ public class AnkaMgmtCloud extends Cloud {
         return cloudInstanceCap;
     }
 
+    public void setCloudInstanceCap(int val) {
+        cloudInstanceCap = val;
+    }
+
     public int getCloudCapacity() {
         if (cloudInstanceCap < 0) { // smaller than 0 is unlimited
             return Integer.MAX_VALUE;
@@ -268,10 +341,6 @@ public class AnkaMgmtCloud extends Cloud {
             }
         }
         return 0;
-    }
-
-    public void setCloudInstanceCap(int val) {
-        cloudInstanceCap = val;
     }
 
     public NodeCountResponse getNumOfRunningNodesPerLabel(Label label) {
@@ -317,7 +386,9 @@ public class AnkaMgmtCloud extends Cloud {
         }
     }
 
-    public List<AnkaCloudSlaveTemplate> getTemplates() { return templates; }
+    public List<AnkaCloudSlaveTemplate> getTemplates() {
+        return templates;
+    }
 
     public List<DynamicSlaveTemplate> getDynamicTemplates() {
         // Returns a copy of the array since SynchronizedList is not iteration safe
@@ -331,7 +402,7 @@ public class AnkaMgmtCloud extends Cloud {
         if (ankaAPI == null) {
             return new ArrayList<>();
         }
-        try{
+        try {
             return ankaAPI.getNodeGroups();
         } catch (AnkaMgmtException e) {
             e.printStackTrace();
@@ -424,15 +495,9 @@ public class AnkaMgmtCloud extends Cloud {
             AnkaOnDemandSlave slave = null;
             String newInstanceId = null;
             try {
-                newInstanceId = ankaAPI.startVM(template.getMasterVmId(), template.getTag(), startUpScript,
-                        template.getGroup(), template.getPriority(),
-                        nodeName, AnkaOnDemandSlave.getJenkinsNodeLink(nodeName), template.getVcpu(), template.getVram());
-                AnkaLauncher launcher = new AnkaLauncher(this, template, newInstanceId,
-                                                            this.launchTimeout, this.maxLaunchRetries,
-                                                            this.launchRetryWaitTime, this.sshLaunchDelaySeconds);
-                slave = new AnkaOnDemandSlave(this, nodeName, template.getDescription(),
-                        template.getRemoteFS(), template.getNumberOfExecutors(), template.getMode(),
-                        template.getLabelString(), launcher, template.getNodeProperties(), template, newInstanceId);
+                newInstanceId = ankaAPI.startVM(template.getMasterVmId(), template.getTag(), startUpScript, template.getGroup(), template.getPriority(), nodeName, AnkaOnDemandSlave.getJenkinsNodeLink(nodeName), template.getVcpu(), template.getVram());
+                AnkaLauncher launcher = new AnkaLauncher(this, template, newInstanceId, this.launchTimeout, this.maxLaunchRetries, this.launchRetryWaitTime, this.sshLaunchDelaySeconds, this.vmIPAssignWaitSeconds, this.vmIPAssignRetries);
+                slave = new AnkaOnDemandSlave(this, nodeName, template.getDescription(), template.getRemoteFS(), template.getNumberOfExecutors(), template.getMode(), template.getLabelString(), launcher, template.getNodeProperties(), template, newInstanceId);
                 newSlaves.add(slave);
                 Jenkins.get().addNode(slave); // add our node as early as possible to avoid zombies
             } catch (Exception e) {
@@ -440,7 +505,7 @@ public class AnkaMgmtCloud extends Cloud {
             } finally {
                 // insurance that our node is in the jenkins loop
                 if (slave == null) {
-                    Log("Failed to create Node "+ nodeName + ". terminating "+ newInstanceId);
+                    Log("Failed to create Node " + nodeName + ". terminating " + newInstanceId);
                     terminateVMInstance(newInstanceId);
                 } else {
                     Node nodeFromJenkins = Jenkins.get().getNode(nodeName);
@@ -464,19 +529,13 @@ public class AnkaMgmtCloud extends Cloud {
             AnkaOnDemandSlave slave = null;
             String newInstanceId = null;
             try {
-                newInstanceId = ankaAPI.startVM(template.getMasterVmId(), template.getTag(), startUpScript,
-                        template.getGroup(), template.getPriority(),
-                        nodeName, AnkaOnDemandSlave.getJenkinsNodeLink(nodeName), template.getVcpu(), template.getVram());
-                AnkaLauncher launcher = new AnkaLauncher(this, template, newInstanceId,
-                                                            this.launchTimeout, this.maxLaunchRetries,
-                                                            this.launchRetryWaitTime, this.sshLaunchDelaySeconds);
-                slave = new AnkaOnDemandSlave(this, nodeName, template.getDescription(),
-                        template.getRemoteFS(), template.getNumberOfExecutors(), template.getMode(),
-                        template.getLabelString(), launcher, template.getNodeProperties(), template, newInstanceId);
+                newInstanceId = ankaAPI.startVM(template.getMasterVmId(), template.getTag(), startUpScript, template.getGroup(), template.getPriority(), nodeName, AnkaOnDemandSlave.getJenkinsNodeLink(nodeName), template.getVcpu(), template.getVram());
+                AnkaLauncher launcher = new AnkaLauncher(this, template, newInstanceId, this.launchTimeout, this.maxLaunchRetries, this.launchRetryWaitTime, this.sshLaunchDelaySeconds, this.vmIPAssignWaitSeconds, this.vmIPAssignRetries);
+                slave = new AnkaOnDemandSlave(this, nodeName, template.getDescription(), template.getRemoteFS(), template.getNumberOfExecutors(), template.getMode(), template.getLabelString(), launcher, template.getNodeProperties(), template, newInstanceId);
                 newSlaves.add(slave);
             } finally {
                 if (slave == null) {
-                    Log("Failed to create Node "+ nodeName + ". terminating "+ newInstanceId);
+                    Log("Failed to create Node " + nodeName + ". terminating " + newInstanceId);
                     terminateVMInstance(newInstanceId);
                 }
             }
@@ -511,7 +570,7 @@ public class AnkaMgmtCloud extends Cloud {
     }
 
     public boolean hasMasterVm(String templateId) {
-        for (AnkaVmTemplate t: this.listVmTemplates()){
+        for (AnkaVmTemplate t : this.listVmTemplates()) {
             if (t.getId().equals(templateId)) {
                 return true;
             }
@@ -529,43 +588,11 @@ public class AnkaMgmtCloud extends Cloud {
         int cloudCapacity = getCloudCapacity();
         if (template.getInstanceCapacity() > 0 || cloudCapacity >= 0) {
             NodeCountResponse countResponse = getNumOfRunningNodesPerLabel(label);
-            if ((cloudCapacity >= 0 && countResponse.numNodes >= cloudCapacity)
-                    ||
-                (template.getInstanceCapacity() >0 &&
-                    countResponse.numNodesPerLabel >= template.getInstanceCapacity())) {
+            if ((cloudCapacity >= 0 && countResponse.numNodes >= cloudCapacity) || (template.getInstanceCapacity() > 0 && countResponse.numNodesPerLabel >= template.getInstanceCapacity())) {
                 return false;
             }
         }
         return true;
-    }
-
-    private static void InternalLog(Slave slave, SlaveComputer slaveComputer, TaskListener listener, String format, Object... args) {
-        String s = "";
-        if (slave != null)
-            s = String.format("[%s] ", slave.getNodeName());
-        if (slaveComputer != null)
-            s = String.format("[%s] ", slaveComputer.getName());
-        s = s + String.format(format, args);
-        s = s + "\n";
-        if (listener != null)
-            listener.getLogger().print(s);
-        MgmtLogger.log(Level.INFO, s);
-    }
-
-    public static void Log(String msg) {
-        InternalLog(null, null, null, msg, null);
-    }
-
-    public static void Log(String format, Object... args) {
-        InternalLog(null, null, null, format, args);
-    }
-
-    public static void Log(Slave slave, TaskListener listener, String msg) {
-        InternalLog(slave, null, listener, msg, null);
-    }
-
-    public static void Log(SlaveComputer slave, TaskListener listener, String format, Object... args) {
-        InternalLog(null, slave, listener, format, args);
     }
 
     public AnkaAPI getAnkaApi() {
@@ -594,31 +621,6 @@ public class AnkaMgmtCloud extends Cloud {
             e.printStackTrace();
             return false;
         }
-    }
-
-    public static List<AnkaMgmtCloud> getAnkaClouds() {
-        List<AnkaMgmtCloud> clouds = new ArrayList<AnkaMgmtCloud>();
-        final Jenkins jenkins = Jenkins.get();
-        for (Cloud cloud : jenkins.clouds) {
-            if (cloud instanceof AnkaMgmtCloud) {
-                AnkaMgmtCloud ankaCloud = (AnkaMgmtCloud) cloud;
-                clouds.add(ankaCloud);
-            }
-        }
-        return clouds;
-    }
-
-    public static AnkaMgmtCloud getCloudThatHasImage(String masterVMID) {
-        final Jenkins jenkins = Jenkins.get();
-        for (Cloud cloud : jenkins.clouds) {
-            if (cloud instanceof AnkaMgmtCloud) {
-                AnkaMgmtCloud ankaCloud = (AnkaMgmtCloud) cloud;
-                if (ankaCloud.hasMasterVm(masterVMID)) {
-                    return ankaCloud;
-                }
-            }
-        }
-        return null;
     }
 
     public void removeDynamicTemplate(AbstractSlaveTemplate template) {
@@ -662,7 +664,7 @@ public class AnkaMgmtCloud extends Cloud {
             // no rest for the wicked
         }
 
-        while(ankaVmInstance != null && !ankaVmInstance.isTerminatingOrTerminated()) {
+        while (ankaVmInstance != null && !ankaVmInstance.isTerminatingOrTerminated()) {
             ankaAPI.terminateInstance(id);
             try {
                 sleep(1000);
@@ -678,12 +680,13 @@ public class AnkaMgmtCloud extends Cloud {
         return ankaAPI.showInstance(id);
     }
 
-    public static AnkaMgmtCloud get(String cloudName) {
-        return (AnkaMgmtCloud) Jenkins.get().getCloud(cloudName);
-    }
-
     public int getVmPollTime() {
         return this.vmPollTime;
+    }
+
+    @DataBoundSetter
+    public void setVmPollTime(int milliseconds) {
+        vmPollTime = milliseconds;
     }
 
     public Set<String> getExistingTemplateIds() {
@@ -729,12 +732,6 @@ public class AnkaMgmtCloud extends Cloud {
         return l;
     }
 
-
-    @DataBoundSetter
-    public void setVmPollTime(int milliseconds) {
-        vmPollTime =milliseconds;
-    }
-
     @Extension
     public static final class DescriptorImpl extends Descriptor<Cloud> {
 
@@ -750,7 +747,7 @@ public class AnkaMgmtCloud extends Cloud {
             final List<CertCredentials> credentials;
             credentials = lookupCredentials(CertCredentials.class, Jenkins.get(), null, new ArrayList<DomainRequirement>());
             ListBoxModel listBox = new StandardUsernameListBoxModel();
-            for (CertCredentials cred: credentials) {
+            for (CertCredentials cred : credentials) {
                 listBox.add(cred.getName(), cred.getId());
             }
             return listBox;
