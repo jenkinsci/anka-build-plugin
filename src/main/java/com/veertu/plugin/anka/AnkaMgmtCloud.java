@@ -747,12 +747,11 @@ public class AnkaMgmtCloud extends Cloud {
             final List<CertCredentials> credentials;
             credentials = lookupCredentials(CertCredentials.class, Jenkins.get(), null, new ArrayList<DomainRequirement>());
             ListBoxModel listBox = new StandardUsernameListBoxModel();
+            listBox.add("None", "");
             for (CertCredentials cred : credentials) {
                 listBox.add(cred.getName(), cred.getId());
             }
             return listBox;
         }
-
     }
-
 }
