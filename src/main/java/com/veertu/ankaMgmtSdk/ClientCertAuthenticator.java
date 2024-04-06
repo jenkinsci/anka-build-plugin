@@ -35,20 +35,30 @@ public class ClientCertAuthenticator {
         try {
             PEMParser reader;
             BouncyCastleProvider bouncyCastleProvider = new BouncyCastleProvider();
+
             reader = new PEMParser(new StringReader(clientCert));
             X509CertificateHolder holder = (X509CertificateHolder)reader.readObject();
             Certificate certificate = new JcaX509CertificateConverter().setProvider(bouncyCastleProvider).getCertificate(holder);
-            reader = new PEMParser(new StringReader(clientCertKey));
-            PEMKeyPair kp = (PEMKeyPair) reader.readObject();
-            PrivateKeyInfo info = kp.getPrivateKeyInfo();
 
-            PrivateKey rsaPrivateKey = new JcaPEMKeyConverter().setProvider(bouncyCastleProvider).getPrivateKey(info);
+            reader = new PEMParser(new StringReader(clientCertKey));
+            Object obj = reader.readObject();
+            PrivateKeyInfo privateKeyInfo;
+            if (obj instanceof PrivateKeyInfo) {
+                privateKeyInfo = (PrivateKeyInfo) obj;
+            } else if (obj instanceof PEMKeyPair) {
+                privateKeyInfo = ((PEMKeyPair)obj).getPrivateKeyInfo();
+            } else {
+                throw new IllegalArgumentException("Invalid private key format");
+            }
+
+            PrivateKey privateKey = new JcaPEMKeyConverter().setProvider(bouncyCastleProvider).getPrivateKey(privateKeyInfo);
 
             KeyStore keystore = KeyStore.getInstance("JKS");
             keystore.load(null);
             keystore.setCertificateEntry(certAlias, certificate);
-            keystore.setKeyEntry(keyAlias, rsaPrivateKey, pemPassword.toCharArray(), new Certificate[] {certificate});
+            keystore.setKeyEntry(keyAlias, privateKey, pemPassword.toCharArray(), new Certificate[] {certificate});
             return keystore;
+
         } catch (CertificateException | NoSuchAlgorithmException | KeyStoreException | IOException e) {
             e.printStackTrace();
             throw e;
