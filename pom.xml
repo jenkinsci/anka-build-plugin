@@ -16,7 +16,7 @@
     <properties>
         <!-- Baseline Jenkins version you use to build the plugin. Users must have this version or newer to run.
              Check out https://stats.jenkins.io/pluginversions/anka-build.html -->
-        <jenkins.version>2.346.1</jenkins.version>
+        <jenkins.version>2.375.1</jenkins.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <hpi.compatibleSinceVersion>2.0.0</hpi.compatibleSinceVersion>
     </properties>
@@ -48,7 +48,7 @@
         <connection>scm:git:git@github.com:jenkinsci/anka-build-plugin.git</connection>
         <developerConnection>scm:git:git@github.com:jenkinsci/anka-build-plugin.git</developerConnection>
         <url>https://github.com/jenkinsci/anka-build-plugin</url>
-        <tag>anka-build-2.2.1</tag>
+        <tag>anka-build-2.11.0</tag>
     </scm>
     <repositories>
         <repository>
@@ -71,8 +71,8 @@
         <dependencies>
             <dependency>
                 <groupId>io.jenkins.tools.bom</groupId>
-                <artifactId>bom-2.346.x</artifactId>
-                <version>1742.vb_70478c1b_25f</version>
+                <artifactId>bom-2.375.x</artifactId>
+                <version>2198.v39c76fc308ca</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
@@ -80,23 +80,6 @@
     </dependencyManagement>
 
     <dependencies>
-        <dependency>
-            <groupId>org.jenkins-ci.plugins</groupId>
-            <artifactId>structs</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.jenkins-ci.plugins.workflow</groupId>
-            <artifactId>workflow-step-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.jenkins-ci.plugins.workflow</groupId>
-            <artifactId>workflow-cps</artifactId>
-            <version>2729.2732.vda_e3f07b_5a_f8</version>
-        </dependency>
-        <dependency>
-            <groupId>org.jenkins-ci.plugins.workflow</groupId>
-            <artifactId>workflow-job</artifactId>
-        </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-basic-steps</artifactId>
@@ -106,30 +89,13 @@
             <artifactId>workflow-durable-task-step</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jenkins-ci.plugins.workflow</groupId>
-            <artifactId>workflow-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.jenkins-ci.plugins.workflow</groupId>
-            <artifactId>workflow-support</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.json</groupId>
             <artifactId>json</artifactId>
-            <version>20231013</version>
-        </dependency>
-        <dependency>
-            <groupId>org.jenkins-ci.plugins</groupId>
-            <artifactId>apache-httpcomponents-client-4-api</artifactId>
+            <version>20240303</version>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>ssh-slaves</artifactId>
-            <version>1.821.vd834f8a_c390e</version>
-        </dependency>
-        <dependency>
-            <groupId>org.jenkins-ci.plugins</groupId>
-            <artifactId>trilead-api</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
@@ -138,23 +104,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>node-iterator-api</artifactId>
-            <version>49.v58a_8b_35f8363</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.jenkins-ci.plugins</groupId>
-            <artifactId>scm-api</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.jenkins-ci.plugins</groupId>
-            <artifactId>script-security</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.jenkins</groupId>
-            <artifactId>configuration-as-code</artifactId>
-            <scope>test</scope>
+            <version>55.v3b_77d4032326</version>
         </dependency>
         <dependency>
             <groupId>io.jenkins.configuration-as-code</groupId>
@@ -170,7 +120,6 @@
                 <artifactId>maven-hpi-plugin</artifactId>
                 <configuration>
                     <disabledTestInjection>true</disabledTestInjection>
-                    <minimumJavaVersion>1.8</minimumJavaVersion>
                     <compatibleSinceVersion>2.0.0</compatibleSinceVersion>
                 </configuration>
             </plugin>
@@ -188,7 +137,6 @@
             <plugin>
                 <groupId>com.github.spotbugs</groupId>
                 <artifactId>spotbugs-maven-plugin</artifactId>
-                <version>4.5.2</version>
                 <configuration>
                     <omitVisitors>FindDeadLocalStores,UnreadFields</omitVisitors>
                 </configuration>
