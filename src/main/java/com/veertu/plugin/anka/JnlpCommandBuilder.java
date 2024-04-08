@@ -23,7 +23,7 @@ public class JnlpCommandBuilder {
 
 
     public static String makeCommand(String nodeName, String extraArgs, String javaArgs, String overrideJenkinsUrl) {
-        String format = "java %s -jar agent.jar -jnlpUrl %s/computer/%s/slave-agent.jnlp -secret %s ";
+        String format = "java %1$s -jar agent.jar -jnlpUrl %2$s/computer/%3$s/slave-agent.jnlp -url %2$s -name %3$s -secret %4$s";
         String secret = JnlpSlaveAgentProtocol.SLAVE_SECRET.mac(nodeName);
         if (javaArgs == null) {
             javaArgs = "";
