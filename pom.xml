@@ -19,6 +19,8 @@
         <jenkins.version>2.375.1</jenkins.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <hpi.compatibleSinceVersion>2.0.0</hpi.compatibleSinceVersion>
+        <spotbugs.effort>Max</spotbugs.effort>
+        <spotbugs.threshold>Low</spotbugs.threshold>
     </properties>
 
     <name>Anka Plugin</name>
