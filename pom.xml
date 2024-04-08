@@ -22,7 +22,6 @@
     </properties>
 
     <name>Anka Plugin</name>
-    <description>Integrates Jenkins with the Anka Build Cloud</description>
     <url>https://github.com/jenkinsci/anka-build-plugin</url>
 
     <licenses>
