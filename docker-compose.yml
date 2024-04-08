@@ -1,18 +1,33 @@
-
 version: '2'
 services:
-  jenkins:
+  jenkins-lts:
     restart: always
     image: jenkins/jenkins:lts
-    container_name: jenkins
+    container_name: jenkins-lts
     user: jenkins
     volumes:
-      - /data/jenkins:/var/jenkins_home
+      - /data/jenkins-lts:/var/jenkins_home
     environment:
-      JENKINS_HOST_HOME: "/data/jenkins"
+      JENKINS_HOST_HOME: "/data/jenkins-lts"
       JAVA_OPTS: "-Xdebug -Xrunjdwp:transport=dt_socket,server=y,address=*:5005,suspend=n -Djenkins.install.runSetupWizard=false -Dorg.jenkinsci.main.modules.sshd.SSHD.hostName=127.0.0.1 -Dorg.jenkinsci.main.modules.sshd.SSHD.port=5000 -Djenkins.CLI.disabled=false -Dorg.jenkinsci.main.modules.sshd.SSHD.mode=fixed"
     ports:
       - "8080:8080"
       - "5000:5000"
       - "50000:50000"
       - "5005:5005"
+
+  jenkins-old:
+    restart: always
+    image: jenkins/jenkins:2.387.3
+    container_name: jenkins-old
+    user: jenkins
+    volumes:
+      - /data/jenkins-old:/var/jenkins_home
+    environment:
+      JENKINS_HOST_HOME: "/data/jenkins-old"
+      JAVA_OPTS: "-Xdebug -Xrunjdwp:transport=dt_socket,server=y,address=*:5005,suspend=n -Djenkins.install.runSetupWizard=false -Dorg.jenkinsci.main.modules.sshd.SSHD.hostName=127.0.0.1 -Dorg.jenkinsci.main.modules.sshd.SSHD.port=5000 -Djenkins.CLI.disabled=false -Dorg.jenkinsci.main.modules.sshd.SSHD.mode=fixed"
+    ports:
+      - "8081:8080"
+      - "5001:5000"
+      - "50001:50000"
+      - "5006:5005"

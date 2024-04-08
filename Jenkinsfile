@@ -1,8 +1,7 @@
-
 properties([buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '', numToKeepStr: '1')), disableConcurrentBuilds(), disableResume(), copyArtifactPermission('*'), durabilityHint('PERFORMANCE_OPTIMIZED')])
 
 pipeline {
-    agent { node { label 'maven' } }
+    agent { node { label 'maven-17' } }
     stages {
         stage('Build Plugin') { steps {
             sh 'mvn package'
