@@ -16,7 +16,7 @@
     <properties>
         <!-- Baseline Jenkins version you use to build the plugin. Users must have this version or newer to run.
              Check out https://stats.jenkins.io/pluginversions/anka-build.html -->
-        <jenkins.version>2.375.1</jenkins.version>
+        <jenkins.version>2.387.3</jenkins.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <hpi.compatibleSinceVersion>2.0.0</hpi.compatibleSinceVersion>
         <spotbugs.effort>Max</spotbugs.effort>
@@ -72,8 +72,8 @@
         <dependencies>
             <dependency>
                 <groupId>io.jenkins.tools.bom</groupId>
-                <artifactId>bom-2.375.x</artifactId>
-                <version>2198.v39c76fc308ca</version>
+                <artifactId>bom-2.387.x</artifactId>
+                <version>2543.vfb_1a_5fb_9496d</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>

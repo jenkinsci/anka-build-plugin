@@ -18,7 +18,7 @@ services:
 
   jenkins-old:
     restart: always
-    image: jenkins/jenkins:2.375.1
+    image: jenkins/jenkins:2.387.3
     container_name: jenkins-old
     user: jenkins
     volumes:
