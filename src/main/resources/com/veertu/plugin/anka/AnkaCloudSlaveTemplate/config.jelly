@@ -1,14 +1,14 @@
 <j:jelly xmlns:j="jelly:core"  xmlns:f="/lib/form" xmlns:c="/lib/credentials">
-  <f:entry title="Cloud Name" field="cloudName" description="The Anka Build Cloud this Node Template/Label is attached to">
+  <f:entry title="Cloud Name" field="cloudName" description="The Anka Build Cloud this Node Template/Label is attached to" style="display:none">
       <f:textbox value="${cloudName}" disabled="true" />
   </f:entry>
 
   <f:entry title="${%Target Label}" field="label" description="The label that jobs will target in order to start and utilize the started Jenkins Node/Agent">
-      <f:textbox clazz="required" />
+      <f:textarea clazz="required" />
   </f:entry>
 
   <f:entry title="${%Jenkins Node Name Template}" field="nameTemplate" description="A string to include in the name of the started Jenkins Node/Agent">
-      <f:textbox default="" />
+      <f:textarea default="" />
   </f:entry>
 
   <f:entry title="${%Anka VM Template}" field="masterVmId" description="The Anka VM Template to use when starting the Jenkins Node/Agent (Java is assumed to be pre-installed)">
@@ -28,7 +28,7 @@
   </f:entry>
 
   <f:entry title="${%Node/Agent Description}" field="templateDescription">
-      <f:textbox />
+      <f:textarea />
   </f:entry>
 
   <f:entry title="${%Launch Method}" field="launchMethod" description="Launch Method Jenkins will use when jobs want to perform actions inside of the Node/Agent">
@@ -66,7 +66,7 @@
   </f:entry>
 
   <f:entry title="${%Anka VM Workspace Path}" field="remoteFS" description="Where Jenkins will store the files/workspace on the started Node/Agent">
-      <f:textbox clazz="required" default="/Users/anka/"/>
+      <f:textarea clazz="required" default="/Users/anka/"/>
   </f:entry>
 
   <f:entry title="${%Keep Alive on Error}" field="keepAliveOnError" description="Keep the Jenkins Node/Agent (and Anka VM on the Anka Node) alive if the job running on it fails. Available for Freestyle jobs only.">
