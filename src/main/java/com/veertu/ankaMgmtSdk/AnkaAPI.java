@@ -10,22 +10,16 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
-/**
- * Created by asafgur on 18/05/2017.
- */
-
 public class AnkaAPI {
-
-    private static final transient Logger LOGGER = Logger.getLogger(RunOnceCloudRetentionStrategy.class.getName());
-
+    private static final Logger LOGGER = Logger.getLogger(RunOnceCloudRetentionStrategy.class.getName());
+    private final transient long instancesCacheTime = 7;
+    private final transient long capacityCacheTime = 20;
+    private final transient Object capacityLock = new Object();
     private AnkaMgmtCommunicator communicator;
-    private transient Map<String,AnkaVmInstance> instances;
-    private transient long instancesCacheTime = 7;
+    private transient Map<String, AnkaVmInstance> instances;
     private transient long instancesLastCached;
-    private transient long capacityCacheTime = 20;
     private transient int cloudCapacity;
     private transient long cloudCapacityLastCached;
-    private transient Object capacityLock = new Object();
 
     public AnkaAPI(List<String> mgmtURLS, boolean skipTLSVerification, String rootCA) {
         this.communicator = new AnkaMgmtCommunicator(mgmtURLS, skipTLSVerification, rootCA);
@@ -42,19 +36,8 @@ public class AnkaAPI {
         }
     }
 
-    public AnkaAPI(String mgmtUrl, boolean skipTLSVerification, String rootCA) {
-        this.communicator = new AnkaMgmtCommunicator(mgmtUrl, skipTLSVerification, rootCA);
-    }
-
-    public AnkaAPI(String mgmtUrl, boolean skipTLSVerification, String client, String key, AuthType authType, String rootCA) {
-        switch (authType) {
-            case CERTIFICATE:
-                this.communicator = new AnkaMgmtClientCertAuthCommunicator(mgmtUrl, skipTLSVerification, client, key, rootCA);
-                break;
-            case OPENID_CONNECT:
-                this.communicator = new AnkaMgmtOpenIdCommunicator(mgmtUrl, skipTLSVerification, client, key, rootCA);
-                break;
-        }
+    public AnkaAPI(List<String> mgmtURLS, boolean skipTLSVerification, String rootCA, String id, String uakKeyPEM) {
+        this.communicator = new AnkaMgmtUakCommunicator(mgmtURLS, skipTLSVerification, rootCA, id, uakKeyPEM);
     }
 
     public void setMaxConnections(int maxConnections) {
@@ -107,7 +90,7 @@ public class AnkaAPI {
     }
 
     public boolean terminateInstance(String vmId) throws AnkaMgmtException {
-        LOGGER.info("Sending termination request to instance: "+ vmId);
+        LOGGER.info("Sending termination request to instance: " + vmId);
         boolean result = communicator.terminateVm(vmId);
         invalidateCache();
         return result;
@@ -123,12 +106,12 @@ public class AnkaAPI {
     }
 
     public void cacheInstances(List<AnkaVmInstance> instances) {
-            Map<String, AnkaVmInstance> cacheMap = new HashMap<>(instances.size());
-            for (AnkaVmInstance instance: instances) {
-                cacheMap.put(instance.id, instance);
-            }
-            instancesLastCached = System.currentTimeMillis();
-            this.instances = cacheMap;
+        Map<String, AnkaVmInstance> cacheMap = new HashMap<>(instances.size());
+        for (AnkaVmInstance instance : instances) {
+            cacheMap.put(instance.id, instance);
+        }
+        instancesLastCached = System.currentTimeMillis();
+        this.instances = cacheMap;
     }
 
     private void getNewData() throws AnkaMgmtException {
@@ -150,10 +133,7 @@ public class AnkaAPI {
         long currentTimeMillis = System.currentTimeMillis();
         long diffMillis = currentTimeMillis - instancesLastCached;
         long staleTimeout = TimeUnit.SECONDS.toMillis(instancesCacheTime);
-        if (diffMillis > staleTimeout) {
-            return true;
-        }
-        return false;
+        return diffMillis > staleTimeout;
     }
 
     public int getCloudCapacity() throws AnkaMgmtException {
@@ -164,7 +144,7 @@ public class AnkaAPI {
             if (cloudCapacity == 0 || diffMillis > staleTimeout) {
                 List<AnkaNode> nodes = communicator.getNodes();
                 int countCapacity = 0;
-                for (AnkaNode node: nodes) {
+                for (AnkaNode node : nodes) {
                     if (node != null && node.isActive()) {
                         if (node.hasQuantityBasedCapacity()) {
                             countCapacity += node.getCapacity();

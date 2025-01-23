@@ -39,7 +39,7 @@
     .anka-build-plugin-group h5 {
       color: rgb(111,69,165);
     }
-    
+
     div[descriptorid="com.veertu.plugin.anka.AnkaMgmtCloud"] {
       background-color: #e6e6e6;
       border: 1px solid #ccc;
@@ -64,7 +64,7 @@
       width: 100%;
       min-width: 100%;
     }
-    
+
     div[descriptorid="com.veertu.plugin.anka.AnkaMgmtCloud"] .dd-handle {
       font-size: 1.5em;
       margin-bottom: 10px;
@@ -133,7 +133,7 @@
         width: 100%;
       }
     }
-    
+
     .anka-build-plugin-head-mtls {
       width: 50%;
       margin: 5px;
@@ -208,7 +208,7 @@
       font-size: 0.8rem;
       color: #ccc !important;
       line-height: 1.30 !important;
-      margin: -.2rem 0 .9rem !important; 
+    margin: -.2rem 0 .9rem !important;
       padding: 0 7px;
     }
     .jenkins-form-description-extra {
@@ -241,7 +241,7 @@
       flex-wrap: wrap-reverse;
       justify-content: center;
     }
-  
+
     .anka-build-plugin-templates-list .repeated-chunk {
       border: 2px solid #60259F;
       background-color: rgb(111,69,165);
@@ -347,8 +347,13 @@
       <h2>Security</h2>
       <div class="anka-build-plugin-head-security">
         <div class="anka-build-plugin-head-mtls">
-          <h3>mTLS / Certificate Authentication (<a href="https://docs.veertu.com/anka/anka-build-cloud/advanced-security-features/certificate-authentication/" target="_blank">documentation</a>)</h3>
-          <f:entry title="${%Certificate Credential}" description="The client certificate to use for the Controller (Kind: Certificate Authentication)" field="credentialsId" >
+            <h3>Authentication (
+                <a href="https://docs.veertu.com/anka/anka-build-cloud/advanced-security-features/certificate-authentication/"
+                   target="_blank">mTLS / Certificate Authentication</a>,
+                <a href="https://docs.veertu.com/anka/anka-build-cloud/advanced-security-features/uak-tap-authentication/"
+                   target="_blank">UAK / TAP</a>)
+          </h3>
+            <f:entry title="${%Credentials}" description="Credentials to use for the Controller" field="credentialsId">
               <c:select/>
           </f:entry>
           <f:entry title="Skip TLS Verification" field="skipTLSVerification">
@@ -356,12 +361,6 @@
             <f:entry title="Controller URL Root CA Certificate" field="rootCA" description="For validating TLS certificate of the Controller URL">
               <f:textarea clazz="string"  />
             </f:entry>
-          </f:entry>
-        </div>
-        <div class="anka-build-plugin-head-uak">
-          <h3>UAK/TAP Authentication (<a href="https://docs.veertu.com/anka/anka-build-cloud/advanced-security-features/uak-tap-authentication/" target="_blank">documentation</a>)</h3>
-          <f:entry title="${%UAK Credential}" description="The UAK credential to use for the Controller (Kind: UAK Authentication)" field="uakCredentialsId" >
-              <c:select/>
           </f:entry>
         </div>
       </div>
