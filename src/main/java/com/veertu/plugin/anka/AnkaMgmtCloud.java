@@ -1,7 +1,8 @@
 package com.veertu.plugin.anka;
 
-import com.cloudbees.plugins.credentials.common.StandardUsernameListBoxModel;
-import com.cloudbees.plugins.credentials.domains.DomainRequirement;
+import com.cloudbees.plugins.credentials.Credentials;
+import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.common.IdCredentials;
 import com.veertu.ankaMgmtSdk.*;
 import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
 import hudson.Extension;
@@ -13,6 +14,7 @@ import hudson.slaves.SlaveComputer;
 import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
 import jenkins.slaves.iterators.api.NodeIterator;
+import org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -22,17 +24,10 @@ import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 
-import static com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials;
 import static java.lang.Thread.sleep;
 
-
-/**
- * Created by asafgur on 08/05/2017.
- */
 public class AnkaMgmtCloud extends Cloud {
-
-
-    private static final transient java.util.logging.Logger MgmtLogger = java.util.logging.Logger.getLogger("anka-host");
+    private static final java.util.logging.Logger MgmtLogger = java.util.logging.Logger.getLogger("anka-host");
     private final List<AnkaCloudSlaveTemplate> templates;
     private final String ankaMgmtUrl;
     private final String credentialsId;
@@ -43,7 +38,6 @@ public class AnkaMgmtCloud extends Cloud {
     private transient AnkaAPI ankaAPI;
     private int cloudInstanceCap;
     private transient ReentrantLock nodeNumLock = new ReentrantLock();
-    private transient SaveImageRequestsHolder saveImageRequestsHolder = SaveImageRequestsHolder.getInstance();
     private int vmPollTime;
     private transient List<DynamicSlaveTemplate> dynamicTemplates;
     private int launchTimeout;
@@ -97,7 +91,7 @@ public class AnkaMgmtCloud extends Cloud {
     }
 
     public static void Log(String msg) {
-        InternalLog(null, null, null, msg, null);
+        InternalLog(null, null, null, msg);
     }
 
     public static void Log(String format, Object... args) {
@@ -105,7 +99,7 @@ public class AnkaMgmtCloud extends Cloud {
     }
 
     public static void Log(Slave slave, TaskListener listener, String msg) {
-        InternalLog(slave, null, listener, msg, null);
+        InternalLog(slave, null, listener, msg);
     }
 
     public static void Log(SlaveComputer slave, TaskListener listener, String format, Object... args) {
@@ -259,24 +253,58 @@ public class AnkaMgmtCloud extends Cloud {
         if (vmPollTime <= 0) {
             vmPollTime = 5000;
         }
-        CertCredentials credentials = lookUpCredentials(credentialsId);
-        if (credentials != null && credentials.getClientCertificate() != null && !credentials.getClientCertificate().isEmpty() && credentials.getClientKey() != null && !credentials.getClientKey().isEmpty()) {
-            if (ankaMgmtUrl.contains(",")) {
-                String[] mgmtURLS = ankaMgmtUrl.split(",");
-                ankaAPI = new AnkaAPI(Arrays.asList(mgmtURLS), skipTLSVerification, credentials.getClientCertificate(), credentials.getClientKey(), AuthType.CERTIFICATE, this.rootCA);
-            } else {
-                ankaAPI = new AnkaAPI(ankaMgmtUrl, skipTLSVerification, credentials.getClientCertificate(), credentials.getClientKey(), AuthType.CERTIFICATE, this.rootCA);
-            }
+
+        String[] mgmtURLS;
+        if (ankaMgmtUrl.contains(",")) {
+            mgmtURLS = ankaMgmtUrl.split(",");
         } else {
-            if (ankaMgmtUrl.contains(",")) {
-                String[] mgmtURLS = ankaMgmtUrl.split(",");
-                ankaAPI = new AnkaAPI(Arrays.asList(mgmtURLS), skipTLSVerification, this.rootCA);
-            } else {
-                ankaAPI = new AnkaAPI(ankaMgmtUrl, skipTLSVerification, this.rootCA);
-            }
+            mgmtURLS = new String[]{ankaMgmtUrl};
         }
-        this.ankaAPI.setMaxConnections(maxConnections);
-        this.ankaAPI.setConnectionKeepAliveSeconds(connectionKeepAliveSeconds);
+
+        Credentials credentials = CredentialsProvider.lookupCredentialsInItemGroup(
+                        Credentials.class,
+                        Jenkins.get(),
+                        null,
+                        null
+                ).stream()
+                .filter(c -> {
+                    if (c instanceof IdCredentials) {
+                        return ((IdCredentials) c).getId().equals(credentialsId);
+                    } else if (c instanceof CertCredentials) {
+                        return ((CertCredentials) c).getId().equals(credentialsId);
+                    }
+
+                    return false;
+                })
+                .findFirst()
+                .orElse(null);
+
+        if (credentials instanceof StringCredentialsImpl) {
+            String secret = ((StringCredentialsImpl) credentials).getSecret().getPlainText();
+            ankaAPI = new AnkaAPI(List.of(mgmtURLS), skipTLSVerification, this.rootCA, ((StringCredentialsImpl) credentials).getId(), secret);
+
+        } else if (credentials instanceof CertCredentials) {
+            CertCredentials certCredentials = (CertCredentials) credentials;
+            if (certCredentials.getClientCertificate() == null
+                    || certCredentials.getClientCertificate().isEmpty()
+                    || certCredentials.getClientKey() == null
+                    || certCredentials.getClientKey().isEmpty()) {
+                throw new IllegalArgumentException("Both client certificate and key must be provided for certificate authentication");
+            }
+
+            ankaAPI = new AnkaAPI(List.of(mgmtURLS),
+                    skipTLSVerification,
+                    certCredentials.getClientCertificate(),
+                    certCredentials.getClientKey(),
+                    AuthType.CERTIFICATE,
+                    this.rootCA);
+
+        } else {
+            ankaAPI = new AnkaAPI(Arrays.asList(mgmtURLS), skipTLSVerification, this.rootCA);
+        }
+
+        ankaAPI.setMaxConnections(maxConnections);
+        ankaAPI.setConnectionKeepAliveSeconds(connectionKeepAliveSeconds);
     }
 
     protected Object readResolve() {
@@ -286,16 +314,6 @@ public class AnkaMgmtCloud extends Cloud {
             this.dynamicTemplates = Collections.synchronizedList(new ArrayList<>());
         }
         return this;
-    }
-
-    private CertCredentials lookUpCredentials(String credentialsId) {
-        List<CertCredentials> credentials = lookupCredentials(CertCredentials.class, Jenkins.get(), null, new ArrayList<DomainRequirement>());
-        for (CertCredentials creds : credentials) {
-            if (creds.getId().equals(credentialsId)) {
-                return creds;
-            }
-        }
-        return null;
     }
 
     public String getCredentialsId() {
@@ -602,10 +620,7 @@ public class AnkaMgmtCloud extends Cloud {
     public boolean isOnline() {
         try {
             AnkaCloudStatus status = ankaAPI.getStatus();
-            if (status.getStatus().toLowerCase().equals("running")) {
-                return true;
-            }
-            return false;
+            return status.getStatus().toLowerCase().equals("running");
         } catch (AnkaMgmtException e) {
             return false;
         }
@@ -744,13 +759,26 @@ public class AnkaMgmtCloud extends Cloud {
             if (!(context instanceof AccessControlled ? (AccessControlled) context : Jenkins.get()).hasPermission(Computer.CONFIGURE)) {
                 return new ListBoxModel();
             }
-            final List<CertCredentials> credentials;
-            credentials = lookupCredentials(CertCredentials.class, Jenkins.get(), null, new ArrayList<DomainRequirement>());
-            ListBoxModel listBox = new StandardUsernameListBoxModel();
+
+            ListBoxModel listBox = new ListBoxModel();
             listBox.add("None", "");
-            for (CertCredentials cred : credentials) {
-                listBox.add(cred.getName(), cred.getId());
-            }
+
+            CredentialsProvider.lookupCredentialsInItemGroup(
+                    CertCredentials.class,
+                    Jenkins.get(),
+                    null,
+                    null
+            ).forEach(c -> listBox.add("mTLS: " + c.getName(), c.getId()));
+
+            CredentialsProvider.lookupCredentialsInItemGroup(
+                    StringCredentialsImpl.class,
+                    Jenkins.get(),
+                    null,
+                    null
+            ).forEach(c -> {
+                listBox.add("UAK/TAP: " + c.getId(), c.getId());
+            });
+
             return listBox;
         }
     }
