@@ -34,7 +34,10 @@
       color: rgb(111,69,165);
     }
     .anka-build-plugin-group h4 {
-      color: rgb(111,69,165);
+      color: white;
+      font-weight: bold;
+      text-transform: uppercase;
+      margin-top: 15px;
     }
     .anka-build-plugin-group h5 {
       color: rgb(111,69,165);
@@ -220,7 +223,6 @@
 
     .anka-build-plugin-head-advanced .advancedButton {
         margin: 10px;
-        width: 100%;
         background-color: rgb(111, 69, 165);
         color: #FFF !important;
     }
@@ -253,6 +255,17 @@
     .anka-build-plugin-templates-list .repeated-chunk button:not(.repeatable-delete) {
       background-color: #FFF;
       color: #000 !important;
+    }
+    .anka-build-plugin-templates-list .repeated-chunk:nth-child(odd) {
+      background-color: #431474;
+    }
+    .anka-build-plugin-templates-list .repeated-chunk .label {
+      background-color: #1d1d1d;
+      padding: 10px;
+      margin-bottom: 10px;
+      margin-top: -10px;
+      display: block;
+      text-align: center;
     }
 
     .repeated-chunk .repeatable-delete {
@@ -418,5 +431,22 @@
       }
       return true;
     }
+
+    document.querySelectorAll('.anka-build-plugin-templates-list .repeated-chunk').forEach(function(chunk, index) {
+      chunk.id = 'repeatedChunk' + index;
+    });
+    document.querySelectorAll('.anka-build-plugin-templates-list .repeated-chunk').forEach(function(chunk, index) {
+      var textarea = chunk.querySelector('textarea[name="_.label"]');
+      if (textarea) {
+        window['repeatedChunkLabel' + index] = textarea.value;
+        console.log('first', textarea.value);
+        chunk.querySelector('.label').innerHTML = "Label: " + textarea.value;
+        textarea.addEventListener('blur', function() {
+          window['repeatedChunkLabel' + index] = textarea.value;
+          console.log('second', textarea.value);
+          chunk.querySelector('.label').innerHTML = "Label: " + textarea.value;
+        });
+      }
+    });
   </script>
 </j:jelly>
