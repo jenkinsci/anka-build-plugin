@@ -10,7 +10,13 @@ properties(
     ]
 )
 pipeline {
-    agent { node { label 'maven-17' } }
+    agent { dockerfile {
+        filename 'Dockerfile'
+        dir '_ci'
+        label 'poweredge'
+        reuseNode true
+        args "--name ${env.JOB_NAME.replace('%2F', '_').replace('/', '_')}-${env.BUILD_NUMBER}"
+    } }
     stages {
         stage('Build Plugin') { steps {
             sh 'mvn package'
