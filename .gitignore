@@ -5,3 +5,4 @@ data/
 work*
 lib*
 target*
+.m2
