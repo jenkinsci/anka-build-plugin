@@ -2,7 +2,8 @@
 set -exo pipefail
 echo "Preparing..."
 apt update 
-apt install --yes maven
+apt install --yes maven openjdk-17-jdk
+java -version
 # since 24.04 error: externally-managed-environment, so we need to create a virtualenv
 # chown -R 1000:1000 /opt
 # export VIRTUAL_ENV="/opt/${UNIQUE_NAME}"
