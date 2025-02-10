@@ -197,8 +197,8 @@ public class AnkaMgmtCommunicator {
         return groups;
     }
 
-    public String startVm(String templateId, String tag, String nameTemplate, String startUpScript, String groupId, int priority,
-                          String name, String externalId, int vcpu, int vram) throws AnkaMgmtException {
+    public String startVm(String templateId, String tag, String nameTemplate, String startUpScript, String groupId,
+                          int priority, String name, String externalId, int vcpu, int vram) throws AnkaMgmtException {
         String url = "/api/v1/vm";
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("vmid", templateId);
@@ -323,10 +323,8 @@ public class AnkaMgmtCommunicator {
     }
 
     public String saveImage(String instanceId, String targetVMId, String newTemplateName, String tag,
-                            String description, Boolean suspend, String shutdownScript,
-                            Boolean revertBeforePush,
-                            String revertTag,
-                            Boolean doSuspendTest
+                            String description, Boolean suspend, String shutdownScript, Boolean revertBeforePush,
+                            String revertTag, Boolean doSuspendTest
     ) throws AnkaMgmtException {
         String url = "/api/v1/image";
         JSONObject jsonObject = new JSONObject();
@@ -643,8 +641,7 @@ public class AnkaMgmtCommunicator {
     }
 
     protected StringBuffer readHttpEntity(HttpEntity entity) throws IOException {
-        BufferedReader rd = new BufferedReader(
-                new InputStreamReader(entity.getContent()));
+        BufferedReader rd = new BufferedReader(new InputStreamReader(entity.getContent()));
         StringBuffer result = new StringBuffer();
         String line = "";
         while ((line = rd.readLine()) != null) {
