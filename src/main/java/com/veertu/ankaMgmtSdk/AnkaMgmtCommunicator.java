@@ -4,7 +4,14 @@ import com.veertu.RoundRobin;
 import com.veertu.ankaMgmtSdk.exceptions.*;
 import com.veertu.plugin.anka.AnkaMgmtCloud;
 import com.veertu.plugin.anka.MetadataKeys;
+import hudson.ProxyConfiguration;
+import hudson.util.Secret;
+import jenkins.model.Jenkins;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpHost;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.config.RequestConfig.Builder;
 import org.apache.http.client.methods.*;
@@ -20,6 +27,7 @@ import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.conn.ssl.TrustAllStrategy;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
@@ -37,11 +45,7 @@ import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import java.io.*;
-import java.net.NoRouteToHostException;
-import java.net.Proxy;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
+import java.net.*;
 import java.security.*;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
@@ -53,39 +57,29 @@ import java.util.concurrent.TimeUnit;
 
 import static org.apache.http.conn.ssl.SSLConnectionSocketFactory.getDefaultHostnameVerifier;
 
-import jenkins.model.Jenkins;
-import org.apache.http.impl.client.BasicCredentialsProvider;
-import hudson.ProxyConfiguration;
-import hudson.util.Secret;
-import org.apache.http.HttpHost;
-import org.apache.http.client.CredentialsProvider;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.auth.AuthScope;
-
 /**
  * Created by asafgur on 09/05/2017.
  */
 public class AnkaMgmtCommunicator {
 
-    protected URL mgmtUrl;
+    private static int MinMaxConnections = 5;
     protected final int timeout = 30000;
     protected final int maxRetries = 10;
+    protected URL mgmtUrl;
     protected boolean skipTLSVerification;
     protected String rootCA;
     protected transient RoundRobin roundRobin;
     protected int maxConnections = 50;
     protected CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-
     protected int connectionKeepAliveSeconds = 120;
     protected transient CloseableHttpClient httpClient;
-    private static int MinMaxConnections = 5;
 
     public AnkaMgmtCommunicator(String url) {
         try {
             URL tmpUrl = new URL(url);
             URIBuilder b = new URIBuilder();
             b.setScheme(tmpUrl.getProtocol());
-            b.setHost( tmpUrl.getHost());
+            b.setHost(tmpUrl.getHost());
             b.setPort(tmpUrl.getPort());
             mgmtUrl = b.build().toURL();
 
@@ -144,7 +138,7 @@ public class AnkaMgmtCommunicator {
             String logicalResult = jsonResponse.getString("status");
             if (logicalResult.equals("OK")) {
                 JSONArray vmsJson = jsonResponse.getJSONArray("body");
-                for (Object j: vmsJson) {
+                for (Object j : vmsJson) {
                     JSONObject jsonObj = (JSONObject) j;
                     String vmId = jsonObj.getString("id");
                     String name = jsonObj.getString("name");
@@ -167,7 +161,7 @@ public class AnkaMgmtCommunicator {
             if (logicalResult.equals("OK")) {
                 JSONObject templateVm = jsonResponse.getJSONObject("body");
                 JSONArray vmsJson = templateVm.getJSONArray("versions");
-                for (Object j: vmsJson) {
+                for (Object j : vmsJson) {
                     JSONObject jsonObj = (JSONObject) j;
                     String tag = jsonObj.getString("tag");
                     tags.add(tag);
@@ -247,13 +241,13 @@ public class AnkaMgmtCommunicator {
         String logicalResult = jsonResponse.getString("status");
         if (logicalResult.equals("OK")) {
             JSONArray uuidsJson = jsonResponse.getJSONArray("body");
-            if (uuidsJson.length() >= 1 ){
+            if (uuidsJson.length() >= 1) {
                 return uuidsJson.getString(0);
             }
         }
         if (tag != null && !tag.isEmpty()) {
             String message = jsonResponse.getString("message");
-            if (message.equals("No such tag "+ tag)) {
+            if (message.equals("No such tag " + tag)) {
                 AnkaMgmtCloud.Log("Tag " + tag + " not found. starting vm with latest tag");
                 return startVm(templateId, null, nameTemplate, startUpScript, groupId, priority, name, externalId, vcpu, vram);
             }
@@ -335,10 +329,10 @@ public class AnkaMgmtCommunicator {
     }
 
     public String saveImage(String instanceId, String targetVMId, String newTemplateName, String tag,
-                          String description, Boolean suspend, String shutdownScript,
-                          Boolean revertBeforePush,
-                          String revertTag,
-                          Boolean doSuspendTest
+                            String description, Boolean suspend, String shutdownScript,
+                            Boolean revertBeforePush,
+                            String revertTag,
+                            Boolean doSuspendTest
     ) throws AnkaMgmtException {
         String url = "/api/v1/image";
         JSONObject jsonObject = new JSONObject();
@@ -371,7 +365,7 @@ public class AnkaMgmtCommunicator {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        if (jsonResponse == null ) {
+        if (jsonResponse == null) {
             throw new AnkaMgmtException("error sending save image request");
         }
         String logicalResult = jsonResponse.optString("status", "fail");
@@ -393,7 +387,7 @@ public class AnkaMgmtCommunicator {
             e.printStackTrace();
             throw new AnkaMgmtException("error sending save image status request");
         }
-        if (jsonResponse == null )
+        if (jsonResponse == null)
             throw new AnkaMgmtException("error while trying to get save image status");
 
         String logicalResult = jsonResponse.optString("status", "fail");
@@ -506,10 +500,6 @@ public class AnkaMgmtCommunicator {
         return;
     }
 
-    protected enum RequestMethod {
-        GET, POST, DELETE, PUT
-    }
-
     protected JSONObject doRequest(RequestMethod method, String path, JSONObject requestBody) throws IOException, AnkaMgmtException {
         return doRequest(method, path, requestBody, timeout);
     }
@@ -527,7 +517,7 @@ public class AnkaMgmtCommunicator {
         CloseableHttpResponse response = null;
         HttpRequestBase request;
 
-        while (true){
+        while (true) {
             try {
                 retry++;
 
@@ -585,7 +575,7 @@ public class AnkaMgmtCommunicator {
                         HttpEntity entity = response.getEntity();
                         if (entity != null) {
                             StringBuffer result = readHttpEntity(entity);
-                            AnkaMgmtCloud.Log("response error. status line: %s, response: %s", response.getStatusLine().toString(), result.toString());
+                            AnkaMgmtCloud.Log("Request failed: %s %s %s: Got %s %s", method, path, requestBody, response.getStatusLine().toString(), result.toString());
                         } else {
                             AnkaMgmtCloud.Log(response.getStatusLine().toString());
                         }
@@ -613,8 +603,13 @@ public class AnkaMgmtCommunicator {
 
                 } catch (ConnectionPoolTimeoutException e) {
                     throw e; // keep on retrying
-                } catch (HttpHostConnectException | ConnectTimeoutException | ClientException | SSLException | NoRouteToHostException e) {
-                    AnkaMgmtCloud.Log("Got client exception for http request. Method: %s, Path: %s, Body: %s. Error: %s", method, path, requestBody, e.getMessage());
+                } catch (HttpHostConnectException
+                         | ConnectTimeoutException
+                         | ClientException
+                         | SSLException
+                         | NoRouteToHostException
+                         | AnkaUnAuthenticatedRequestException
+                         | AnkaUnauthorizedRequestException e) {
 
                     // don't retry on client exception, timeouts or host exceptions
                     throw e;
@@ -630,7 +625,13 @@ public class AnkaMgmtCommunicator {
                     }
                 }
                 return null;
-            } catch (HttpHostConnectException | ConnectTimeoutException | ClientException | SSLException | NoRouteToHostException e) {
+            } catch (HttpHostConnectException
+                     | ConnectTimeoutException
+                     | ClientException
+                     | SSLException
+                     | NoRouteToHostException
+                     | AnkaUnAuthenticatedRequestException
+                     | AnkaUnauthorizedRequestException e) {
                 // don't retry on client exception
                 AnkaMgmtCloud.Log("Got exception: %s %s", e.getClass().getName(), e.getMessage());
 
@@ -685,11 +686,11 @@ public class AnkaMgmtCommunicator {
         Jenkins jenkins = Jenkins.get();
         if (jenkins == null)
             return requestBuilder;
-            
+
         ProxyConfiguration proxyConfig = jenkins.proxy;
         if (proxyConfig == null)
             return requestBuilder;
-            
+
         Proxy proxy = proxyConfig.createProxy(host);
         if (proxy == Proxy.NO_PROXY)  // host is in exceptions list
             return requestBuilder;
@@ -721,7 +722,7 @@ public class AnkaMgmtCommunicator {
             PEMParser reader;
             BouncyCastleProvider bouncyCastleProvider = new BouncyCastleProvider();
             reader = new PEMParser(new StringReader(rootCA));
-            X509CertificateHolder holder = (X509CertificateHolder)reader.readObject();
+            X509CertificateHolder holder = (X509CertificateHolder) reader.readObject();
             Certificate certificate = new JcaX509CertificateConverter().setProvider(bouncyCastleProvider).getCertificate(holder);
             keystore.setCertificateEntry("rootCA", certificate);
         }
@@ -785,12 +786,12 @@ public class AnkaMgmtCommunicator {
         return request;
     }
 
+    protected enum RequestMethod {
+        GET, POST, DELETE, PUT
+    }
+
     class HttpDeleteWithBody extends HttpEntityEnclosingRequestBase {
         public static final String METHOD_NAME = "DELETE";
-
-        public String getMethod() {
-            return METHOD_NAME;
-        }
 
         public HttpDeleteWithBody(final String uri) {
             super();
@@ -804,6 +805,10 @@ public class AnkaMgmtCommunicator {
 
         public HttpDeleteWithBody() {
             super();
+        }
+
+        public String getMethod() {
+            return METHOD_NAME;
         }
     }
 
