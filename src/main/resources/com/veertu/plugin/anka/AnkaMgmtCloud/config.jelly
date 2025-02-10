@@ -1,6 +1,10 @@
 <?jelly escape-by-default='true'?>
-<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:f="/lib/form" xmlns:c="/lib/credentials">
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:f="/lib/form" xmlns:c="/lib/credentials" xmlns:l="/lib/layout">
   <style>
+
+    #main-panel {
+      padding-top: 10px !important;
+    }
     .app-page-body {
       display: block;
     }
@@ -15,10 +19,37 @@
     .anka-build-plugin-group a {
       color: #e21e79;
     }
+  
+    .error {
+      background-color: #e21e79;
+      color: white;
+      padding: 10px 10px 10px 40px;
+    }
+
+    .error:before, .info:before, .warning:before {
+      background-color: currentColor;
+      bottom: unset;
+      content: "";
+      height: 22px;
+      left: 10px;
+      -webkit-mask-position: top center;
+      mask-position: top center;
+      -webkit-mask-repeat: no-repeat;
+      mask-repeat: no-repeat;
+      -webkit-mask-size: contain;
+      mask-size: contain;
+      position: absolute;
+      top: unset;
+      width: 22px;
+    }
+
+    .help .from-plugin {
+        color: #ccc;
+    }
 
     #main-panel {
       width: 100% !important;
-      padding-top: 0px !important;
+      padding-top: 10px !important;
     }
 
     #main-panel form.jenkins-form {
@@ -28,10 +59,10 @@
 
     .anka-build-plugin-group h2 {
       margin: 20px 0px;
-      color: rgb(111,69,165);
+      color: #5e2e9b;
     }
     .anka-build-plugin-group h3 {
-      color: rgb(111,69,165);
+      color: #5e2e9b;
     }
     .anka-build-plugin-group h4 {
       color: white;
@@ -40,7 +71,7 @@
       margin-top: 15px;
     }
     .anka-build-plugin-group h5 {
-      color: rgb(111,69,165);
+      color: #5e2e9b;
     }
 
     div[descriptorid="com.veertu.plugin.anka.AnkaMgmtCloud"] {
@@ -102,7 +133,7 @@
       padding: 10px 17px 17px 17px;
       color: #FFF;
       border: 2px solid #60259F;
-      background-color: rgb(111, 69, 165);
+      background-color: #5e2e9b;
       border-radius: .66rem;
     }
     .anka-build-plugin-head div.jenkins-form-item p {
@@ -116,7 +147,7 @@
       padding: 10px 17px 17px 17px;
       color: #FFF;
       border: 2px solid #60259F;
-      background-color: rgb(111, 69, 165);
+      background-color: #5e2e9b;
       border-radius: .66rem;
     }
 
@@ -143,7 +174,7 @@
       padding: 10px 17px 17px 17px;
       color: #FFF;
       border: 2px solid #60259F;
-      background-color: rgb(111, 69, 165);
+      background-color: #5e2e9b;
       border-radius: .66rem;
     }
     .anka-build-plugin-head-mtls button {
@@ -162,7 +193,7 @@
       padding: 10px 17px 17px 17px;
       color: #FFF;
       border: 2px solid #60259F;
-      background-color: rgb(111, 69, 165);
+      background-color: #5e2e9b;
       border-radius: .66rem;
     }
     .anka-build-plugin-head-uak button {
@@ -223,7 +254,7 @@
 
     .anka-build-plugin-head-advanced .advancedButton {
         margin: 10px;
-        background-color: rgb(111, 69, 165);
+        background-color: #5e2e9b;
         color: #FFF !important;
     }
 
@@ -246,7 +277,7 @@
 
     .anka-build-plugin-templates-list .repeated-chunk {
       border: 2px solid #60259F;
-      background-color: rgb(111,69,165);
+      background-color: #5e2e9b;
       padding: 7px 15px !important;
       flex: 1;
       margin: 10px 5px;
@@ -308,7 +339,7 @@
       </div>
       <div class="anka-build-plugin-head">
         <f:entry title="${%Cloud Name}" field="cloudName">
-            <f:textbox clazz="required string" />
+          <f:textbox clazz="required string" default="${instance.name}" />
         </f:entry>
         <f:entry title="Full Anka Build Cloud Controller URL" field="ankaMgmtUrl" description="ex: http[s]://{URL}:{PORT}">
             <f:textbox clazz="required string" id="ankaMgmtUrl" onblur="validateAnkaMgmtUrl()" />
@@ -324,38 +355,42 @@
         </f:entry>
       </div>
       <div class="anka-build-plugin-head-advanced">
-        <f:advanced align="center">
-          <f:entry title="${%Launch Timeout}" field="launchTimeout" description="Launch timeout in seconds">
-                  <f:textbox clazz="number" default="2000"/>
-          </f:entry>
-          <f:entry title="${%Launch Retries}" field="maxLaunchRetries" description="Launch retries">
-                  <f:textbox clazz="number" default="5"/>
-          </f:entry>
-          <f:entry title="${%Launch Retry Wait Time (seconds)}" field="launchRetryWaitTime" description="The number of seconds to wait between retries">
-                  <f:textbox clazz="number" default="5"/>
-          </f:entry>
-          <f:entry title="${%Launch Delay (seconds)}" field="sshLaunchDelaySeconds" description="The number of seconds to wait before starting the launch process">
-                  <f:textbox clazz="number" default="15"/>
-          </f:entry>
-          <f:entry title="${%VM IP Assign Wait Time (seconds)}" field="vmIPAssignWaitSeconds" description="Number of seconds to wait for the VM IP to be assigned (works only for VMs with bridged network adapter)">
-            <f:textbox clazz="number" default="10"/>
-          </f:entry>
-          <f:entry title="${%VM IP Assign Retries}" field="vmIPAssignRetries" description="Number of retries to read the assigned VM IP (works only for VMs with bridged network adapter)">
-            <f:textbox clazz="number" default="6"/>
-          </f:entry>
-          <f:entry title="${%Monitor Recurrence (minute)}" field="monitorRecurrenceMinutes" description="Number of minutes to check for dead instances (global). min 1 minute">
-              <f:textbox clazz="number" default="10"/>
-          </f:entry>
-          <f:entry title="${%Connection Keep Alive (seconds)}" field="connectionKeepAliveSeconds" description="Number of seconds to keep tcp connection alive">
-              <f:textbox clazz="number" default="120"/>
-          </f:entry>
-          <f:entry title="${%Maximum HTTP Connections}" field="maxConnections" description="Limit for http connection (for the controller)">
-              <f:textbox clazz="number" default="50"/>
-          </f:entry>
-          <f:entry title="${%VM Poll Time (milliseconds)}" field="vmPollTime" description="Time in milliseconds to poll during VM creation">
-              <f:textbox clazz="number" default="5000"/>
-          </f:entry>
-        </f:advanced>
+        <f:block>
+          <table>
+            <f:optionalBlock name="dynamic" title="Advanced">
+              <f:entry title="${%Launch Timeout}" field="launchTimeout" description="Launch timeout in seconds">
+                <f:textbox clazz="number" default="2000"/>
+              </f:entry>
+              <f:entry title="${%Launch Retries}" field="maxLaunchRetries" description="Launch retries">
+                <f:textbox clazz="number" default="5"/>
+              </f:entry>
+              <f:entry title="${%Launch Retry Wait Time (seconds)}" field="launchRetryWaitTime" description="The number of seconds to wait between retries">
+                <f:textbox clazz="number" default="5"/>
+              </f:entry>
+              <f:entry title="${%Launch Delay (seconds)}" field="sshLaunchDelaySeconds" description="The number of seconds to wait before starting the launch process">
+                <f:textbox clazz="number" default="15"/>
+              </f:entry>
+              <f:entry title="${%VM IP Assign Wait Time (seconds)}" field="vmIPAssignWaitSeconds" description="Number of seconds to wait for the VM IP to be assigned (works only for VMs with bridged network adapter)">
+                <f:textbox clazz="number" default="10"/>
+              </f:entry>
+              <f:entry title="${%VM IP Assign Retries}" field="vmIPAssignRetries" description="Number of retries to read the assigned VM IP (works only for VMs with bridged network adapter)">
+                <f:textbox clazz="number" default="6"/>
+              </f:entry>
+              <f:entry title="${%Monitor Recurrence (minute)}" field="monitorRecurrenceMinutes" description="Number of minutes to check for dead instances (global). min 1 minute">
+                <f:textbox clazz="number" default="10"/>
+              </f:entry>
+              <f:entry title="${%Connection Keep Alive (seconds)}" field="connectionKeepAliveSeconds" description="Number of seconds to keep tcp connection alive">
+                <f:textbox clazz="number" default="120"/>
+              </f:entry>
+              <f:entry title="${%Maximum HTTP Connections}" field="maxConnections" description="Limit for http connection (for the controller)">
+                <f:textbox clazz="number" default="50"/>
+              </f:entry>
+              <f:entry title="${%VM Poll Time (milliseconds)}" field="vmPollTime" description="Time in milliseconds to poll during VM creation">
+                <f:textbox clazz="number" default="5000"/>
+              </f:entry>
+            </f:optionalBlock>
+          </table>
+        </f:block>
       </div>
       <h2>Security</h2>
       <div class="anka-build-plugin-head-security">
@@ -382,26 +417,21 @@
       <h2>Node Labels</h2>
       <div class="anka-build-plugin-templates-list">
         <f:section>
-            <div>Node Labels are used by your Jenkins jobs to target specific Anka VM Template and Tag.</div>
+            <div class="anka-build-plugin-templates-list-description">Node Labels are used by your Jenkins jobs to trigger the request of a VM with a specific Anka VM Template and Tag.</div>
+            <div class="anka-build-plugin-templates-list-description">Jenkins Node/Agent Templates and Labels will appear here if the cloud is reachable (ensure the Anka Build Cloud hostname or IP is reachable from Jenkins).</div>
+            <hr />
             <!-- templates section-->
             <f:block>
                 <j:set var="cloud" value="${instance}"/>
-                <j:if test="${cloud==null}">
-                    <b>
-                        <div>Jenkins Node/Agent Templates and Labels will appear here if the cloud is reachable (ensure the Anka Build Cloud hostname or IP is reachable from Jenkins).</div>
-                        <div>After configuring the Anka Build Cloud, click apply and refresh.</div>
-                    </b>
-                </j:if>
                 <j:if test="${cloud!=null}">
                   <j:set var="isCloudOnline" value="${cloud.isOnline()}"/>
-                  <j:set var="cloudName" value="${cloud.getCloudName()}"/>
+                  <j:set var="cloudName" value="${cloud.name}"/>
                   <j:if test="${!isCloudOnline}">
-                      <b>
-                        Anka Build Cloud "${cloudName}" is offline or Jenkins cannot connect to it
-                      </b>
+                      <br />
+                      <b style="color: red;">Anka Build Cloud "${cloud.name}" is offline or Jenkins cannot connect to it yet. Did you click Save after setting the Anka Build Cloud Controller URL?</b>
                   </j:if>
-                  <div class="${isCloudOnline?'':'hide-me'}">
-                    <f:optionalBlock title="Show Node Labels" checked="${isCloudOnline}" disabled="${!isCloudOnline}">
+                  <div class="${isCloudOnline ? '' : 'hide-me'}">
+                    <f:optionalBlock inline="true" title="Show Node Labels" checked="${isCloudOnline}" disabled="${!isCloudOnline}">
                       <f:entry description="${%List of Node Labels}">
                         <f:repeatable field="templates">
                           <st:include page="config.jelly" class="${descriptor.clazz}"/>
