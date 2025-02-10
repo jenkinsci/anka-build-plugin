@@ -57,12 +57,9 @@ import java.util.concurrent.TimeUnit;
 
 import static org.apache.http.conn.ssl.SSLConnectionSocketFactory.getDefaultHostnameVerifier;
 
-/**
- * Created by asafgur on 09/05/2017.
- */
 public class AnkaMgmtCommunicator {
 
-    private static int MinMaxConnections = 5;
+    private static final int MinMaxConnections = 5;
     protected final int timeout = 30000;
     protected final int maxRetries = 10;
     protected URL mgmtUrl;
@@ -279,10 +276,7 @@ public class AnkaMgmtCommunicator {
             jsonObject.put("id", sessionId);
             JSONObject jsonResponse = this.doRequest(RequestMethod.DELETE, url, jsonObject);
             String logicalResult = jsonResponse.getString("status");
-            if (logicalResult.equals("OK")) {
-                return true;
-            }
-            return false;
+            return logicalResult.equals("OK");
         } catch (IOException e) {
             e.printStackTrace();
             return false;
@@ -497,7 +491,6 @@ public class AnkaMgmtCommunicator {
     }
 
     protected void addHeaders(HttpRequestBase request) throws AnkaMgmtException, ClientException {
-        return;
     }
 
     protected JSONObject doRequest(RequestMethod method, String path, JSONObject requestBody) throws IOException, AnkaMgmtException {
@@ -591,7 +584,7 @@ public class AnkaMgmtCommunicator {
                     }
 
                     if (responseCode != 200) {
-                        AnkaMgmtCloud.Log(String.format("url: %s response: %s", url, response.toString()));
+                        AnkaMgmtCloud.Log(String.format("url: %s response: %s", url, response));
                         return null;
                     }
                     HttpEntity entity = response.getEntity();
@@ -811,6 +804,4 @@ public class AnkaMgmtCommunicator {
             return METHOD_NAME;
         }
     }
-
-
 }
