@@ -18,7 +18,8 @@ public class AnkaVmInfo {
 
     public AnkaVmInfo(JSONObject jsonObject) {
         this.uuid = jsonObject.getString("uuid");
-        this.name = jsonObject.getString("name");
+        // instance stuck in error state may not have a name
+        this.name = jsonObject.optString("name", "*** N/A ***");
         this.status = jsonObject.getString("status");
         this.vmIp = jsonObject.optString("ip");
         this.hostIp = jsonObject.optString("host_ip");
