@@ -57,6 +57,11 @@
       max-width: 100% !important;
     }
 
+    .app-page-body--one-column {
+        margin: revert;
+        max-width: revert;
+    }
+
     .anka-build-plugin-group h2 {
       margin: 20px 0px;
       color: #5e2e9b;
@@ -139,7 +144,6 @@
     .anka-build-plugin-head div.jenkins-form-item p {
       color: #FFF;
     }
-
 
     .anka-build-plugin-head-advanced .dropdownList-container div.jenkins-form-item {
       width: 220px;
