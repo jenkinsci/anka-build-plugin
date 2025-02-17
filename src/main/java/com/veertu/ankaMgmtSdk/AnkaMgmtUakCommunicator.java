@@ -13,7 +13,7 @@ public class AnkaMgmtUakCommunicator extends AnkaMgmtCommunicator {
 
     public AnkaMgmtUakCommunicator(List<String> mgmtURLS, boolean skipTLSVerification, String rootCA, String id, String uakKeyPEM) {
         super(mgmtURLS, skipTLSVerification, rootCA);
-        authenticator = new UakAuthenticator(mgmtURLS, id, uakKeyPEM);
+        authenticator = new UakAuthenticator(mgmtURLS, skipTLSVerification, rootCA, id, uakKeyPEM);
     }
 
     @Override
