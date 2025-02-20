@@ -222,6 +222,7 @@
 
     .anka-build-plugin-templates-list .form-container .jenkins-form-item {
         max-width: 100%;
+        margin-top: 20px;
     }
 
     .repeatable-add {
@@ -338,6 +339,13 @@
     .setting-main {
       display: flex;
       flex-direction: column-reverse;
+    }
+    .jenkins-checkbox {
+      margin-top: 10px;
+    }
+
+    :root, .app-theme-picker__picker[data-theme="none"] {
+        --secondary: #e21e79 !important;
     }
 
   </style>
