@@ -253,7 +253,7 @@
       font-size: 0.8rem;
       color: #ccc !important;
       line-height: 1.30 !important;
-      margin: -7px 0px 17px 0px;
+      margin: 17px 0px 5px 0px;
     }
 
     .anka-build-plugin-head-advanced .advancedButton {
@@ -333,6 +333,11 @@
 
     .jenkins-section__description {
       color: #FFF;
+    }
+
+    .setting-main {
+      display: flex;
+      flex-direction: column-reverse;
     }
 
   </style>
