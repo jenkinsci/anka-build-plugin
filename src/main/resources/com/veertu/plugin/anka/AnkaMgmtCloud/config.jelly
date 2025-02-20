@@ -296,7 +296,7 @@
       background-color: #431474;
     }
     .anka-build-plugin-templates-list .repeated-chunk .label {
-      background-color: #1d1d1d;
+      background-color: #1d1d1d55;
       padding: 10px;
       margin-bottom: 10px;
       margin-top: -10px;
@@ -346,6 +346,10 @@
 
     :root, .app-theme-picker__picker[data-theme="none"] {
         --secondary: #e21e79 !important;
+    }
+
+    .jenkins-section__description {
+      margin: 10px 0px 0px 0px;
     }
 
   </style>
@@ -483,15 +487,19 @@
       chunk.id = 'repeatedChunk' + index;
     });
     document.querySelectorAll('.anka-build-plugin-templates-list .repeated-chunk').forEach(function(chunk, index) {
-      var textarea = chunk.querySelector('textarea[name="_.label"]');
-      if (textarea) {
-        window['repeatedChunkLabel' + index] = textarea.value;
-        console.log('first', textarea.value);
-        chunk.querySelector('.label').innerHTML = "Label: " + textarea.value;
-        textarea.addEventListener('blur', function() {
-          window['repeatedChunkLabel' + index] = textarea.value;
-          console.log('second', textarea.value);
-          chunk.querySelector('.label').innerHTML = "Label: " + textarea.value;
+      var labelInput = chunk.querySelector('input[name="_.label"]');
+      if (labelInput) {
+        window['repeatedChunkLabel' + index] = labelInput.value;
+        let label = chunk.querySelector('.label');
+        if (label) {
+          label.innerHTML = "Label: " + labelInput.value;
+        }
+        labelInput.addEventListener('blur', function() {
+          window['repeatedChunkLabel' + index] = labelInput.value;
+          console.log('second', labelInput.value);
+          if (label) {
+            label.innerHTML = "Label: " + labelInput.value;
+          }
         });
       }
     });
