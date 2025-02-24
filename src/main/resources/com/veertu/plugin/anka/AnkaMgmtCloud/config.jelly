@@ -4,6 +4,7 @@
 
     #main-panel {
       padding-top: 10px !important;
+      background-color: rgb(244 244 248);
     }
     .app-page-body {
       display: block;
@@ -70,10 +71,11 @@
       color: #5e2e9b;
     }
     .anka-build-plugin-group h4 {
-      color: white;
+      color: #5e2e9b;
       font-weight: bold;
       text-transform: uppercase;
       margin-top: 15px;
+      margin-bottom: 0px;
     }
     .anka-build-plugin-group h5 {
       color: #5e2e9b;
@@ -136,77 +138,40 @@
     .anka-build-plugin-head div.jenkins-form-item {
       margin: 5px;
       padding: 10px 17px 17px 17px;
-      color: #FFF;
-      border: 2px solid #60259F;
-      background-color: #5e2e9b;
+      color: #5e2e9b;
+      border: 1px solid #60259F;
+      background-color: #FFF;
       border-radius: .66rem;
     }
     .anka-build-plugin-head div.jenkins-form-item p {
-      color: #FFF;
+      color: #5e2e9b;
     }
 
     .anka-build-plugin-head-advanced .dropdownList-container div.jenkins-form-item {
       width: 220px;
       margin: 5px;
       padding: 10px 17px 17px 17px;
-      color: #FFF;
-      border: 2px solid #60259F;
-      background-color: #5e2e9b;
+      color: #5e2e9b;
+      border: 1px solid #60259F;
+      background-color: #FFF;
       border-radius: .66rem;
     }
 
-    .anka-build-plugin-head-security {
-      display: flex;
-      flex-direction: row;
-    }
-
-    @media (max-width: 600px) {
-      .anka-build-plugin-head-security {
-        flex-direction: column;
-      }
-      .anka-build-plugin-head-mtls {
-        width: 100%;
-      }
-      .anka-build-plugin-head-uak {
-        width: 100%;
-      }
-    }
-
-    .anka-build-plugin-head-mtls {
-      width: 50%;
+    .anka-build-plugin-security {
       margin: 5px;
       padding: 10px 17px 17px 17px;
-      color: #FFF;
-      border: 2px solid #60259F;
-      background-color: #5e2e9b;
+      color: #5e2e9b;
+      border: 1px solid #60259F;
+      background-color: #FFF;
       border-radius: .66rem;
     }
-    .anka-build-plugin-head-mtls button {
+    .anka-build-plugin-security button {
       background-color: #FFF;
     }
-    .anka-build-plugin-head-mtls h3 {
+    .anka-build-plugin-security h3 {
       border-bottom: 1px solid #fff;
       padding-bottom: 10px;
-      color: #FFF;
-      margin-bottom: 10px;
-    }
-
-    .anka-build-plugin-head-uak {
-      width: 50%;
-      margin: 5px;
-      padding: 10px 17px 17px 17px;
-      color: #FFF;
-      border: 2px solid #60259F;
-      background-color: #5e2e9b;
-      border-radius: .66rem;
-    }
-    .anka-build-plugin-head-uak button {
-      background-color: #FFF;
-    }
-    .anka-build-plugin-head-uak h3 {
-      border-bottom: 1px solid #fff;
-      padding-bottom: 10px;
-      color: #FFF;
+      color: #5e2e9b;
       margin-bottom: 10px;
     }
 
@@ -245,22 +210,22 @@
 
     .jenkins-form-description {
       font-size: 0.8rem;
-      color: #ccc !important;
+      color: #717171 !important;
       line-height: 1.30 !important;
     margin: -.2rem 0 .9rem !important;
       padding: 0 7px;
     }
     .jenkins-form-description-extra {
       font-size: 0.8rem;
-      color: #ccc !important;
+      color: #717171 !important;
       line-height: 1.30 !important;
       margin: 17px 0px 5px 0px;
     }
 
     .anka-build-plugin-head-advanced .advancedButton {
         margin: 10px;
-        background-color: #5e2e9b;
-        color: #FFF !important;
+        background-color: #FFF;
+        color: #5e2e9b !important;
     }
 
     .anka-build-plugin-head-advanced .tbody {
@@ -281,31 +246,30 @@
     }
 
     .anka-build-plugin-templates-list .repeated-chunk {
-      border: 2px solid #60259F;
-      background-color: #5e2e9b;
+      border: 1px solid #60259F;
+      background-color: #FFF;
       padding: 7px 15px !important;
       flex: 1;
       margin: 10px 5px;
-      color: #FFF;
+      color: #5e2e9b;
     }
     .anka-build-plugin-templates-list .repeated-chunk button:not(.repeatable-delete) {
       background-color: #FFF;
-      color: #000 !important;
+      color: #5e2e9b !important;
     }
     .anka-build-plugin-templates-list .repeated-chunk:nth-child(odd) {
-      background-color: #431474;
+      background-color:#f2e8fd;
     }
     .anka-build-plugin-templates-list .repeated-chunk .label {
-      background-color: #1d1d1d55;
-      padding: 10px;
-      margin-bottom: 10px;
-      margin-top: -10px;
+      width: 110%;
+      position: relative;
+      top: -10px;
+      left: -19px;
+      background-color: #e21e79;
+      padding: 6px;
       display: block;
       text-align: center;
-    }
-
-    .repeated-chunk .repeatable-delete {
-      color: #FFF;
+      color: #fff;
     }
 
     .hide-me {
@@ -333,7 +297,7 @@
     }
 
     .jenkins-section__description {
-      color: #FFF;
+      color: #717171;
     }
 
     .setting-main {
@@ -345,7 +309,7 @@
     }
 
     :root, .app-theme-picker__picker[data-theme="none"] {
-        --secondary: #e21e79 !important;
+        --secondary: #5e2e9b !important;
     }
 
     .jenkins-section__description {
@@ -414,24 +378,22 @@
         </f:block>
       </div>
       <h2>Security</h2>
-      <div class="anka-build-plugin-head-security">
-        <div class="anka-build-plugin-head-mtls">
-            <h3>Authentication (
-                <a href="https://docs.veertu.com/anka/anka-build-cloud/advanced-security-features/certificate-authentication/"
-                   target="_blank">mTLS / Certificate Authentication</a>,
-                <a href="https://docs.veertu.com/anka/anka-build-cloud/advanced-security-features/uak-tap-authentication/"
-                   target="_blank">UAK / TAP</a>)
-          </h3>
-            <f:entry title="${%Credentials}" description="Credentials to use for the Controller" field="credentialsId">
-              <c:select/>
+      <div class="anka-build-plugin-security">
+        <h3>Authentication</h3>
+        <h4>Supported Authentication Methods</h4>
+        <ul>
+          <li><a href="https://docs.veertu.com/anka/anka-build-cloud/advanced-security-features/certificate-authentication/" target="_blank">mTLS / Certificate Authentication</a></li>
+          <li><a href="https://docs.veertu.com/anka/anka-build-cloud/advanced-security-features/uak-tap-authentication/" target="_blank">UAK / TAP</a></li>
+        </ul>
+        <f:entry title="${%Credentials}" description="Credentials to use for the Controller" field="credentialsId">
+          <c:select/>
+        </f:entry>
+        <f:entry title="Skip TLS Verification" field="skipTLSVerification">
+          <f:checkbox checked="${instance.getSkipTLSVerification()?'true':'false'}" field="skipTLSVerification" />
+          <f:entry title="Controller URL Root CA Certificate" field="rootCA" description="For validating TLS certificate of the Controller URL">
+            <f:textarea clazz="string"  />
           </f:entry>
-          <f:entry title="Skip TLS Verification" field="skipTLSVerification">
-            <f:checkbox checked="${instance.getSkipTLSVerification()?'true':'false'}" field="skipTLSVerification" />
-            <f:entry title="Controller URL Root CA Certificate" field="rootCA" description="For validating TLS certificate of the Controller URL">
-              <f:textarea clazz="string"  />
-            </f:entry>
-          </f:entry>
-        </div>
+        </f:entry>
       </div>
     </div>
     <div class="anka-build-plugin-content-group">
