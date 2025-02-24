@@ -96,8 +96,8 @@
       </f:entry>
   </f:block>
   <hr />
-    <h4>Anka VM Template/Tag Creation</h4>
     <label class="label"></label>
+    <h4>Anka VM Template/Tag Creation</h4>
     <f:section style="font-size: 10px;" description="Pushes a new Anka VM Tag to the registry when the build finishes">
       <f:optionalBlock inline="true" field="saveImage" title="Enabled" checked="${instance.getSaveImage()}">
         <f:entry title="${%Target Anka VM Template}"  field="templateId" description="The Anka VM Template to save the new Tag to">
