@@ -84,7 +84,7 @@ public class AnkaPlannedNodeCreator {
                 int schedulingTimeout = template.getSchedulingTimeout();
                 long schedulingTimeoutMillis = TimeUnit.SECONDS.toMillis(schedulingTimeout);
                 LOGGER.log(Level.FINE,"Instance {0} is scheduling for {1} seconds",
-                            new Object[]{instanceId, sinceStarted * 1000});
+                            new Object[]{instanceId, sinceStarted / 1000});
                 if (sinceStarted > schedulingTimeoutMillis) {
                     LOGGER.log(Level.WARNING,"Instance {0} reached it's scheduling timeout of {1} seconds, terminating provisioning",
                             new Object[]{instanceId, schedulingTimeout});
