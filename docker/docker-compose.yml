@@ -1,0 +1,43 @@
+name: 'anka-cloud-jenkins'
+services:
+  jenkins-lts:
+    restart: always
+    image: jenkins/jenkins:2.492.3
+    container_name: jenkins
+    user: jenkins
+    volumes:
+      - ./jenkins:/var/jenkins_home
+    environment:
+      JENKINS_HOST_HOME: "/jenkins"
+      #      HTTP_PROXY: 'http://squid:3128'
+      #      HTTPS_PROXY: 'http://squid:3128'
+      #      NO_PROXY: 'localhost,127.0.0.1'
+      JAVA_OPTS: >
+        -Xdebug -Xrunjdwp:transport=dt_socket,server=y,address=*:5005,suspend=n
+        -Djenkins.install.runSetupWizard=false
+        -Dorg.jenkinsci.main.modules.sshd.SSHD.hostName=127.0.0.1
+        -Dorg.jenkinsci.main.modules.sshd.SSHD.port=5000
+        -Djenkins.CLI.disabled=false
+        -Dorg.jenkinsci.main.modules.sshd.SSHD.mode=fixed
+    #        -Dhttp.proxyHost=squid
+    #        -Dhttp.proxyPort=3128
+    #        -Dhttp.nonProxyHosts="localhost|127.0.0.1"
+    #        -Dhttps.proxyHost=squid
+    #        -Dhttps.proxyPort=3128
+    #        -Dhttps.nonProxyHosts="localhost|127.0.0.1"
+    ports:
+      - "8080:8080"
+      - "5000:5000"
+      - "50000:50000"
+      - "5005:5005"
+
+  squid:
+    image: sameersbn/squid:3.5.27-2
+    container_name: squid-proxy
+    restart: always
+    ports:
+      - "3128:3128"
+    volumes:
+      - ./squid/cache:/var/spool/squid
+      - ./squid/log:/var/log/squid
+      - ./squid.conf:/etc/squid/squid.conf
