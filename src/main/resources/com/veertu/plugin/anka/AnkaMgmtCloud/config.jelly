@@ -252,6 +252,7 @@
       flex: 1;
       margin: 10px 5px;
       color: #5e2e9b;
+      flex-basis: 30%;
     }
     .anka-build-plugin-templates-list .repeated-chunk button:not(.repeatable-delete) {
       background-color: #FFF;
