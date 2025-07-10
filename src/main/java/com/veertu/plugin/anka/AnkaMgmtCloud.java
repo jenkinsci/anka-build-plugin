@@ -3,6 +3,7 @@ package com.veertu.plugin.anka;
 import com.cloudbees.plugins.credentials.Credentials;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.IdCredentials;
+import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import com.veertu.ankaMgmtSdk.*;
 import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
 import hudson.Extension;
@@ -280,8 +281,15 @@ public class AnkaMgmtCloud extends Cloud {
                 .orElse(null);
 
         if (credentials instanceof StringCredentialsImpl) {
-            String secret = ((StringCredentialsImpl) credentials).getSecret().getPlainText();
-            ankaAPI = new AnkaAPI(List.of(mgmtURLS), skipTLSVerification, this.rootCA, ((StringCredentialsImpl) credentials).getId(), secret);
+            StringCredentialsImpl stringCreds = (StringCredentialsImpl) credentials;
+            String secret = stringCreds.getSecret().getPlainText();
+
+            ankaAPI = new AnkaAPI(List.of(mgmtURLS), skipTLSVerification, this.rootCA, stringCreds.getId(), secret);
+
+        } else if (credentials instanceof UsernamePasswordCredentialsImpl) {
+            UsernamePasswordCredentialsImpl userPassCreds = (UsernamePasswordCredentialsImpl) credentials;
+            String secret = userPassCreds.getPassword().getPlainText();
+            ankaAPI = new AnkaAPI(List.of(mgmtURLS), skipTLSVerification, this.rootCA, userPassCreds.getUsername(), secret);
 
         } else if (credentials instanceof CertCredentials) {
             CertCredentials certCredentials = (CertCredentials) credentials;
@@ -307,8 +315,56 @@ public class AnkaMgmtCloud extends Cloud {
         ankaAPI.setConnectionKeepAliveSeconds(connectionKeepAliveSeconds);
     }
 
+    /**
+     * Checks if the configured credentials are legacy UAK credentials stored as StringCredentials
+     * and logs a deprecation warning to encourage users to migrate to UsernamePasswordCredentials.
+     */
+    private void checkAndWarnLegacyUakCredentials() {
+        if (credentialsId == null || credentialsId.trim().isEmpty()) {
+            return;
+        }
+
+        StringCredentialsImpl stringCreds = CredentialsProvider.lookupCredentialsInItemGroup(
+                        StringCredentialsImpl.class,
+                        Jenkins.get(),
+                        null,
+                        null
+                ).stream()
+                .filter(c -> c.getId().equals(credentialsId))
+                .findFirst()
+                .orElse(null);
+
+        if (stringCreds != null && isLegacyUakCredential(stringCreds)) {
+            Log("WARNING: Cloud '%s' is using deprecated StringCredentials for UAK authentication. " +
+                            "Please migrate to UsernamePasswordCredentials where username=UAK_ID and password=UAK_SECRET. " +
+                            "StringCredentials support for UAK will be removed in a future version.",
+                    getCloudName());
+        }
+    }
+
+    /**
+     * Determines if a StringCredentials instance is likely a legacy UAK credential
+     * by checking if the secret looks like a UAK private key (PEM format).
+     */
+    private boolean isLegacyUakCredential(StringCredentialsImpl stringCreds) {
+        try {
+            String secret = stringCreds.getSecret().getPlainText();
+            // UAK secrets are typically RSA private keys in PEM format
+            return secret != null &&
+                    secret.contains("-----BEGIN RSA PRIVATE KEY-----") &&
+                    secret.contains("-----END RSA PRIVATE KEY-----");
+        } catch (Exception e) {
+            // If we can't access the secret, assume it's not a UAK credential
+            return false;
+        }
+    }
+
     protected Object readResolve() {
         this.nodeNumLock = new ReentrantLock();
+
+        // Check for legacy UAK credentials and warn users
+        checkAndWarnLegacyUakCredentials();
+        
         createAnkaAPIObject();
         if (this.dynamicTemplates == null) {
             this.dynamicTemplates = Collections.synchronizedList(new ArrayList<>());
@@ -771,12 +827,21 @@ public class AnkaMgmtCloud extends Cloud {
             ).forEach(c -> listBox.add("mTLS: " + c.getName(), c.getId()));
 
             CredentialsProvider.lookupCredentialsInItemGroup(
+                    UsernamePasswordCredentialsImpl.class,
+                    Jenkins.get(),
+                    null,
+                    null
+            ).forEach(c -> {
+                listBox.add("UAK/TAP: " + c.getUsername() + " (" + c.getId() + ")", c.getId());
+            });
+
+            CredentialsProvider.lookupCredentialsInItemGroup(
                     StringCredentialsImpl.class,
                     Jenkins.get(),
                     null,
                     null
             ).forEach(c -> {
-                listBox.add("UAK/TAP: " + c.getId(), c.getId());
+                listBox.add("UAK/TAP (DEPRECATED): " + c.getId(), c.getId());
             });
 
             return listBox;
