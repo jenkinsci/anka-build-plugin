@@ -56,6 +56,39 @@ public class UakAuthenticator {
     private PrivateKey key;
 
     /**
+     * Parses a UAK credential string and returns the RSA private key.
+     * UAK can be either a PEM formatted private key or just a concatenated string without header and footer.
+     *
+     * @param key the key string to parse
+     * @return the RSA private key object
+     * @throws IllegalArgumentException if the key is null, empty, or not a valid RSA private key
+     */
+    public static RSAPrivateKey getRSAPrivateKey(String key) {
+        if (key == null || key.trim().isEmpty()) {
+            throw new IllegalArgumentException("Key cannot be null or empty");
+        }
+
+        try {
+            String privateKeyPEM = key
+                    .replace("-----BEGIN RSA PRIVATE KEY-----", "")
+                    .replace("-----END RSA PRIVATE KEY-----", "")
+                    .replaceAll("\\s", "");
+
+            byte[] keyBytes = Base64.getDecoder().decode(privateKeyPEM);
+            ASN1Primitive asn1Object = ASN1Primitive.fromByteArray(keyBytes);
+            RSAPrivateKey rsaPrivateKey = RSAPrivateKey.getInstance(asn1Object);
+
+            if (rsaPrivateKey == null) {
+                throw new IllegalArgumentException("Failed to parse RSA private key");
+            }
+
+            return rsaPrivateKey;
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Invalid RSA private key: " + e.getMessage(), e);
+        }
+    }
+
+    /**
      * Initializes a new instance of the UakAuthenticator class.
      *
      * @param mgmtURLs            the Anka Management API URLs
@@ -71,14 +104,8 @@ public class UakAuthenticator {
         this.id = id;
 
         try {
-            String privateKeyPEM = pemKey
-                    .replace("-----BEGIN RSA PRIVATE KEY-----", "")
-                    .replace("-----END RSA PRIVATE KEY-----", "")
-                    .replaceAll("\\s", "");
-
-            byte[] keyBytes = Base64.getDecoder().decode(privateKeyPEM);
-            ASN1Primitive asn1Object = ASN1Primitive.fromByteArray(keyBytes);
-            RSAPrivateKey rsaPrivateKey = RSAPrivateKey.getInstance(asn1Object);
+            // Parse and validate the UAK credential
+            RSAPrivateKey rsaPrivateKey = getRSAPrivateKey(pemKey);
 
             // Convert PKCS#1 to PKCS#8
             PrivateKeyInfo privateKeyInfo = new PrivateKeyInfo(
@@ -90,7 +117,7 @@ public class UakAuthenticator {
             KeyFactory keyFactory = KeyFactory.getInstance("RSA");
             this.key = keyFactory.generatePrivate(keySpec);
         } catch (Exception e) {
-            AnkaMgmtCloud.Log("Failed to initialize RSA private key: " + e.getMessage());
+            AnkaMgmtCloud.Log("Failed to initialize RSA private key for id " + id + ": " + e.getMessage());
         }
     }
 
