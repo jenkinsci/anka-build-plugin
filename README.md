@@ -6,7 +6,7 @@ This plugin integrates with an [Anka Build Cloud](https://ankadocs.veertu.com/do
 
 ## Build
 
-- Install Maven 4.0.0-rc-2
+- Install Maven 3 (tested with 3.9.9)
 - Install OpenJDK 17
 
 ```
