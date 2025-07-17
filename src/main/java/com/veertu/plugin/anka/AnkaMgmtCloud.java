@@ -3,7 +3,7 @@ package com.veertu.plugin.anka;
 import com.cloudbees.plugins.credentials.Credentials;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.IdCredentials;
-import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
+import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.veertu.ankaMgmtSdk.*;
 import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
 import hudson.Extension;
@@ -286,8 +286,8 @@ public class AnkaMgmtCloud extends Cloud {
 
             ankaAPI = new AnkaAPI(List.of(mgmtURLS), skipTLSVerification, this.rootCA, stringCreds.getId(), secret);
 
-        } else if (credentials instanceof UsernamePasswordCredentialsImpl) {
-            UsernamePasswordCredentialsImpl userPassCreds = (UsernamePasswordCredentialsImpl) credentials;
+        } else if (credentials instanceof StandardUsernamePasswordCredentials) {
+            StandardUsernamePasswordCredentials userPassCreds = (StandardUsernamePasswordCredentials) credentials;
             String secret = userPassCreds.getPassword().getPlainText();
             ankaAPI = new AnkaAPI(List.of(mgmtURLS), skipTLSVerification, this.rootCA, userPassCreds.getUsername(), secret);
 
@@ -825,7 +825,7 @@ public class AnkaMgmtCloud extends Cloud {
             ).forEach(c -> listBox.add("mTLS: " + c.getName(), c.getId()));
 
             CredentialsProvider.lookupCredentialsInItemGroup(
-                    UsernamePasswordCredentialsImpl.class,
+                    StandardUsernamePasswordCredentials.class,
                     Jenkins.get(),
                     null,
                     null
