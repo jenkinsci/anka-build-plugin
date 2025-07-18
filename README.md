@@ -12,11 +12,4 @@ Contributors are welcome! Please submit an Issue or PR.
 
 ### Build
 
-- Install Maven 3 (tested with 3.9.9)
-- Install OpenJDK 17
-
-```
-export PATH="${HOME}/apache-maven-4.0.0-rc-2/bin:$PATH"
-export PATH="/opt/homebrew/opt/openjdk@17/bin:$PATH"
-mvn package
-```
+See `build-macos.bash` for building the plugin.
