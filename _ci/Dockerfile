@@ -1,1 +1,1 @@
-FROM maven:3-openjdk-17-slim
+FROM maven:3.9.11-eclipse-temurin-17
