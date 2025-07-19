@@ -2,7 +2,7 @@ name: 'anka-cloud-jenkins'
 services:
   jenkins-lts:
     restart: always
-    image: jenkins/jenkins:2.440.3
+    image: jenkins/jenkins:2.479.3
     container_name: jenkins
     user: jenkins
     volumes:
