@@ -110,7 +110,6 @@ public abstract class AbstractAnkaSlave extends Slave {
 
     public void terminate() throws IOException {
         try {
-            Thread.sleep(3000); // Sleep for 3 seconds to avoid those spooky ChannelClosedException
             AnkaVmInstance vm = getAndLogInstance();
             if (vm != null) {
                 LOGGER.log(Level.INFO, "Node {0} Instance {1} is in state {2}", new Object[]{getNodeName(), instanceId, vm.getSessionState()});
@@ -133,8 +132,6 @@ public abstract class AbstractAnkaSlave extends Slave {
             }
         } catch (AnkaMgmtException e) {
             throw new IOException(e);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
         } finally {
             try {
                 if (this.instanceId != null) {
