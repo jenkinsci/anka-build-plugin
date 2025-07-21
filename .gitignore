@@ -1,8 +1,9 @@
 .idea/
-data/
 *.DS_Store
 *.iml
 work*
 lib*
 target*
 .m2
+docker/jenkins/
+docker/squid/

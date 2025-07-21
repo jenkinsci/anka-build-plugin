@@ -1,4 +1,3 @@
-
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form" xmlns:st="jelly:stapler">
   <f:entry title="${%Client Key}" field="clientKey">
@@ -14,7 +13,8 @@
       <f:textbox name="_.id"
                  value="${instance != null ? instance.id : null}"
                  readonly="${instance != null ? 'readonly' : null}"
-                 checkUrl="${instance != null ? null : descriptor.getCheckUrl('id')}"
+                 checkUrl="${instance != null ? null : rootURL + descriptor.getCheckUrl('id')}"
+                 checkDependsOn=""
       />
     </f:entry>
     <f:entry title="${%Description}" field="description">
