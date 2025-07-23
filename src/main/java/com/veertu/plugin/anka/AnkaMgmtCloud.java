@@ -721,28 +721,38 @@ public class AnkaMgmtCloud extends Cloud {
 
     public void terminateVMInstance(String id, AbstractAnkaSlave node) throws AnkaMgmtException {
         AnkaVmInstance ankaVmInstance = ankaAPI.showInstance(id);
+
         ImageSaver.deleteRequest(node);
+
         if (ankaVmInstance == null || ankaVmInstance.isTerminatingOrTerminated()) {
-            return; // if it's already terminated just forget about it
+            Log("VM instance " + id + " is already terminated or terminating");
+            return;
         }
 
         ankaAPI.terminateInstance(id);
-        try {
-            sleep(200);
-        } catch (InterruptedException e) {
-            // no rest for the wicked
-        }
 
-        while (ankaVmInstance != null && !ankaVmInstance.isTerminatingOrTerminated()) {
-            ankaAPI.terminateInstance(id);
+        long startTime = System.currentTimeMillis();
+        long timeoutMs = 60_000;
+
+        while (System.currentTimeMillis() - startTime < timeoutMs) {
+            ankaVmInstance = ankaAPI.showInstance(id);
+
+            if (ankaVmInstance == null || ankaVmInstance.isTerminatingOrTerminated()) {
+                Log("VM instance " + id + " terminated successfully");
+                return;
+            }
+
             try {
                 sleep(1000);
             } catch (InterruptedException e) {
-                // no rest for the wicked
+                Thread.currentThread().interrupt();
+                Log("Thread was interrupted while waiting for instance termination");
+                throw new AnkaMgmtException("Thread was interrupted while waiting for instance termination");
             }
-            ankaVmInstance = ankaAPI.showInstance(id);
         }
 
+        Log("Failed to terminate VM instance " + id + " within timeout period");
+        throw new AnkaMgmtException("Failed to terminate VM instance " + id + " within timeout period");
     }
 
     public AnkaVmInstance showInstance(String id) throws AnkaMgmtException {
