@@ -729,9 +729,7 @@ public class AnkaMgmtCloud extends Cloud {
             return;
         }
 
-        boolean terminationAccepted = ankaAPI.terminateInstance(id);
-
-        if (terminationAccepted) {
+        if (ankaAPI.terminateInstance(id)) {
             Log("Termination request for VM instance " + id + " accepted");
         } else {
             Log("Termination request for VM instance " + id + " was not accepted");
