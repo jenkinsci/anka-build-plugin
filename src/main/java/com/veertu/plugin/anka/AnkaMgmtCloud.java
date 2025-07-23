@@ -729,30 +729,14 @@ public class AnkaMgmtCloud extends Cloud {
             return;
         }
 
-        ankaAPI.terminateInstance(id);
+        boolean terminationAccepted = ankaAPI.terminateInstance(id);
 
-        long startTime = System.currentTimeMillis();
-        long timeoutMs = 60_000;
-
-        while (System.currentTimeMillis() - startTime < timeoutMs) {
-            ankaVmInstance = ankaAPI.showInstance(id);
-
-            if (ankaVmInstance == null || ankaVmInstance.isTerminatingOrTerminated()) {
-                Log("VM instance " + id + " terminated successfully");
-                return;
-            }
-
-            try {
-                sleep(1000);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                Log("Thread was interrupted while waiting for instance termination");
-                throw new AnkaMgmtException("Thread was interrupted while waiting for instance termination");
-            }
+        if (terminationAccepted) {
+            Log("Termination request for VM instance " + id + " accepted");
+        } else {
+            Log("Termination request for VM instance " + id + " was not accepted");
+            throw new AnkaMgmtException("Failed to terminate VM instance " + id);
         }
-
-        Log("Failed to terminate VM instance " + id + " within timeout period");
-        throw new AnkaMgmtException("Failed to terminate VM instance " + id + " within timeout period");
     }
 
     public AnkaVmInstance showInstance(String id) throws AnkaMgmtException {
