@@ -721,28 +721,20 @@ public class AnkaMgmtCloud extends Cloud {
 
     public void terminateVMInstance(String id, AbstractAnkaSlave node) throws AnkaMgmtException {
         AnkaVmInstance ankaVmInstance = ankaAPI.showInstance(id);
+
         ImageSaver.deleteRequest(node);
+
         if (ankaVmInstance == null || ankaVmInstance.isTerminatingOrTerminated()) {
-            return; // if it's already terminated just forget about it
+            Log("VM instance " + id + " is already terminated or terminating");
+            return;
         }
 
-        ankaAPI.terminateInstance(id);
-        try {
-            sleep(200);
-        } catch (InterruptedException e) {
-            // no rest for the wicked
+        if (ankaAPI.terminateInstance(id)) {
+            Log("Termination request for VM instance " + id + " accepted");
+        } else {
+            Log("Termination request for VM instance " + id + " was not accepted");
+            throw new AnkaMgmtException("Failed to terminate VM instance " + id);
         }
-
-        while (ankaVmInstance != null && !ankaVmInstance.isTerminatingOrTerminated()) {
-            ankaAPI.terminateInstance(id);
-            try {
-                sleep(1000);
-            } catch (InterruptedException e) {
-                // no rest for the wicked
-            }
-            ankaVmInstance = ankaAPI.showInstance(id);
-        }
-
     }
 
     public AnkaVmInstance showInstance(String id) throws AnkaMgmtException {
