@@ -267,13 +267,16 @@ public class AnkaCloudSlaveTemplate extends AbstractSlaveTemplate implements Des
             AnkaMgmtCloud cloud = (AnkaMgmtCloud) Jenkins.get().getCloud(cloudName);
             ListBoxModel models = new ListBoxModel();
             models.add("Choose Node Group Or Leave Empty for all", "");
-            if (! cloud.isOnline()) {
-                for (String groupId : cloud.getExistingGroupIds()) {
+            if (!cloud.isOnline()) {
+                List<String> groupIds = new ArrayList<>(cloud.getExistingGroupIds());
+                groupIds.sort(String::compareToIgnoreCase);
+                for (String groupId : groupIds) {
                     models.add(groupId);
                 }
-            }
-            else {
-                for (NodeGroup nodeGroup: getNodeGroups(cloud)) {
+            } else {
+                List<NodeGroup> nodeGroups = new ArrayList<>(getNodeGroups(cloud));
+                nodeGroups.sort((a, b) -> a.getName().compareToIgnoreCase(b.getName()));
+                for (NodeGroup nodeGroup : nodeGroups) {
                     models.add(nodeGroup.getName(), nodeGroup.getId());
                 }
             }
