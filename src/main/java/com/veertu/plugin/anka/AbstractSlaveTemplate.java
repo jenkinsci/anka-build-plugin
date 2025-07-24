@@ -1,14 +1,19 @@
 package com.veertu.plugin.anka;
 
 import com.cloudbees.plugins.credentials.domains.SchemeRequirement;
+import com.veertu.ankaMgmtSdk.NodeGroup;
 import hudson.model.Node;
+import com.veertu.plugin.anka.AnkaMgmtCloud;
 import hudson.slaves.EnvironmentVariablesNodeProperty;
 import hudson.slaves.NodeProperty;
 import hudson.slaves.RetentionStrategy;
+import jenkins.model.Jenkins;
 import org.kohsuke.stapler.DataBoundSetter;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
+import java.util.logging.Logger;
 
 public class AbstractSlaveTemplate {
 
@@ -177,7 +182,79 @@ public class AbstractSlaveTemplate {
 
     @DataBoundSetter
     public void setGroup(String group) {
-        this.group = group;
+        // If group is null or empty, just set it as-is
+        if (group == null || group.trim().isEmpty()) {
+            this.group = group;
+            return;
+        }
+        
+        // Check if the group is already a UUID format
+        if (isUUID(group)) {
+            this.group = group;
+            return;
+        }
+        
+        // Try to convert group name to UUID
+        String groupId = convertGroupNameToUUID(group);
+        if (groupId != null) {
+            this.group = groupId;
+        } else {
+            // If conversion fails, keep the original value
+            this.group = group;
+        }
+    }
+
+    /**
+     * Converts a group name to its corresponding UUID by looking up the group in the Anka cloud.
+     * @param groupName The name of the group to convert
+     * @return The UUID of the group, or null if not found
+     */
+    private String convertGroupNameToUUID(String groupName) {
+        try {
+            // Get the cloud instance using the cloudName
+            if (cloudName == null || cloudName.trim().isEmpty()) {
+                return null;
+            }
+            
+            AnkaMgmtCloud cloud = AnkaMgmtCloud.get(cloudName);
+            if (cloud == null) {
+                return null;
+            }
+            
+            // Get all node groups from the cloud
+            List<NodeGroup> nodeGroups = cloud.getNodeGroups();
+            if (nodeGroups == null) {
+                return null;
+            }
+            
+            // Find the group with the matching name
+            for (NodeGroup nodeGroup : nodeGroups) {
+                if (groupName.equals(nodeGroup.getName())) {
+                    return nodeGroup.getId();
+                }
+            }
+            
+            return null;
+        } catch (Exception e) {
+            // Log the error but don't fail the operation
+            Logger.getLogger(AbstractSlaveTemplate.class.getName())
+                .warning("Failed to convert group name '" + groupName + "' to UUID: " + e.getMessage());
+            return null;
+        }
+    }
+    
+    /**
+     * Checks if a string is a valid UUID format.
+     * @param uuid The string to check
+     * @return true if the string is a valid UUID format, false otherwise
+     */
+    private boolean isUUID(String uuid) {
+        try {
+            UUID.fromString(uuid);
+            return true;
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
     }
 
     public String getExtraArgs() {

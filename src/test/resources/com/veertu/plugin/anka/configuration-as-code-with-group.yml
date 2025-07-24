@@ -1,0 +1,56 @@
+jenkins:
+  systemMessage: "Hello World"
+  clouds:
+    - ankaMgmt:
+        ankaMgmtUrl: "https://veertu-anka"
+        cloudInstanceCap: 100
+        cloudName: "Veertu anka"
+        connectionKeepAliveSeconds: 60
+        launchRetryWaitTime: 10
+        launchTimeout: 60
+        maxLaunchRetries: 10
+        skipTLSVerification: false
+        sshLaunchDelaySeconds: 60
+        vmIPAssignWaitSeconds: 15
+        vmIPAssignRetries: 4
+        vmPollTime: 3000
+        templates:
+          - cloudName: "Veertu anka"
+            credentialsId: "anka-creds"
+            deleteLatest: false
+            description: "macos anka template with group"
+            dontAppendTimestamp: false
+            environments:
+              - name: "test-name"
+                value: "test-value"
+            group: "team-a"
+            keepAliveOnError: false
+            label: "macos anka"
+            launchDelay: 0
+            launchMethod: "ssh"
+            masterVmId: "xxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+            mode: NORMAL
+            nameTemplate: "macos-anka"
+            numberOfExecutors: 1
+            priority: 0
+            pushTag: "test-tag"
+            remoteFS: "/Users/anka"
+            retentionStrategy:
+              ankaRunOnceCloud:
+                idleMinutes: 5
+            saveImage: false
+            saveImageParameters:
+              deleteLatest: false
+              description: "macos anka template with group"
+              dontAppendTimestamp: false
+              saveImage: false
+              suspend: false
+              tag: "test-tag"
+              templateID: "xxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+              waitForBuildToFinish: false
+            schedulingTimeout: 1800
+            suspend: false
+            templateId: "xxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+            vcpu: 0
+            vram: 0
+            waitForBuildToFinish: false 
