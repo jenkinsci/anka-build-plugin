@@ -177,7 +177,26 @@ public class AbstractSlaveTemplate {
     }
 
     public String getGroup() {
-        return valOrNull(group);
+        String groupValue = valOrNull(group);
+        if (groupValue == null || groupValue.trim().isEmpty()) {
+            return groupValue;
+        }
+        
+        // If it's already a UUID, return it as-is
+        if (isUUID(groupValue)) {
+            return groupValue;
+        }
+        
+        // Try to convert group name to UUID
+        String groupId = convertGroupNameToUUID(groupValue);
+        if (groupId != null) {
+            // Update the stored value to the UUID for future calls
+            this.group = groupId;
+            return groupId;
+        }
+        
+        // If conversion fails, return the original value
+        return groupValue;
     }
 
     @DataBoundSetter
@@ -209,7 +228,7 @@ public class AbstractSlaveTemplate {
      * @param groupName The name of the group to convert
      * @return The UUID of the group, or null if not found
      */
-    private String convertGroupNameToUUID(String groupName) {
+    protected String convertGroupNameToUUID(String groupName) {
         try {
             // Get the cloud instance using the cloudName
             if (cloudName == null || cloudName.trim().isEmpty()) {
@@ -248,7 +267,7 @@ public class AbstractSlaveTemplate {
      * @param uuid The string to check
      * @return true if the string is a valid UUID format, false otherwise
      */
-    private boolean isUUID(String uuid) {
+    protected boolean isUUID(String uuid) {
         try {
             UUID.fromString(uuid);
             return true;
