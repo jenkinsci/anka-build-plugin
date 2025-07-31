@@ -182,16 +182,30 @@ public class AbstractSlaveTemplate {
             return groupValue;
         }
         
-        // If it's already a UUID, return it as-is
+        // If it's already a UUID, validate it still corresponds to a valid group
         if (isUUID(groupValue)) {
-            return groupValue;
+            // Check if this UUID still corresponds to a valid group
+            String groupName = convertUUIDToGroupName(groupValue);
+            if (groupName != null) {
+                // UUID is still valid, return it
+                return groupValue;
+            } else {
+                // UUID is no longer valid, try to find a group with the same name
+                // This handles the case where a group was deleted and recreated with the same name
+                String newGroupId = convertGroupNameToUUID(findGroupNameByUUID(groupValue));
+                if (newGroupId != null) {
+                    // Update the stored value to the new UUID
+                    this.group = newGroupId;
+                    return newGroupId;
+                }
+                // If we can't find a replacement, return the original value
+                return groupValue;
+            }
         }
         
-        // Try to convert group name to UUID
+        // Try to convert group name to UUID without modifying internal state
         String groupId = convertGroupNameToUUID(groupValue);
         if (groupId != null) {
-            // Update the stored value to the UUID for future calls
-            this.group = groupId;
             return groupId;
         }
         
@@ -221,6 +235,55 @@ public class AbstractSlaveTemplate {
             // If conversion fails, keep the original value
             this.group = group;
         }
+    }
+
+    /**
+     * Converts a UUID to its corresponding group name by looking up the group in the Anka cloud.
+     * @param groupId The UUID of the group to convert
+     * @return The name of the group, or null if not found
+     */
+    protected String convertUUIDToGroupName(String groupId) {
+        try {
+            // Get the cloud instance using the cloudName
+            if (cloudName == null || cloudName.trim().isEmpty()) {
+                return null;
+            }
+            
+            AnkaMgmtCloud cloud = AnkaMgmtCloud.get(cloudName);
+            if (cloud == null) {
+                return null;
+            }
+            
+            // Get all node groups from the cloud
+            List<NodeGroup> nodeGroups = cloud.getNodeGroups();
+            if (nodeGroups == null) {
+                return null;
+            }
+            
+            // Find the group with the matching UUID
+            for (NodeGroup nodeGroup : nodeGroups) {
+                if (groupId.equals(nodeGroup.getId())) {
+                    return nodeGroup.getName();
+                }
+            }
+            
+            return null;
+        } catch (Exception e) {
+            // Log the error but don't fail the operation
+            Logger.getLogger(AbstractSlaveTemplate.class.getName())
+                .warning("Failed to convert group UUID '" + groupId + "' to name: " + e.getMessage());
+            return null;
+        }
+    }
+    
+    /**
+     * Finds a group name by UUID, returning null if the group doesn't exist.
+     * This is used to get the original group name when a UUID becomes invalid.
+     * @param groupId The UUID to look up
+     * @return The group name if found, null otherwise
+     */
+    protected String findGroupNameByUUID(String groupId) {
+        return convertUUIDToGroupName(groupId);
     }
 
     /**
