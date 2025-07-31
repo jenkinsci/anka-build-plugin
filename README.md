@@ -13,3 +13,9 @@ Contributors are welcome! Please submit an Issue or PR.
 ### Build
 
 See `build-macos.bash` for building the plugin.
+
+## Release
+
+```bash
+mvn release:prepare release:perform
+```
