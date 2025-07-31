@@ -190,15 +190,21 @@ public class AbstractSlaveTemplate {
                 // UUID is still valid, return it
                 return groupValue;
             } else {
-                // UUID is no longer valid, try to find a group with the same name
-                // This handles the case where a group was deleted and recreated with the same name
-                String newGroupId = convertGroupNameToUUID(findGroupNameByUUID(groupValue));
-                if (newGroupId != null) {
-                    // Update the stored value to the new UUID
-                    this.group = newGroupId;
-                    return newGroupId;
+                // UUID is no longer valid - check if cloud is available for validation
+                if (cloudName != null && !cloudName.trim().isEmpty()) {
+                    try {
+                        AnkaMgmtCloud cloud = AnkaMgmtCloud.get(cloudName);
+                        if (cloud != null) {
+                            // Cloud is available but UUID is invalid, clear the stored value
+                            this.group = null;
+                            return null;
+                        }
+                    } catch (Exception e) {
+                        // Cloud is not available, return the UUID as-is
+                        return groupValue;
+                    }
                 }
-                // If we can't find a replacement, return the original value
+                // Cloud is not available, return the UUID as-is
                 return groupValue;
             }
         }
@@ -274,16 +280,6 @@ public class AbstractSlaveTemplate {
                 .warning("Failed to convert group UUID '" + groupId + "' to name: " + e.getMessage());
             return null;
         }
-    }
-    
-    /**
-     * Finds a group name by UUID, returning null if the group doesn't exist.
-     * This is used to get the original group name when a UUID becomes invalid.
-     * @param groupId The UUID to look up
-     * @return The group name if found, null otherwise
-     */
-    protected String findGroupNameByUUID(String groupId) {
-        return convertUUIDToGroupName(groupId);
     }
 
     /**

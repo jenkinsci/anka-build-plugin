@@ -47,4 +47,12 @@ public class AbstractSlaveTemplateTest {
         template.setGroup(invalidUuid);
         assertThat(template.getGroup(), is(invalidUuid));
     }
+    
+    @Test
+    public void testGetGroupWithInvalidUUIDAndNoCloud_shouldReturnUUID() {
+        String uuid = "4894c60f-949d-4c5e-40d6-260c13bc0509";
+        template.setGroup(uuid);
+        // When cloud is not available, should return UUID as-is even if invalid
+        assertThat(template.getGroup(), is(uuid));
+    }
 } 
