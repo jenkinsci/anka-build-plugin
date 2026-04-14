@@ -90,7 +90,7 @@ public class AnkaAPI {
     }
 
     public boolean terminateInstance(String vmId) throws AnkaMgmtException {
-        LOGGER.info("Sending termination request to instance: " + vmId);
+        LOGGER.info(AnkaSdkLog.prefix("Sending termination request to instance: " + vmId));
         boolean result = communicator.terminateVm(vmId);
         invalidateCache();
         return result;

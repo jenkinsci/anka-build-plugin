@@ -175,8 +175,9 @@ public class AnkaCloudComputer extends SlaveComputer {
             // Unknown/unstable metadata should never prevent run-once cleanup.
             applyBuildOutcome(BuildOutcome.UNKNOWN);
             LOGGER.log(Level.WARNING,
+                    AnkaLog.prefix(
                     String.format("Computer %s, instance %s failed to resolve build result for task %s",
-                            getName(), getVMId(), task),
+                            getName(), getVMId(), task)),
                     e);
         }
     }

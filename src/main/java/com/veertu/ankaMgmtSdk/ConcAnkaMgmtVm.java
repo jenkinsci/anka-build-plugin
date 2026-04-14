@@ -28,7 +28,7 @@ public class ConcAnkaMgmtVm implements AnkaMgmtVm {
         this.sessionId = sessionId;
         this.sshConnectionPort = sshConnectionPort;
         this.terminated = false;
-        logger.info(String.format("init VM %s", sessionId));
+        logger.info(AnkaSdkLog.prefix(String.format("init VM %s", sessionId)));
     }
 
     public String getStatus() throws AnkaMgmtException {
@@ -72,7 +72,7 @@ public class ConcAnkaMgmtVm implements AnkaMgmtVm {
                 if (session != null) {
                     this.cachedVmSession = session;
                 } else {
-                    logger.info("info for vm is null");
+                    logger.info(AnkaSdkLog.prefix("info for vm is null"));
                 }
             }
             return this.cachedVmSession;
@@ -152,14 +152,14 @@ public class ConcAnkaMgmtVm implements AnkaMgmtVm {
     }
 
     public String waitForBoot(int schedulingTimeout) throws InterruptedException, IOException, AnkaMgmtException {
-        logger.info(String.format("waiting for vm %s to boot", this.sessionId));
+        logger.info(AnkaSdkLog.prefix(String.format("waiting for vm %s to boot", this.sessionId)));
         int timeWaited = 0;
 
         while (isScheduling()) {
             // terminate if scheduling timeout is reached
             Thread.sleep(waitUnit);
             timeWaited += waitUnit;
-            logger.info(String.format("waiting for vm %s %d to stop scheduling", this.sessionId, timeWaited));
+            logger.info(AnkaSdkLog.prefix(String.format("waiting for vm %s %d to stop scheduling", this.sessionId, timeWaited)));
             if (timeWaited > schedulingTimeout * waitUnit) {
                 this.terminate();
                 throw new IOException("vm scheduling too long");
@@ -173,7 +173,7 @@ public class ConcAnkaMgmtVm implements AnkaMgmtVm {
             try {
                 Thread.sleep(waitUnit);
                 timeWaited += waitUnit;
-                logger.info(String.format("waiting for vm %s %d to boot", this.sessionId, timeWaited));
+                logger.info(AnkaSdkLog.prefix(String.format("waiting for vm %s %d to boot", this.sessionId, timeWaited)));
                 if (timeWaited > maxRunningTimeout) {
                     this.terminate();
                     throw new IOException("could not start vm");
@@ -181,7 +181,7 @@ public class ConcAnkaMgmtVm implements AnkaMgmtVm {
                 }
             } catch (InterruptedException e) {
                 if (isPulling()) {  // Don't let jenkins interrupt us while we are pulling
-                    logger.info(String.format("vm %s is pulling, ignoring InterruptedException", this.sessionId));
+                    logger.info(AnkaSdkLog.prefix(String.format("vm %s is pulling, ignoring InterruptedException", this.sessionId)));
                 } else {
                     throw e;
                 }
@@ -190,7 +190,7 @@ public class ConcAnkaMgmtVm implements AnkaMgmtVm {
 
         String ip;
         timeWaited = 0;
-        logger.info(String.format("waiting for vm %s to get an ip ", this.sessionId));
+        logger.info(AnkaSdkLog.prefix(String.format("waiting for vm %s to get an ip ", this.sessionId)));
         while (true) { // wait to get machine ip
 
             ip = this.getIp();
@@ -199,7 +199,7 @@ public class ConcAnkaMgmtVm implements AnkaMgmtVm {
 
             Thread.sleep(waitUnit);
             timeWaited += waitUnit;
-            logger.info(String.format("waiting for vm %s %d to get ip ", this.sessionId, timeWaited));
+            logger.info(AnkaSdkLog.prefix(String.format("waiting for vm %s %d to get ip ", this.sessionId, timeWaited)));
             if (timeWaited > maxIpTimeout) {
                 this.terminate();
                 throw new IOException("VM started but couldn't acquire ip");

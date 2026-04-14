@@ -69,7 +69,7 @@ public class AnkaSlaveMonitor extends AsyncPeriodicWork {
     }
 
     private void cleanDynamicTemplates() {
-        LOGGER.log(Level.INFO, "AnkaSlaveMonitor cleaning dynamic templates...");
+        LOGGER.log(Level.INFO, AnkaLog.prefix("AnkaSlaveMonitor cleaning dynamic templates..."));
         List<AnkaMgmtCloud> clouds = getAnkaClouds();
         for (AnkaMgmtCloud cloud : clouds) {
 
@@ -77,7 +77,7 @@ public class AnkaSlaveMonitor extends AsyncPeriodicWork {
 
                 String jobId = template.getBuildId();
                 if (jobId.equals("")) {
-                    LOGGER.log(Level.WARNING, "dynamic template with label {0} has no build id assigned",
+                    LOGGER.log(Level.WARNING, AnkaLog.prefix("dynamic template with label {0} has no build id assigned"),
                             new Object[]{template.getLabel()});
                     continue;
                 }
@@ -86,7 +86,7 @@ public class AnkaSlaveMonitor extends AsyncPeriodicWork {
                 try {
                     run = fromExternalizableId(jobId);
                 } catch (IllegalArgumentException e) {
-                    LOGGER.log(Level.WARNING, "invalid job id {0} stored in dynamic template (label {1})",
+                    LOGGER.log(Level.WARNING, AnkaLog.prefix("invalid job id {0} stored in dynamic template (label {1})"),
                             new Object[]{jobId, template.getLabel()});
                 } finally {
                     if (run == null || !run.isBuilding()) {
@@ -98,9 +98,9 @@ public class AnkaSlaveMonitor extends AsyncPeriodicWork {
     }
 
     private void removeDeadNodes() {
-        LOGGER.log(Level.INFO, "AnkaSlaveMonitor checking nodes...");
+        LOGGER.log(Level.INFO, AnkaLog.prefix("AnkaSlaveMonitor checking nodes..."));
         for (AbstractAnkaSlave ankaNode : NodeIterator.nodes(AbstractAnkaSlave.class)) {
-            LOGGER.log(Level.FINE, "Checking Anka Node {0}, instance {1}",
+            LOGGER.log(Level.FINE, AnkaLog.prefix("Checking Anka Node {0}, instance {1}"),
                     new Object[]{ankaNode.getNodeName(), ankaNode.getInstanceId()});
             AnkaCloudComputer computer = (AnkaCloudComputer) ankaNode.getComputer();
             if (computer != null && computer.isConnecting()) {
@@ -108,12 +108,12 @@ public class AnkaSlaveMonitor extends AsyncPeriodicWork {
             }
             try {
                 if (!ankaNode.isAlive()) {
-                    LOGGER.log(Level.WARNING, "Anka Node {0}, instance {1}: instance is not alive - terminating",
+                    LOGGER.log(Level.WARNING, AnkaLog.prefix("Anka Node {0}, instance {1}: instance is not alive - terminating"),
                             new Object[]{ankaNode.getNodeName(), ankaNode.getInstanceId()});
                     ankaNode.terminate();
                 }
             } catch (IOException e) {
-                LOGGER.log(Level.WARNING,"Anka VM failed to terminate: " + ankaNode.getInstanceId());
+                LOGGER.log(Level.WARNING, AnkaLog.prefix("Anka VM failed to terminate: " + ankaNode.getInstanceId()));
                 e.printStackTrace();
             }
         }

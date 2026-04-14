@@ -27,7 +27,7 @@ public class AnkaCloudComputerListener extends ComputerListener {
         if (c instanceof AnkaCloudComputer) {
             AnkaCloudComputer computer = (AnkaCloudComputer)c;
             if (c.isLaunchSupported()) {
-                LOGGER.log(Level.INFO, "Computer {0}, instance {1} failed to launch, terminating",
+                LOGGER.log(Level.INFO, AnkaLog.prefix("Computer {0}, instance {1} failed to launch, terminating"),
                         new Object[]{computer.getName(), computer.getVMId()});
                 computer.terminate();
             }

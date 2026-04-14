@@ -86,6 +86,7 @@ public class AnkaMgmtCloud extends Cloud {
         if (slave != null) s = String.format("[%s] ", slave.getNodeName());
         if (slaveComputer != null) s = String.format("[%s] ", slaveComputer.getName());
         s = s + String.format(format, args);
+        s = AnkaLog.prefix(s);
         s = s + "\n";
         if (listener != null) listener.getLogger().print(s);
         MgmtLogger.log(Level.INFO, s);
@@ -510,6 +511,8 @@ public class AnkaMgmtCloud extends Cloud {
                     if (cloudCapacity > 0) {
                         int allowedCloudCapacity = cloudCapacity - nodeCount.numNodes;
                         if (allowedCloudCapacity <= 0) {
+                            Log("Skipping provisioning for label '%s': cloud capacity reached (%d/%d active nodes)",
+                                    label, nodeCount.numNodes, cloudCapacity);
                             return plannedNodes;
                         }
                         if (number > allowedCloudCapacity) {
@@ -519,6 +522,8 @@ public class AnkaMgmtCloud extends Cloud {
                     if (t.getInstanceCapacity() > 0) {
                         int allowedTemplateCapacity = t.getInstanceCapacity() - nodeCount.numNodesPerLabel;
                         if (allowedTemplateCapacity <= 0) {
+                            Log("Skipping provisioning for label '%s': template capacity reached (%d/%d active nodes for template '%s')",
+                                    label, nodeCount.numNodesPerLabel, t.getInstanceCapacity(), t.getDisplayName());
                             return plannedNodes;
                         }
                         if (number > allowedTemplateCapacity) {
@@ -655,12 +660,19 @@ public class AnkaMgmtCloud extends Cloud {
         Label label = state.getLabel();
         AnkaCloudSlaveTemplate template = getTemplate(label);
         if (template == null) {
+            Log("Cannot provision label '%s': no matching Anka template found in cloud '%s'", label, getCloudName());
             return false;
         }
         int cloudCapacity = getCloudCapacity();
         if (template.getInstanceCapacity() > 0 || cloudCapacity >= 0) {
             NodeCountResponse countResponse = getNumOfRunningNodesPerLabel(label);
-            if ((cloudCapacity >= 0 && countResponse.numNodes >= cloudCapacity) || (template.getInstanceCapacity() > 0 && countResponse.numNodesPerLabel >= template.getInstanceCapacity())) {
+            if (cloudCapacity >= 0 && countResponse.numNodes >= cloudCapacity) {
+                Log("Cannot provision label '%s': cloud capacity reached (%d/%d active nodes)", label, countResponse.numNodes, cloudCapacity);
+                return false;
+            }
+            if (template.getInstanceCapacity() > 0 && countResponse.numNodesPerLabel >= template.getInstanceCapacity()) {
+                Log("Cannot provision label '%s': template capacity reached (%d/%d active nodes for template '%s')",
+                        label, countResponse.numNodesPerLabel, template.getInstanceCapacity(), template.getDisplayName());
                 return false;
             }
         }
