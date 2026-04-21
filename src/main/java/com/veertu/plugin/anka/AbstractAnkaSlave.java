@@ -38,6 +38,7 @@ public abstract class AbstractAnkaSlave extends Slave {
     protected boolean taskExecuted;
     protected boolean saveImageSent;
     protected boolean hadProblemsInBuild = false;
+    protected boolean hadUnknownBuildOutcome = false;
 
     public String getJobNameAndNumber() {
         return jobNameAndNumber;
@@ -115,7 +116,8 @@ public abstract class AbstractAnkaSlave extends Slave {
             if (vm != null) {
                 LOGGER.log(Level.INFO, "Node {0} Instance {1} is in state {2}", new Object[]{getNodeName(), instanceId, vm.getSessionState()});
                 SaveImageParameters saveImageParams = template.getSaveImageParameters();
-                if (taskExecuted && saveImageParams != null && this.template.getSaveImageParameters().getSaveImage() && saveImageParams.getSaveImage() && !hadProblemsInBuild) {
+                if (taskExecuted && saveImageParams != null && this.template.getSaveImageParameters().getSaveImage()
+                        && saveImageParams.getSaveImage() && !hadProblemsInBuild && !hadUnknownBuildOutcome) {
                     LOGGER.log(Level.INFO, "Node {0} Instance {1}, saving image", new Object[]{getNodeName(), instanceId});
 
                     synchronized (this) {
@@ -198,6 +200,10 @@ public abstract class AbstractAnkaSlave extends Slave {
 
     public void setHadErrorsOnBuild(boolean value) {
         this.hadProblemsInBuild = value;
+    }
+
+    public void setHadUnknownBuildOutcome(boolean value) {
+        this.hadUnknownBuildOutcome = value;
     }
 
     public void setDescription(String jobAndNumber) {
@@ -299,7 +305,8 @@ public abstract class AbstractAnkaSlave extends Slave {
     public void taskCompleted(Executor executor, Queue.Task task, long durationMS) {
         this.setTaskExecuted(true);
         SaveImageParameters saveImageParams = template.getSaveImageParameters();
-        if (!hadProblemsInBuild && saveImageParams != null && this.template.getSaveImageParameters().getSaveImage() &&
+        if (!hadProblemsInBuild && !hadUnknownBuildOutcome && saveImageParams != null
+                && this.template.getSaveImageParameters().getSaveImage() &&
                 saveImageParams.getSaveImage()) {
             AnkaMgmtCloud.markFuture(cloud, this);
         }
