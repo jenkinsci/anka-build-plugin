@@ -2,7 +2,7 @@
 set -exo pipefail
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 cd $SCRIPT_DIR/_ci
-docker build --no-cache -t anka-build-plugin .
+docker build --no-cache -t anka-build-plugin --load .
 cd $SCRIPT_DIR
 docker run \
 --rm --name anka-build-plugin -it \
