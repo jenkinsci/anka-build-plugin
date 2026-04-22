@@ -19,7 +19,17 @@ pipeline {
     } }
     stages {
         stage('Build Plugin') { steps {
-            sh 'mvn package'
+            sh '''
+                # Override Plugin-Version's snapshot suffix so the Jenkins
+                # plugins page shows when this snapshot was built and which
+                # commit it came from, e.g.
+                #   Version 2.13.0-SNAPSHOT (built-20260422.2122-f9c67980)
+                PLUGIN_BUILD_TIMESTAMP_UTC=$(date -u +%Y%m%d.%H%M)
+                PLUGIN_GIT_SHORT_SHA=$(git rev-parse --short=8 HEAD 2>/dev/null || echo unknown)
+                PLUGIN_VERSION_DESCRIPTION="built-${PLUGIN_BUILD_TIMESTAMP_UTC}-${PLUGIN_GIT_SHORT_SHA}"
+                echo "[Jenkinsfile] plugin.version.description: ${PLUGIN_VERSION_DESCRIPTION}"
+                mvn -Dplugin.version.description="${PLUGIN_VERSION_DESCRIPTION}" package
+            '''
         } }
         stage('Archive') { steps {
             archiveArtifacts artifacts: '**/target/anka-build.hpi', onlyIfSuccessful: true
