@@ -117,7 +117,6 @@ public class AnkaCloudComputer extends SlaveComputer {
         super.taskAccepted(executor, task);
         this.run = null;
         this.acceptedRunIdentity = null;
-        this.slave.setHadUnknownBuildOutcome(false);
         if (task instanceof ExecutorStepExecution.PlaceholderTask) {
             this.run = ((ExecutorStepExecution.PlaceholderTask) task).run();
             if (this.run != null ){
@@ -301,7 +300,6 @@ public class AnkaCloudComputer extends SlaveComputer {
 
     private void applyBuildOutcome(BuildOutcome buildOutcome) {
         this.slave.setHadErrorsOnBuild(shouldMarkBuildAsErrorForKeepAlive(buildOutcome));
-        this.slave.setHadUnknownBuildOutcome(buildOutcome == BuildOutcome.UNKNOWN);
     }
 
     static BuildOutcome resolveBuildOutcome(Result result) {
