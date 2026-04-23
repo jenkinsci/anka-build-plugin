@@ -660,7 +660,6 @@ public class AnkaMgmtCloud extends Cloud {
         Label label = state.getLabel();
         AnkaCloudSlaveTemplate template = getTemplate(label);
         if (template == null) {
-            Log("Cannot provision label '%s': no matching Anka template found in cloud '%s'", label, getCloudName());
             return false;
         }
         int cloudCapacity = getCloudCapacity();

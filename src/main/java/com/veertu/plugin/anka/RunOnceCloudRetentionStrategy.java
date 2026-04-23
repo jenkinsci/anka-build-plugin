@@ -123,13 +123,15 @@ public class RunOnceCloudRetentionStrategy extends RetentionStrategy<AnkaCloudCo
     private void done(final AnkaCloudComputer computer) {
         AnkaMgmtCloud.Log("Computer %s is done, terminating", computer.getName());
         AbstractAnkaSlave node = computer.getNode();
+        int busyExecutors = computer.countBusy();
+        boolean canTerminate = node != null && node.canTerminate();
         if (node != null) {
             AnkaMgmtCloud.Log("computer %s node %s found", computer.getName(), node.getNodeName());
-            if (computer.countBusy() > 1) {
+            if (busyExecutors > 1) {
                 AnkaMgmtCloud.Log("computer %s is busy, not terminating", computer.getName());
                 return;
             }
-            if ( node.canTerminate()) {
+            if (canTerminate) {
                 AnkaMgmtCloud.Log("terminating computer %s node %s", computer.getName(), node.getNodeName());
                 try {
                     node.terminate();
