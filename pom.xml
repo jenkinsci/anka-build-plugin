@@ -51,10 +51,6 @@
             <id>repo.jenkins-ci.org</id>
             <url>https://repo.jenkins-ci.org/public/</url>
         </repository>
-        <repository>
-            <id>my</id>
-            <url>file://${basedir}/lib</url>
-        </repository>
     </repositories>
     <pluginRepositories>
         <pluginRepository>

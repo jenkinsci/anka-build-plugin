@@ -11,3 +11,6 @@ docker/jenkins/
 docker/squid/
 .mvn-debug.log
 .m2-local
+# maven-release-plugin
+release.properties
+pom.xml.releaseBackup
