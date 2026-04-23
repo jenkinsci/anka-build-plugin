@@ -148,7 +148,8 @@
     }
 
     .anka-build-plugin-head-advanced .dropdownList-container div.jenkins-form-item {
-      width: 220px;
+      width: 100% !important;
+      max-width: 100% !important;
       margin: 5px;
       padding: 10px 17px 17px 17px;
       color: #5e2e9b;
@@ -228,11 +229,7 @@
         color: #5e2e9b !important;
     }
 
-    .anka-build-plugin-head-advanced .tbody {
-      display: flex !important;
-      flex-wrap: wrap;
-    }
-    .anka-build-plugin-head-advanced .tbody .form-group {
+    .anka-build-plugin-head-advanced .advancedBody .form-group {
       max-width: 300px;
     }
     .anka-build-plugin-head-advanced .advancedLink {
@@ -313,6 +310,10 @@
       margin: 10px 0px 0px 0px;
     }
 
+    .repeated-chunk__header {
+      display: none !important;
+    }
+
   </style>
   <div class="anka-build-plugin-group">
     <div class="anka-build-plugin-head-group">
@@ -338,40 +339,38 @@
       </div>
       <div class="anka-build-plugin-head-advanced">
         <f:block>
-          <table>
-            <f:optionalBlock name="dynamic" title="Advanced">
-              <f:entry title="${%Launch Timeout}" field="launchTimeout" description="Launch timeout in seconds">
-                <f:textbox clazz="number" default="2000"/>
-              </f:entry>
-              <f:entry title="${%Launch Retries}" field="maxLaunchRetries" description="Launch retries">
-                <f:textbox clazz="number" default="5"/>
-              </f:entry>
-              <f:entry title="${%Launch Retry Wait Time (seconds)}" field="launchRetryWaitTime" description="The number of seconds to wait between retries">
-                <f:textbox clazz="number" default="5"/>
-              </f:entry>
-              <f:entry title="${%Launch Delay (seconds)}" field="sshLaunchDelaySeconds" description="The number of seconds to wait before starting the launch process">
-                <f:textbox clazz="number" default="15"/>
-              </f:entry>
-              <f:entry title="${%VM IP Assign Wait Time (seconds)}" field="vmIPAssignWaitSeconds" description="Number of seconds to wait for the VM IP to be assigned (works only for VMs with bridged network adapter)">
-                <f:textbox clazz="number" default="10"/>
-              </f:entry>
-              <f:entry title="${%VM IP Assign Retries}" field="vmIPAssignRetries" description="Number of retries to read the assigned VM IP (works only for VMs with bridged network adapter)">
-                <f:textbox clazz="number" default="6"/>
-              </f:entry>
-              <f:entry title="${%Monitor Recurrence (minute)}" field="monitorRecurrenceMinutes" description="Number of minutes to check for dead instances (global). min 1 minute">
-                <f:textbox clazz="number" default="10"/>
-              </f:entry>
-              <f:entry title="${%Connection Keep Alive (seconds)}" field="connectionKeepAliveSeconds" description="Number of seconds to keep tcp connection alive">
-                <f:textbox clazz="number" default="120"/>
-              </f:entry>
-              <f:entry title="${%Maximum HTTP Connections}" field="maxConnections" description="Limit for http connection (for the controller)">
-                <f:textbox clazz="number" default="50"/>
-              </f:entry>
-              <f:entry title="${%VM Poll Time (milliseconds)}" field="vmPollTime" description="Time in milliseconds to poll during VM creation">
-                <f:textbox clazz="number" default="5000"/>
-              </f:entry>
-            </f:optionalBlock>
-          </table>
+          <f:advanced>
+            <f:entry title="${%Launch Timeout}" field="launchTimeout" description="Launch timeout in seconds">
+              <f:textbox clazz="number" default="2000"/>
+            </f:entry>
+            <f:entry title="${%Launch Retries}" field="maxLaunchRetries" description="Launch retries">
+              <f:textbox clazz="number" default="5"/>
+            </f:entry>
+            <f:entry title="${%Launch Retry Wait Time (seconds)}" field="launchRetryWaitTime" description="The number of seconds to wait between retries">
+              <f:textbox clazz="number" default="5"/>
+            </f:entry>
+            <f:entry title="${%Launch Delay (seconds)}" field="sshLaunchDelaySeconds" description="The number of seconds to wait before starting the launch process">
+              <f:textbox clazz="number" default="15"/>
+            </f:entry>
+            <f:entry title="${%VM IP Assign Wait Time (seconds)}" field="vmIPAssignWaitSeconds" description="Number of seconds to wait for the VM IP to be assigned (works only for VMs with bridged network adapter)">
+              <f:textbox clazz="number" default="10"/>
+            </f:entry>
+            <f:entry title="${%VM IP Assign Retries}" field="vmIPAssignRetries" description="Number of retries to read the assigned VM IP (works only for VMs with bridged network adapter)">
+              <f:textbox clazz="number" default="6"/>
+            </f:entry>
+            <f:entry title="${%Monitor Recurrence (minute)}" field="monitorRecurrenceMinutes" description="Number of minutes to check for dead instances (global). min 1 minute">
+              <f:textbox clazz="number" default="10"/>
+            </f:entry>
+            <f:entry title="${%Connection Keep Alive (seconds)}" field="connectionKeepAliveSeconds" description="Number of seconds to keep tcp connection alive">
+              <f:textbox clazz="number" default="120"/>
+            </f:entry>
+            <f:entry title="${%Maximum HTTP Connections}" field="maxConnections" description="Limit for http connection (for the controller)">
+              <f:textbox clazz="number" default="50"/>
+            </f:entry>
+            <f:entry title="${%VM Poll Time (milliseconds)}" field="vmPollTime" description="Time in milliseconds to poll during VM creation">
+              <f:textbox clazz="number" default="5000"/>
+            </f:entry>
+          </f:advanced>
         </f:block>
       </div>
       <h2>Security</h2>

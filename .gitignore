@@ -2,8 +2,12 @@
 *.DS_Store
 *.iml
 work*
+!.github/workflows/
+!.github/workflows/*.yml
 lib*
 target*
 .m2
 docker/jenkins/
 docker/squid/
+.mvn-debug.log
+.m2-local

@@ -86,6 +86,7 @@ public class AnkaMgmtCloud extends Cloud {
         if (slave != null) s = String.format("[%s] ", slave.getNodeName());
         if (slaveComputer != null) s = String.format("[%s] ", slaveComputer.getName());
         s = s + String.format(format, args);
+        s = AnkaLog.prefix(s);
         s = s + "\n";
         if (listener != null) listener.getLogger().print(s);
         MgmtLogger.log(Level.INFO, s);
@@ -510,6 +511,8 @@ public class AnkaMgmtCloud extends Cloud {
                     if (cloudCapacity > 0) {
                         int allowedCloudCapacity = cloudCapacity - nodeCount.numNodes;
                         if (allowedCloudCapacity <= 0) {
+                            Log("Skipping provisioning for label '%s': cloud capacity reached (%d/%d active nodes)",
+                                    label, nodeCount.numNodes, cloudCapacity);
                             return plannedNodes;
                         }
                         if (number > allowedCloudCapacity) {
@@ -519,6 +522,8 @@ public class AnkaMgmtCloud extends Cloud {
                     if (t.getInstanceCapacity() > 0) {
                         int allowedTemplateCapacity = t.getInstanceCapacity() - nodeCount.numNodesPerLabel;
                         if (allowedTemplateCapacity <= 0) {
+                            Log("Skipping provisioning for label '%s': template capacity reached (%d/%d active nodes for template '%s')",
+                                    label, nodeCount.numNodesPerLabel, t.getInstanceCapacity(), t.getDisplayName());
                             return plannedNodes;
                         }
                         if (number > allowedTemplateCapacity) {
@@ -660,7 +665,13 @@ public class AnkaMgmtCloud extends Cloud {
         int cloudCapacity = getCloudCapacity();
         if (template.getInstanceCapacity() > 0 || cloudCapacity >= 0) {
             NodeCountResponse countResponse = getNumOfRunningNodesPerLabel(label);
-            if ((cloudCapacity >= 0 && countResponse.numNodes >= cloudCapacity) || (template.getInstanceCapacity() > 0 && countResponse.numNodesPerLabel >= template.getInstanceCapacity())) {
+            if (cloudCapacity >= 0 && countResponse.numNodes >= cloudCapacity) {
+                Log("Cannot provision label '%s': cloud capacity reached (%d/%d active nodes)", label, countResponse.numNodes, cloudCapacity);
+                return false;
+            }
+            if (template.getInstanceCapacity() > 0 && countResponse.numNodesPerLabel >= template.getInstanceCapacity()) {
+                Log("Cannot provision label '%s': template capacity reached (%d/%d active nodes for template '%s')",
+                        label, countResponse.numNodesPerLabel, template.getInstanceCapacity(), template.getDisplayName());
                 return false;
             }
         }
@@ -721,28 +732,20 @@ public class AnkaMgmtCloud extends Cloud {
 
     public void terminateVMInstance(String id, AbstractAnkaSlave node) throws AnkaMgmtException {
         AnkaVmInstance ankaVmInstance = ankaAPI.showInstance(id);
+
         ImageSaver.deleteRequest(node);
+
         if (ankaVmInstance == null || ankaVmInstance.isTerminatingOrTerminated()) {
-            return; // if it's already terminated just forget about it
+            Log("VM instance " + id + " is already terminated or terminating");
+            return;
         }
 
-        ankaAPI.terminateInstance(id);
-        try {
-            sleep(200);
-        } catch (InterruptedException e) {
-            // no rest for the wicked
+        if (ankaAPI.terminateInstance(id)) {
+            Log("Termination request for VM instance " + id + " accepted");
+        } else {
+            Log("Termination request for VM instance " + id + " was not accepted");
+            throw new AnkaMgmtException("Failed to terminate VM instance " + id);
         }
-
-        while (ankaVmInstance != null && !ankaVmInstance.isTerminatingOrTerminated()) {
-            ankaAPI.terminateInstance(id);
-            try {
-                sleep(1000);
-            } catch (InterruptedException e) {
-                // no rest for the wicked
-            }
-            ankaVmInstance = ankaAPI.showInstance(id);
-        }
-
     }
 
     public AnkaVmInstance showInstance(String id) throws AnkaMgmtException {

@@ -7,7 +7,6 @@ import hudson.model.Computer;
 import hudson.model.Node;
 import hudson.slaves.NodeProvisioner;
 
-import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -24,14 +23,28 @@ public class AnkaPlannedNodeCreator {
 
     public static NodeProvisioner.PlannedNode createPlannedNode(final AnkaMgmtCloud cloud, final AnkaCloudSlaveTemplate template, final AbstractAnkaSlave slave) {
         return new NodeProvisioner.PlannedNode(template.getDisplayName(),
-                Computer.threadPoolForRemoting.submit(new Callable<Node>() {
-
-
-                    public Node call() throws Exception {
+                Computer.threadPoolForRemoting.submit(() -> {
+                    try {
                         return waitAndConnect(cloud, template, slave);
+                    } catch (InterruptedException interruptedException) {
+                        terminateProvisioningInstance(cloud, slave, interruptedException);
+                        Thread.currentThread().interrupt();
+                        return null;
                     }
                 })
                 , template.getNumberOfExecutors());
+    }
+
+    private static void terminateProvisioningInstance(AnkaMgmtCloud cloud, AbstractAnkaSlave slave, InterruptedException interruptedException) {
+        String instanceId = slave.getInstanceId();
+        LOGGER.log(Level.WARNING, AnkaLog.prefix("Provisioning interrupted for instance {0}, sending termination"), instanceId);
+        try {
+            cloud.terminateVMInstance(instanceId, slave);
+        } catch (AnkaMgmtException terminateError) {
+            LOGGER.log(Level.WARNING, AnkaLog.prefix("Failed to terminate interrupted instance " + instanceId), terminateError);
+        } finally {
+            LOGGER.log(Level.FINE, AnkaLog.prefix("Provisioning interruption stacktrace for instance " + instanceId), interruptedException);
+        }
     }
 
     public static Node waitAndConnect(final AnkaMgmtCloud cloud, final AnkaCloudSlaveTemplate template, final AbstractAnkaSlave slave) throws AnkaMgmtException, InterruptedException {
@@ -41,7 +54,7 @@ public class AnkaPlannedNodeCreator {
             int vmCheckTime = cloud.getVmPollTime();
             AnkaVmInstance instance = cloud.showInstance(instanceId);
             if (instance == null) {
-                LOGGER.log(Level.WARNING, "instance `{0}` not found in cloud {1}. Terminate provisioning ",
+                LOGGER.log(Level.WARNING, AnkaLog.prefix("instance `{0}` not found in cloud {1}. Terminate provisioning "),
                         new Object[]{instanceId, cloud.getCloudName()});
                 return null;
             }
@@ -83,10 +96,10 @@ public class AnkaPlannedNodeCreator {
                 final long sinceStarted = System.currentTimeMillis() - timeStarted;
                 int schedulingTimeout = template.getSchedulingTimeout();
                 long schedulingTimeoutMillis = TimeUnit.SECONDS.toMillis(schedulingTimeout);
-                LOGGER.log(Level.FINE,"Instance {0} is scheduling for {1} seconds",
+                LOGGER.log(Level.FINE, AnkaLog.prefix("Instance {0} is scheduling for {1} seconds"),
                             new Object[]{instanceId, sinceStarted / 1000});
                 if (sinceStarted > schedulingTimeoutMillis) {
-                    LOGGER.log(Level.WARNING,"Instance {0} reached it's scheduling timeout of {1} seconds, terminating provisioning",
+                    LOGGER.log(Level.WARNING, AnkaLog.prefix("Instance {0} reached it's scheduling timeout of {1} seconds, terminating provisioning"),
                             new Object[]{instanceId, schedulingTimeout});
                     cloud.terminateVMInstance(instanceId);
                     return null;
@@ -96,7 +109,7 @@ public class AnkaPlannedNodeCreator {
             }
 
             if (instance.isTerminatingOrTerminated() || instance.isInError()) {
-                LOGGER.log(Level.WARNING,"Instance {0} is in unexpected state {1}",
+                LOGGER.log(Level.WARNING, AnkaLog.prefix("Instance {0} is in unexpected state {1}"),
                         new Object[]{instanceId, instance.getSessionState()});
                 cloud.terminateVMInstance(instanceId);
                 return null;

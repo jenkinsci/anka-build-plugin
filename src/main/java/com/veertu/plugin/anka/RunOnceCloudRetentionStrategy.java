@@ -21,9 +21,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Created by avia on 12/07/2016.
- */
 public class RunOnceCloudRetentionStrategy extends RetentionStrategy<AnkaCloudComputer> implements ExecutorListener, Cloneable {
     private static final transient Logger LOGGER = Logger.getLogger(RunOnceCloudRetentionStrategy.class.getName());
 
@@ -44,9 +41,9 @@ public class RunOnceCloudRetentionStrategy extends RetentionStrategy<AnkaCloudCo
     @Override
     public long check(final AnkaCloudComputer computer) {
         try {
-            LOGGER.log(Level.INFO, "Checking computer {0}", computer.getName());
+            LOGGER.log(Level.INFO, AnkaLog.prefix("Checking computer {0}"), computer.getName());
             if (computer.countBusy() > 1) {
-                LOGGER.log(Level.FINE, "Computer {0} has {1} busy executors", new Object[]{computer.getName(), computer.countBusy()});
+                LOGGER.log(Level.FINE, AnkaLog.prefix("Computer {0} has {1} busy executors"), new Object[]{computer.getName(), computer.countBusy()});
                 return idleMinutes;
             }
 
@@ -64,14 +61,14 @@ public class RunOnceCloudRetentionStrategy extends RetentionStrategy<AnkaCloudCo
 
 
             if (reconnectionRetries >= MAX_RECONNECTION_RETRIES) { // we tried to reconnect - but it's enough now
-                LOGGER.log(Level.WARNING, "Computer {0}, instance {1} is terminating because it has reached it's max reconnection retries",
+                LOGGER.log(Level.WARNING, AnkaLog.prefix("Computer {0}, instance {1} is terminating because it has reached it's max reconnection retries"),
                         new Object[]{computer.getName(), computer.getVMId()});
                 done(computer);
                 return idleMinutes;
             }
 
             if (!computer.isOnline()) {
-                LOGGER.log(Level.WARNING, "Computer {0}, instance {1} is offline, trying to reconnect",
+                LOGGER.log(Level.WARNING, AnkaLog.prefix("Computer {0}, instance {1} is offline, trying to reconnect"),
                         new Object[]{computer.getName(), computer.getVMId()});
                 boolean forceReconnect = false;
                 if (reconnectionRetries > 4) {
@@ -86,7 +83,7 @@ public class RunOnceCloudRetentionStrategy extends RetentionStrategy<AnkaCloudCo
             if(computer.isIdle()) {
                 final long idleMilliseconds = System.currentTimeMillis() - computer.getIdleStartMilliseconds();
                 if(idleMilliseconds > TimeUnit.MINUTES.toMillis(idleMinutes)) {
-                    LOGGER.log(Level.WARNING, "Computer {0}, instance {1} is terminating due to idle timeout",
+                    LOGGER.log(Level.WARNING, AnkaLog.prefix("Computer {0}, instance {1} is terminating due to idle timeout"),
                             new Object[]{computer.getName(), computer.getVMId()});
                     done(computer);
                 }
@@ -101,14 +98,14 @@ public class RunOnceCloudRetentionStrategy extends RetentionStrategy<AnkaCloudCo
     @Override
     public void taskAccepted(Executor executor, Queue.Task task) {
         AnkaCloudComputer computer = (AnkaCloudComputer) executor.getOwner();
-        LOGGER.log(Level.INFO, "Computer {0}, instance {2} accepted task {1}",
+        LOGGER.log(Level.INFO, AnkaLog.prefix("Computer {0}, instance {2} accepted task {1}"),
                 new Object[]{computer.getName(), task.toString(), computer.getVMId()});
     }
 
     @Override
     public void taskCompleted(final Executor executor, final Queue.Task task, final long durationMS) {
         AnkaCloudComputer computer = (AnkaCloudComputer) executor.getOwner();
-        LOGGER.log(Level.INFO, "Computer {0}, instance {2} completed task {1}",
+        LOGGER.log(Level.INFO, AnkaLog.prefix("Computer {0}, instance {2} completed task {1}"),
                 new Object[]{computer.getName(), task.toString(), computer.getVMId()});
         computer.setAcceptingTasks(false);
         done(computer);
@@ -117,7 +114,7 @@ public class RunOnceCloudRetentionStrategy extends RetentionStrategy<AnkaCloudCo
     @Override
     public void taskCompletedWithProblems(final Executor executor, final Queue.Task task, final long durationMS, final Throwable problems) {
         AnkaCloudComputer computer = (AnkaCloudComputer) executor.getOwner();
-        LOGGER.log(Level.INFO, "Computer {0}, instance {2} accepted task {1} with problems",
+        LOGGER.log(Level.INFO, AnkaLog.prefix("Computer {0}, instance {2} accepted task {1} with problems"),
                 new Object[]{computer.getName(), task.toString(), computer.getVMId()});
         computer.setAcceptingTasks(false);
         done(computer);
@@ -126,13 +123,15 @@ public class RunOnceCloudRetentionStrategy extends RetentionStrategy<AnkaCloudCo
     private void done(final AnkaCloudComputer computer) {
         AnkaMgmtCloud.Log("Computer %s is done, terminating", computer.getName());
         AbstractAnkaSlave node = computer.getNode();
+        int busyExecutors = computer.countBusy();
+        boolean canTerminate = node != null && node.canTerminate();
         if (node != null) {
             AnkaMgmtCloud.Log("computer %s node %s found", computer.getName(), node.getNodeName());
-            if (computer.countBusy() > 1) {
+            if (busyExecutors > 1) {
                 AnkaMgmtCloud.Log("computer %s is busy, not terminating", computer.getName());
                 return;
             }
-            if ( node.canTerminate()) {
+            if (canTerminate) {
                 AnkaMgmtCloud.Log("terminating computer %s node %s", computer.getName(), node.getNodeName());
                 try {
                     node.terminate();
@@ -171,7 +170,7 @@ public class RunOnceCloudRetentionStrategy extends RetentionStrategy<AnkaCloudCo
                     computer.firstConnectionAttempted(); // in case jenkins restarted before we could set this property
                     return;
                 } catch (AnkaMgmtException | IOException e) {
-                    LOGGER.info("Got exception while handling node in jenkins startup");
+                    LOGGER.info(AnkaLog.prefix("Got exception while handling node in jenkins startup"));
                     e.printStackTrace();
                     return;
                 }
@@ -179,7 +178,7 @@ public class RunOnceCloudRetentionStrategy extends RetentionStrategy<AnkaCloudCo
         }
 
 
-        LOGGER.info("Start requested for " + computer.getName());
+        LOGGER.info(AnkaLog.prefix("Start requested for " + computer.getName()));
         computer.connect(false);
     }
 
