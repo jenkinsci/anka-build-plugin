@@ -9,7 +9,7 @@
         <relativePath />
     </parent>
     <artifactId>anka-build</artifactId>
-    <version>2.14.1-SNAPSHOT</version>
+    <version>2.14.0-SNAPSHOT</version>
     <packaging>hpi</packaging>
 
     <properties>
@@ -21,9 +21,6 @@
         <spotbugs.effort>Max</spotbugs.effort>
         <spotbugs.threshold>Low</spotbugs.threshold>
         <maven.compiler.release>17</maven.compiler.release>
-        <!-- Default parent values; set here so jenkins-release profile still resolves if parent model is partial (Maven 4) -->
-        <release.skipTests>true</release.skipTests>
-        <no-test-jar>true</no-test-jar>
     </properties>
 
     <name>Anka Plugin</name>
@@ -142,71 +139,4 @@
             </plugin>
         </plugins>
     </reporting>
-    <!-- Mirrored from org.jenkins-ci.plugins:plugin parent; required when the parent is not fully merged (e.g. release:perform with Maven 4) -->
-    <profiles>
-        <profile>
-            <id>jenkins-release</id>
-            <properties>
-                <skipTests>${release.skipTests}</skipTests>
-                <spotbugs.skip>${release.skipTests}</spotbugs.skip>
-                <invoker.skip>${release.skipTests}</invoker.skip>
-            </properties>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-source-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>attach-sources</id>
-                                <goals>
-                                    <goal>jar-no-fork</goal>
-                                </goals>
-                            </execution>
-                            <execution>
-                                <id>attach-test-sources</id>
-                                <goals>
-                                    <goal>test-jar-no-fork</goal>
-                                </goals>
-                                <configuration>
-                                    <skipSource>${no-test-jar}</skipSource>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <artifactId>maven-javadoc-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>attach-javadocs</id>
-                                <goals>
-                                    <goal>jar</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-        <profile>
-            <id>consume-incrementals</id>
-            <repositories>
-                <repository>
-                    <id>incrementals</id>
-                    <url>https://repo.jenkins-ci.org/incrementals/</url>
-                    <snapshots>
-                        <enabled>false</enabled>
-                    </snapshots>
-                </repository>
-            </repositories>
-            <pluginRepositories>
-                <pluginRepository>
-                    <id>incrementals</id>
-                    <url>https://repo.jenkins-ci.org/incrementals/</url>
-                    <snapshots>
-                        <enabled>false</enabled>
-                    </snapshots>
-                </pluginRepository>
-            </pluginRepositories>
-        </profile>
-    </profiles>
 </project>
