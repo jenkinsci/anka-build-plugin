@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:combine="https://maven.apache.org/merge" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -21,6 +21,8 @@
         <spotbugs.effort>Max</spotbugs.effort>
         <spotbugs.threshold>Low</spotbugs.threshold>
         <maven.compiler.release>17</maven.compiler.release>
+        <release.skipTests>true</release.skipTests>
+        <no-test-jar>true</no-test-jar>
     </properties>
 
     <name>Anka Plugin</name>
@@ -125,6 +127,49 @@
                 <configuration>
                     <skip>true</skip>
                 </configuration>
+            </plugin>
+            <!-- Maven 4 may not see parent-inherited profile ids in the tag checkout; drop -P jenkins-release,!consume-incrementals from release:perform. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <configuration>
+                    <releaseProfiles combine.self="override" />
+                    <arguments combine.self="override">-DskipTests=true -Dspotbugs.skip=true -Dinvoker.skip=true</arguments>
+                </configuration>
+            </plugin>
+            <!-- Replaces source/javadoc attach normally activated by the jenkins-release profile -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar-no-fork</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>attach-test-sources</id>
+                        <goals>
+                            <goal>test-jar-no-fork</goal>
+                        </goals>
+                        <configuration>
+                            <skipSource>${no-test-jar}</skipSource>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
