@@ -47,3 +47,9 @@ mvn -Daether.remoteRepositoryFilter.prefixes=false -Dtest=ConfigurationAsCodeTes
 ```bash
 mvn release:prepare release:perform
 ```
+
+If needed, rollback the release:
+
+```bash
+mvn release:rollback
+```
