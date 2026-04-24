@@ -26,17 +26,12 @@ import org.bouncycastle.asn1.ASN1Primitive;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.asn1.pkcs.RSAPrivateKey;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
-import org.bouncycastle.cert.X509CertificateHolder;
-import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.openssl.PEMParser;
 import org.json.JSONObject;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.OAEPParameterSpec;
 import javax.crypto.spec.PSource;
 import javax.net.ssl.SSLContext;
-import java.io.StringReader;
 import java.security.KeyFactory;
 import java.security.KeyStore;
 import java.security.PrivateKey;
@@ -280,11 +275,7 @@ public class UakAuthenticator {
      * @throws Exception if an error occurs while creating the SSLConnectionSocketFactory
      */
     private SSLConnectionSocketFactory createCustomSSLSocketFactory(String rootCA) throws Exception {
-        PEMParser reader;
-        BouncyCastleProvider bouncyCastleProvider = new BouncyCastleProvider();
-        reader = new PEMParser(new StringReader(rootCA));
-        X509CertificateHolder holder = (X509CertificateHolder) reader.readObject();
-        Certificate certificate = new JcaX509CertificateConverter().setProvider(bouncyCastleProvider).getCertificate(holder);
+        Certificate certificate = RootCaCertificateParser.parsePemToCertificate(rootCA);
 
         KeyStore keyStore = KeyStore.getInstance("JKS");
         keyStore.load(null);

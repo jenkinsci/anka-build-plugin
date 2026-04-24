@@ -386,9 +386,9 @@
         </f:entry>
         <f:entry title="Skip TLS Verification" field="skipTLSVerification">
           <f:checkbox checked="${instance.getSkipTLSVerification()?'true':'false'}" field="skipTLSVerification" />
-          <f:entry title="Controller URL Root CA Certificate" field="rootCA" description="For validating TLS certificate of the Controller URL">
-            <f:textarea clazz="string"  />
-          </f:entry>
+        </f:entry>
+        <f:entry title="Controller Root CA credential" field="rootCaCredentialsId" description="Secret text credential whose value is the controller Root CA PEM. Used for TLS validation when &quot;Skip TLS Verification&quot; is off. Use a dedicated credential; do not reuse UAK or API key secrets.">
+          <c:select/>
         </f:entry>
       </div>
     </div>

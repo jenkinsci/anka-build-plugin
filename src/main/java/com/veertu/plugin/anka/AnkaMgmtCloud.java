@@ -7,6 +7,7 @@ import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredenti
 import com.veertu.ankaMgmtSdk.*;
 import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
 import hudson.Extension;
+import hudson.Util;
 import hudson.model.*;
 import hudson.security.AccessControlled;
 import hudson.slaves.Cloud;
@@ -15,6 +16,7 @@ import hudson.slaves.SlaveComputer;
 import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
 import jenkins.slaves.iterators.api.NodeIterator;
+import org.jenkinsci.plugins.plaincredentials.StringCredentials;
 import org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -32,7 +34,16 @@ public class AnkaMgmtCloud extends Cloud {
     private final List<AnkaCloudSlaveTemplate> templates;
     private final String ankaMgmtUrl;
     private final String credentialsId;
-    private final String rootCA;
+    /**
+     * Jenkins credential id ({@link StringCredentials} / Secret text) whose value is the controller
+     * Root CA PEM. Prefer this over legacy {@link #rootCA}.
+     */
+    private final String rootCaCredentialsId;
+    /**
+     * @deprecated Inline PEM stored in cloud config (visible in XML). Use {@link #rootCaCredentialsId}.
+     */
+    @Deprecated
+    private String rootCA;
     private final boolean skipTLSVerification;
     protected int maxConnections = 50;
     protected int connectionKeepAliveSeconds = 120;
@@ -50,7 +61,7 @@ public class AnkaMgmtCloud extends Cloud {
     private String durabilityMode = "durable";
 
     @DataBoundConstructor
-    public AnkaMgmtCloud(String ankaMgmtUrl, String cloudName, String credentialsId, String rootCA, boolean skipTLSVerification, List<AnkaCloudSlaveTemplate> templates, int cloudInstanceCap) {
+    public AnkaMgmtCloud(String ankaMgmtUrl, String cloudName, String credentialsId, String rootCaCredentialsId, boolean skipTLSVerification, List<AnkaCloudSlaveTemplate> templates, int cloudInstanceCap) {
         super(cloudName);
         if (cloudInstanceCap < 0) {
             this.cloudInstanceCap = 0; // zero means unlimited
@@ -63,11 +74,7 @@ public class AnkaMgmtCloud extends Cloud {
             this.templates = templates;
         }
         this.credentialsId = credentialsId;
-        if (rootCA != null && !rootCA.trim().isEmpty()) {
-            this.rootCA = rootCA;
-        } else {
-            this.rootCA = null;
-        }
+        this.rootCaCredentialsId = Util.fixEmptyAndTrim(rootCaCredentialsId);
 
         this.dynamicTemplates = Collections.synchronizedList(new ArrayList<>());
 
@@ -75,6 +82,44 @@ public class AnkaMgmtCloud extends Cloud {
         this.skipTLSVerification = skipTLSVerification;
 
         createAnkaAPIObject();
+    }
+
+    /**
+     * @deprecated Retained for Configuration as Code and older serialized configs that inlined PEM.
+     *             Configure the cloud {@code rootCaCredentialsId} (Secret text credential id) instead.
+     */
+    @Deprecated
+    @DataBoundSetter
+    public void setRootCA(String rootCA) {
+        this.rootCA = rootCA != null && !rootCA.trim().isEmpty() ? rootCA.trim() : null;
+    }
+
+    /**
+     * Resolves the controller Root CA PEM from {@link #rootCaCredentialsId}, falling back to legacy {@link #rootCA}.
+     */
+    private String resolveRootCaPem() {
+        if (rootCaCredentialsId != null && !rootCaCredentialsId.isEmpty()) {
+            StringCredentials stringCred = CredentialsProvider.lookupCredentialsInItemGroup(
+                            StringCredentials.class,
+                            Jenkins.get(),
+                            null,
+                            null
+                    ).stream()
+                    .filter(c -> rootCaCredentialsId.equals(c.getId()))
+                    .findFirst()
+                    .orElse(null);
+            if (stringCred != null) {
+                return stringCred.getSecret().getPlainText();
+            }
+            Log("Root CA credential id '%s' was not found or is not a Secret text credential", rootCaCredentialsId);
+        }
+        if (rootCA != null && !rootCA.isEmpty()) {
+            Log("WARNING: Anka cloud '%s' uses inline Controller Root CA PEM in the cloud configuration (deprecated). "
+                            + "Create a Jenkins \"Secret text\" credential with the PEM and set \"Controller Root CA credential\" instead.",
+                    getCloudName());
+            return rootCA;
+        }
+        return null;
     }
 
     public static void markFuture(AnkaMgmtCloud cloud, AbstractAnkaSlave abstractAnkaSlave) {
@@ -281,16 +326,18 @@ public class AnkaMgmtCloud extends Cloud {
                 .findFirst()
                 .orElse(null);
 
+        final String resolvedRootCaPem = resolveRootCaPem();
+
         if (credentials instanceof StringCredentialsImpl) {
             StringCredentialsImpl stringCreds = (StringCredentialsImpl) credentials;
             String secret = stringCreds.getSecret().getPlainText();
 
-            ankaAPI = new AnkaAPI(List.of(mgmtURLS), skipTLSVerification, this.rootCA, stringCreds.getId(), secret);
+            ankaAPI = new AnkaAPI(List.of(mgmtURLS), skipTLSVerification, resolvedRootCaPem, stringCreds.getId(), secret);
 
         } else if (credentials instanceof StandardUsernamePasswordCredentials) {
             StandardUsernamePasswordCredentials userPassCreds = (StandardUsernamePasswordCredentials) credentials;
             String secret = userPassCreds.getPassword().getPlainText();
-            ankaAPI = new AnkaAPI(List.of(mgmtURLS), skipTLSVerification, this.rootCA, userPassCreds.getUsername(), secret);
+            ankaAPI = new AnkaAPI(List.of(mgmtURLS), skipTLSVerification, resolvedRootCaPem, userPassCreds.getUsername(), secret);
 
         } else if (credentials instanceof CertCredentials) {
             CertCredentials certCredentials = (CertCredentials) credentials;
@@ -306,10 +353,10 @@ public class AnkaMgmtCloud extends Cloud {
                     certCredentials.getClientCertificate(),
                     certCredentials.getClientKey(),
                     AuthType.CERTIFICATE,
-                    this.rootCA);
+                    resolvedRootCaPem);
 
         } else {
-            ankaAPI = new AnkaAPI(Arrays.asList(mgmtURLS), skipTLSVerification, this.rootCA);
+            ankaAPI = new AnkaAPI(Arrays.asList(mgmtURLS), skipTLSVerification, resolvedRootCaPem);
         }
 
         ankaAPI.setMaxConnections(maxConnections);
@@ -381,6 +428,10 @@ public class AnkaMgmtCloud extends Cloud {
         return credentialsId;
     }
 
+    public String getRootCaCredentialsId() {
+        return rootCaCredentialsId;
+    }
+
     public String getCloudName() {
         return name;
     }
@@ -391,10 +442,6 @@ public class AnkaMgmtCloud extends Cloud {
 
     public boolean getSkipTLSVerification() {
         return skipTLSVerification;
-    }
-
-    public String getRootCA() {
-        return rootCA;
     }
 
     public int getCloudInstanceCap() {
@@ -849,6 +896,28 @@ public class AnkaMgmtCloud extends Cloud {
                     null
             ).forEach(c -> {
                 listBox.add("UAK/TAP (DEPRECATED): " + c.getId(), c.getId());
+            });
+
+            return listBox;
+        }
+
+        public ListBoxModel doFillRootCaCredentialsIdItems(@AncestorInPath ItemGroup context) {
+            if (!(context instanceof AccessControlled ? (AccessControlled) context : Jenkins.get()).hasPermission(Computer.CONFIGURE)) {
+                return new ListBoxModel();
+            }
+
+            ListBoxModel listBox = new ListBoxModel();
+            listBox.add("None", "");
+
+            CredentialsProvider.lookupCredentialsInItemGroup(
+                    StringCredentials.class,
+                    Jenkins.get(),
+                    null,
+                    null
+            ).forEach(c -> {
+                String labelSuffix = (c.getDescription() != null && !c.getDescription().isEmpty())
+                        ? " (" + c.getDescription() + ")" : "";
+                listBox.add("Secret text: " + c.getId() + labelSuffix, c.getId());
             });
 
             return listBox;

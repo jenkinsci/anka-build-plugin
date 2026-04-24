@@ -33,10 +33,6 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.ssl.TrustStrategy;
-import org.bouncycastle.cert.X509CertificateHolder;
-import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.openssl.PEMParser;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -709,11 +705,7 @@ public class AnkaMgmtCommunicator {
                 keystore = KeyStore.getInstance("JKS");
                 keystore.load(null);
             }
-            PEMParser reader;
-            BouncyCastleProvider bouncyCastleProvider = new BouncyCastleProvider();
-            reader = new PEMParser(new StringReader(rootCA));
-            X509CertificateHolder holder = (X509CertificateHolder) reader.readObject();
-            Certificate certificate = new JcaX509CertificateConverter().setProvider(bouncyCastleProvider).getCertificate(holder);
+            Certificate certificate = RootCaCertificateParser.parsePemToCertificate(rootCA);
             keystore.setCertificateEntry("rootCA", certificate);
         }
 
