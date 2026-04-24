@@ -344,16 +344,22 @@ public class AnkaMgmtCloud extends Cloud {
     }
 
     /**
-     * Determines if a StringCredentials instance is likely a legacy UAK credential
-     * by checking if the secret is a valid UAK private key (PEM format or concatenated string).
+     * Determines if a credential instance is likely a legacy UAK credential stored as
+     * StringCredentials. The parameter is declared as {@link Object} rather than
+     * {@code StringCredentialsImpl} so this method is class-verifiable by the JVM even when the
+     * {@code plain-credentials} plugin is absent; the {@code instanceof} check and cast live in
+     * the method body, which is only linked when the method is actually invoked.
      */
-    private boolean isLegacyUakCredential(StringCredentialsImpl stringCreds) {
+    private boolean isLegacyUakCredential(Object credObj) {
+        if (!(credObj instanceof StringCredentialsImpl)) {
+            return false;
+        }
+        StringCredentialsImpl stringCreds = (StringCredentialsImpl) credObj;
         try {
             String secret = stringCreds.getSecret().getPlainText();
             UakAuthenticator.getRSAPrivateKey(secret);
             return true;
         } catch (Exception e) {
-            // If we can't access the secret or it's not a valid RSA key, assume it's not a UAK credential
             return false;
         }
     }
