@@ -21,6 +21,7 @@ import org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.interceptor.RequirePOST;
 
 import java.io.IOException;
 import java.util.*;
@@ -901,6 +902,7 @@ public class AnkaMgmtCloud extends Cloud {
             return listBox;
         }
 
+        @RequirePOST
         public ListBoxModel doFillRootCaCredentialsIdItems(@AncestorInPath ItemGroup context) {
             if (!(context instanceof AccessControlled ? (AccessControlled) context : Jenkins.get()).hasPermission(Computer.CONFIGURE)) {
                 return new ListBoxModel();
