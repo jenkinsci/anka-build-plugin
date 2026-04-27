@@ -23,7 +23,11 @@ public class JnlpCommandBuilder {
 
 
     public static String makeCommand(String nodeName, String extraArgs, String javaArgs, String overrideJenkinsUrl) {
-        String format = "java %s -jar agent.jar -jnlpUrl %s/computer/%s/slave-agent.jnlp -secret %s ";
+        return makeCommand(nodeName, extraArgs, javaArgs, overrideJenkinsUrl, null);
+    }
+
+    public static String makeCommand(String nodeName, String extraArgs, String javaArgs, String overrideJenkinsUrl, String jnlpTunnel) {
+        String format = "java %s -jar agent.jar -url %s -secret %s -name %s ";
         String secret = JnlpSlaveAgentProtocol.SLAVE_SECRET.mac(nodeName);
         if (javaArgs == null) {
             javaArgs = "";
@@ -35,7 +39,10 @@ public class JnlpCommandBuilder {
             effectiveJenkinsUrl = overrideJenkinsUrl;
         }
 
-        String command = String.format(format, javaArgs, effectiveJenkinsUrl, nodeName, secret);
+        String command = String.format(format, javaArgs, effectiveJenkinsUrl, secret, nodeName);
+        if (jnlpTunnel != null) {
+            command += "-tunnel " + jnlpTunnel + " ";
+        }
         if (extraArgs != null) {
             command += extraArgs;
         }
@@ -43,8 +50,12 @@ public class JnlpCommandBuilder {
     }
 
     public static String makeStartUpScript(String nodeName, String extraArgs, String javaArgs, String overrideJenkinsUrl) {
+        return makeStartUpScript(nodeName, extraArgs, javaArgs, overrideJenkinsUrl, null);
+    }
 
-        String jarCommand = makeCommand(nodeName, extraArgs, javaArgs, overrideJenkinsUrl);
+    public static String makeStartUpScript(String nodeName, String extraArgs, String javaArgs, String overrideJenkinsUrl, String jnlpTunnel) {
+
+        String jarCommand = makeCommand(nodeName, extraArgs, javaArgs, overrideJenkinsUrl, jnlpTunnel);
         String jenkinsUrl = Jenkins.get().getRootUrl();
         String script = String.format(scriptTemplate, jenkinsUrl, jenkinsUrl, jenkinsUrl, jarCommand, jarCommand);
         return script;

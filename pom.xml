@@ -9,7 +9,7 @@
         <relativePath />
     </parent>
     <artifactId>anka-build</artifactId>
-    <version>2.14.1-SNAPSHOT</version>
+    <version>2.15.0-SNAPSHOT</version>
     <packaging>hpi</packaging>
 
     <properties>
@@ -23,6 +23,19 @@
         <maven.compiler.release>17</maven.compiler.release>
         <release.skipTests>true</release.skipTests>
         <no-test-jar>true</no-test-jar>
+
+        <!-- Runtime-required minimum versions of dependency plugins, enforced at Jenkins startup by
+             DependencyVerifier. The <dependency><version> floors below are intentionally LOW so that
+             the plugin always loads its classes; these properties are the REAL required minimums.
+             BUMP THESE in lockstep with jenkins.baseline / BOM version bumps. The
+             verify-required-dep-versions-in-sync build step will fail the build if any <dependency>
+             here lacks a matching entry. See README.md "Dependency floors" for background. -->
+        <required.plain-credentials.version>199.v9f8e1f741799</required.plain-credentials.version>
+        <required.bouncycastle-api.version>2.30.1.80-261.v00c0e2618ec3</required.bouncycastle-api.version>
+        <required.workflow-basic-steps.version>1079.vce64b_a_929c5a_</required.workflow-basic-steps.version>
+        <required.workflow-durable-task-step.version>1434.v1b_595c29ddd7</required.workflow-durable-task-step.version>
+        <required.ssh-slaves.version>3.1031.v72c6b_883b_869</required.ssh-slaves.version>
+        <required.node-iterator-api.version>72.vc90e81737df1</required.node-iterator-api.version>
     </properties>
 
     <name>Anka Plugin</name>
@@ -46,7 +59,6 @@
         <connection>scm:git:git@github.com:jenkinsci/anka-build-plugin.git</connection>
         <developerConnection>scm:git:git@github.com:jenkinsci/anka-build-plugin.git</developerConnection>
         <url>https://github.com/jenkinsci/anka-build-plugin</url>
-        <tag>anka-build-2.11.0</tag>
     </scm>
     <repositories>
         <repository>
@@ -74,13 +86,22 @@
     </dependencyManagement>
 
     <dependencies>
+        <!-- Jenkins plugin dep <version> floors are intentionally LOW (LTS 2.440-era) and marked
+             <optional>true</optional>. This lets the hpi pass Jenkins' manifest-level dependency
+             check on older installs so DependencyVerifier can run at startup and halt Jenkins
+             before SYSTEM_CONFIG_LOADED if the REAL required versions (the required.*.version
+             properties) are not met. Do NOT raise these floors. See README.md "Dependency floors". -->
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-basic-steps</artifactId>
+            <version>1049.v257a_e6b_30fb_d</version>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-durable-task-step</artifactId>
+            <version>1353.v1891a_b_01da_18</version>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.json</groupId>
@@ -90,14 +111,20 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>ssh-slaves</artifactId>
+            <version>2.973.v0fa_8c0dea_f9f</version>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>bouncycastle-api</artifactId>
+            <version>2.30.1.77-225.v26ea_c9455fd9</version>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>node-iterator-api</artifactId>
+            <version>49.v58a_8b_35f8363</version>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>io.jenkins.configuration-as-code</groupId>
@@ -107,11 +134,31 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>plain-credentials</artifactId>
-            <scope>compile</scope>
+            <version>183.va_de8f1dd5a_2b_</version>
+            <optional>true</optional>
         </dependency>
     </dependencies>
 
     <build>
+        <resources>
+            <!-- Filter required-dep-versions.properties so ${required.*.version} placeholders are
+                 substituted from the <properties> block above at build time. This makes pom.xml
+                 the single source of truth for runtime-required dependency minimums. -->
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>com/veertu/plugin/anka/required-dep-versions.properties</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+                <excludes>
+                    <exclude>com/veertu/plugin/anka/required-dep-versions.properties</exclude>
+                </excludes>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.jenkins-ci.tools</groupId>
@@ -168,6 +215,72 @@
                         <goals>
                             <goal>jar</goal>
                         </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- Fail the build if any Jenkins plugin dep declared in the generated MANIFEST.MF
+                 Plugin-Dependencies header lacks a matching required.<shortName>.version property.
+                 This keeps pom.xml <properties> and <dependencies> in lockstep with the runtime
+                 DependencyVerifier so a new dep cannot be added without its enforcement entry.
+                 Implemented via gmavenplus (Groovy) because Nashorn is removed in Java 15+. -->
+            <plugin>
+                <groupId>org.codehaus.gmavenplus</groupId>
+                <artifactId>gmavenplus-plugin</artifactId>
+                <version>4.1.1</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.apache.groovy</groupId>
+                        <artifactId>groovy</artifactId>
+                        <version>4.0.21</version>
+                        <scope>runtime</scope>
+                    </dependency>
+                </dependencies>
+                <executions>
+                    <execution>
+                        <id>verify-required-dep-versions-in-sync</id>
+                        <phase>verify</phase>
+                        <goals><goal>execute</goal></goals>
+                        <configuration>
+                            <scripts>
+                                <script><![CDATA[
+                                    def fail = { String m -> throw new RuntimeException(m) }
+                                    def runtimeFile = new File(project.build.outputDirectory,
+                                            "com/veertu/plugin/anka/required-dep-versions.properties")
+                                    def manifestFile = new File(project.build.directory,
+                                            "${project.artifactId}/META-INF/MANIFEST.MF")
+                                    if (!runtimeFile.exists()) {
+                                        fail("Expected ${runtimeFile} to exist after package phase.")
+                                    }
+                                    if (!manifestFile.exists()) {
+                                        fail("Expected ${manifestFile} to exist after package phase.")
+                                    }
+                                    def runtime = runtimeFile.text
+                                    // Unfold MANIFEST.MF continuation lines (newline followed by a
+                                    // single space), then locate the Plugin-Dependencies header.
+                                    def manifest = manifestFile.text.replaceAll(/\r?\n /, "")
+                                    def depsLine = manifest.readLines().find {
+                                        it.startsWith("Plugin-Dependencies:")
+                                    }
+                                    if (!depsLine) {
+                                        fail("No Plugin-Dependencies header in ${manifestFile}")
+                                    }
+                                    def depsValue = depsLine.substring("Plugin-Dependencies:".length()).trim()
+                                    def depNames = depsValue.split(",").collect {
+                                        it.split(";")[0].split(":")[0].trim()
+                                    }
+                                    // Use 'depName' not 'name' because 'name' resolves to project.name
+                                    // ("Anka Plugin") in gmavenplus's script binding.
+                                    depNames.each { depName ->
+                                        if (!runtime.contains(depName + "=")) {
+                                            fail("pom.xml declares plugin dep '${depName}' but " +
+                                                 "required.<${depName}>.version is missing from " +
+                                                 "<properties> / required-dep-versions.properties. " +
+                                                 "Add it so DependencyVerifier can enforce the runtime minimum.")
+                                        }
+                                    }
+                                ]]></script>
+                            </scripts>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
