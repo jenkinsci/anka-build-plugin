@@ -21,6 +21,7 @@ import org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.interceptor.RequirePOST;
 
 import java.io.IOException;
@@ -866,7 +867,7 @@ public class AnkaMgmtCloud extends Cloud {
             return "Anka Build Cloud Plugin";
         }
 
-        public ListBoxModel doFillCredentialsIdItems(@AncestorInPath ItemGroup context) {
+        public ListBoxModel doFillCredentialsIdItems(@AncestorInPath ItemGroup context, @QueryParameter String credentialsId) {
             if (!(context instanceof AccessControlled ? (AccessControlled) context : Jenkins.get()).hasPermission(Computer.CONFIGURE)) {
                 return new ListBoxModel();
             }
@@ -879,27 +880,77 @@ public class AnkaMgmtCloud extends Cloud {
                     Jenkins.get(),
                     null,
                     null
-            ).forEach(c -> listBox.add("mTLS: " + c.getName(), c.getId()));
+            ).forEach(c -> listBox.add(formatControllerCredentialLabel(c), c.getId()));
 
             CredentialsProvider.lookupCredentialsInItemGroup(
-                    StandardUsernamePasswordCredentials.class,
+                    AnkaUakTapCredentials.class,
                     Jenkins.get(),
                     null,
                     null
-            ).forEach(c -> {
-                listBox.add("UAK/TAP: " + c.getUsername() + " (" + c.getId() + ")", c.getId());
-            });
+            ).forEach(c -> listBox.add(formatControllerCredentialLabel(c), c.getId()));
 
             CredentialsProvider.lookupCredentialsInItemGroup(
                     StringCredentialsImpl.class,
                     Jenkins.get(),
                     null,
                     null
-            ).forEach(c -> {
-                listBox.add("UAK/TAP (DEPRECATED): " + c.getId(), c.getId());
-            });
+            ).forEach(c -> listBox.add(formatControllerCredentialLabel(c), c.getId()));
+
+            addSelectedCredentialIfMissing(listBox, credentialsId);
 
             return listBox;
+        }
+
+        private static void addSelectedCredentialIfMissing(ListBoxModel listBox, String credentialsId) {
+            if (Util.fixEmptyAndTrim(credentialsId) == null) {
+                return;
+            }
+            if (listBox.stream().anyMatch(option -> credentialsId.equals(option.value))) {
+                return;
+            }
+
+            CredentialsProvider.lookupCredentialsInItemGroup(
+                    Credentials.class,
+                    Jenkins.get(),
+                    null,
+                    null
+            ).stream()
+                    .filter(c -> credentialMatchesId(c, credentialsId))
+                    .findFirst()
+                    .ifPresent(c -> listBox.add(formatControllerCredentialLabel(c), credentialsId));
+        }
+
+        private static boolean credentialMatchesId(Credentials credential, String credentialsId) {
+            if (credential instanceof IdCredentials) {
+                return credentialsId.equals(((IdCredentials) credential).getId());
+            }
+            if (credential instanceof CertCredentials) {
+                return credentialsId.equals(((CertCredentials) credential).getId());
+            }
+            return false;
+        }
+
+        private static String formatControllerCredentialLabel(Credentials credential) {
+            if (credential instanceof CertCredentials certCredentials) {
+                return "mTLS: " + AnkaCredentialNaming.displayLabel(certCredentials.getName(), "Certificate Authentication");
+            }
+            if (credential instanceof AnkaUakTapCredentials uakTapCredentials) {
+                return "UAK/TAP: " + uakTapCredentials.getDescription() + " (" + uakTapCredentials.getUsername() + ")";
+            }
+            if (credential instanceof StandardUsernamePasswordCredentials userPassCredentials) {
+                return "UAK/TAP (legacy): " + userPassCredentials.getUsername() + " (" + userPassCredentials.getId() + ")";
+            }
+            if (credential instanceof StringCredentialsImpl stringCredentials) {
+                return "UAK/TAP (DEPRECATED): " + stringCredentials.getId();
+            }
+            return credentialsIdLabel(credential);
+        }
+
+        private static String credentialsIdLabel(Credentials credential) {
+            if (credential instanceof IdCredentials idCredentials) {
+                return idCredentials.getId();
+            }
+            return credential.getClass().getSimpleName();
         }
 
         @RequirePOST

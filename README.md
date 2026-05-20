@@ -1,4 +1,4 @@
-# Anka Jenkins Build Plugin
+# Anka Jenkins Build Cloud Plugin
 
 [![PR Maven Tests](https://github.com/jenkinsci/anka-build-plugin/actions/workflows/pr-maven-tests.yml/badge.svg)](https://github.com/jenkinsci/anka-build-plugin/actions/workflows/pr-maven-tests.yml)
 
