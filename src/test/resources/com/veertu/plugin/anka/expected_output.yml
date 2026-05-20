@@ -7,7 +7,6 @@
     launchTimeout: 60
     maxLaunchRetries: 10
     skipTLSVerification: false
-    sshLaunchDelaySeconds: 60
     templates:
     - cloudName: "Veertu anka"
       credentialsId: "anka-creds"
