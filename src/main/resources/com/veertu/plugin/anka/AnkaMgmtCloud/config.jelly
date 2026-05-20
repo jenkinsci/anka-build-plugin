@@ -349,8 +349,8 @@
             <f:entry title="${%Launch Retry Wait Time (seconds)}" field="launchRetryWaitTime" description="The number of seconds to wait between retries">
               <f:textbox clazz="number" default="5"/>
             </f:entry>
-            <f:entry title="${%Launch Delay (seconds)}" field="sshLaunchDelaySeconds" description="The number of seconds to wait before starting the launch process">
-              <f:textbox clazz="number" default="15"/>
+            <f:entry title="${%SSH Port Wait Timeout (seconds)}" field="sshLaunchDelaySeconds" description="Maximum seconds to poll for the SSH port to accept connections before attempting launch (poll interval: 1 second)">
+              <f:textbox clazz="number" default="60"/>
             </f:entry>
             <f:entry title="${%VM IP Assign Wait Time (seconds)}" field="vmIPAssignWaitSeconds" description="Number of seconds to wait for the VM IP to be assigned (works only for VMs with bridged network adapter)">
               <f:textbox clazz="number" default="10"/>

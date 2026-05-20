@@ -222,7 +222,7 @@ public class AnkaMgmtCloud extends Cloud {
 
     public int getSshLaunchDelaySeconds() {
         if (sshLaunchDelaySeconds <= 0) {
-            return AnkaLauncher.defaultSSHLaunchDelay;
+            return AnkaLauncher.defaultSSHPortWaitTimeoutSeconds;
         }
         return sshLaunchDelaySeconds;
     }
