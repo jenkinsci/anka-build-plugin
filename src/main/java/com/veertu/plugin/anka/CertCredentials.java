@@ -9,6 +9,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.Util;
 import hudson.util.Secret;
+import jenkins.model.Jenkins;
 import org.kohsuke.stapler.DataBoundConstructor;
 import javax.annotation.CheckForNull;
 
@@ -68,9 +69,8 @@ public class CertCredentials implements Credentials, IdCredentials {
     @NonNull
     @Override
     public CredentialsDescriptor getDescriptor() {
-        return new CertCredentials.DescriptorImpl();
+        return Jenkins.get().getDescriptorByType(DescriptorImpl.class);
     }
-
 
     @Extension
     public static class DescriptorImpl extends CredentialsDescriptor {

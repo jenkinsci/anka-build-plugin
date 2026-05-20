@@ -66,6 +66,7 @@ public class AnkaMgmtCommunicator {
     protected CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
     protected int connectionKeepAliveSeconds = 120;
     protected transient CloseableHttpClient httpClient;
+    protected String authCredentialContext;
 
     public AnkaMgmtCommunicator(String url) {
         try {
@@ -121,6 +122,22 @@ public class AnkaMgmtCommunicator {
 
     public void setConnectionKeepAliveSeconds(int connectionKeepAliveSeconds) {
         this.connectionKeepAliveSeconds = connectionKeepAliveSeconds;
+    }
+
+    public void setAuthCredentialContext(String authCredentialContext) {
+        this.authCredentialContext = authCredentialContext;
+    }
+
+    protected void logException(Throwable exception) {
+        if (authCredentialContext != null && !authCredentialContext.isEmpty()) {
+            AnkaMgmtCloud.Log(
+                    "Got exception using credential %s: %s %s",
+                    authCredentialContext,
+                    exception.getClass().getName(),
+                    exception.getMessage());
+            return;
+        }
+        AnkaMgmtCloud.Log("Got exception: %s %s", exception.getClass().getName(), exception.getMessage());
     }
 
     public List<AnkaVmTemplate> listTemplates() throws AnkaMgmtException {
@@ -620,11 +637,11 @@ public class AnkaMgmtCommunicator {
                      | AnkaUnAuthenticatedRequestException
                      | AnkaUnauthorizedRequestException e) {
                 // don't retry on client exception
-                AnkaMgmtCloud.Log("Got exception: %s %s", e.getClass().getName(), e.getMessage());
+                logException(e);
 
                 throw new AnkaMgmtException(e);
             } catch (Exception e) {
-                AnkaMgmtCloud.Log("Got exception: %s %s", e.getClass().getName(), e.getMessage());
+                logException(e);
 
                 if (retry < maxRetries) {
                     continue;

@@ -363,6 +363,36 @@ public class AnkaMgmtCloud extends Cloud {
 
         ankaAPI.setMaxConnections(maxConnections);
         ankaAPI.setConnectionKeepAliveSeconds(connectionKeepAliveSeconds);
+        ankaAPI.setAuthCredentialContext(describeCredential(credentials, credentialsId));
+    }
+
+    static String describeCredential(Credentials credentials, String credentialsId) {
+        if (credentials instanceof CertCredentials certCredentials) {
+            return String.format("mTLS id=%s name=%s", certCredentials.getId(), certCredentials.getName());
+        }
+        if (credentials instanceof AnkaUakTapCredentials uakTapCredentials) {
+            return String.format(
+                    "UAK/TAP id=%s description=%s username=%s",
+                    uakTapCredentials.getId(),
+                    uakTapCredentials.getDescription(),
+                    uakTapCredentials.getUsername());
+        }
+        if (credentials instanceof StandardUsernamePasswordCredentials userPassCredentials) {
+            return String.format(
+                    "username/password id=%s username=%s",
+                    userPassCredentials.getId(),
+                    userPassCredentials.getUsername());
+        }
+        if (credentials instanceof StringCredentialsImpl stringCredentials) {
+            return String.format("secret text id=%s", stringCredentials.getId());
+        }
+        if (credentials instanceof IdCredentials idCredentials) {
+            return String.format("id=%s", idCredentials.getId());
+        }
+        if (Util.fixEmptyAndTrim(credentialsId) != null) {
+            return String.format("configured id=%s (not found in credential store)", credentialsId);
+        }
+        return "none configured";
     }
 
     /**

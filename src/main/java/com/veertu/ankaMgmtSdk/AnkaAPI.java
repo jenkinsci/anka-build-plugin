@@ -48,6 +48,10 @@ public class AnkaAPI {
         this.communicator.setConnectionKeepAliveSeconds(seconds);
     }
 
+    public void setAuthCredentialContext(String authCredentialContext) {
+        this.communicator.setAuthCredentialContext(authCredentialContext);
+    }
+
     public List<AnkaVmTemplate> listTemplates() throws AnkaMgmtException {
         return communicator.listTemplates();
     }
