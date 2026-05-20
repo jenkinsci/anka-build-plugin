@@ -19,4 +19,14 @@ public class AnkaMgmtCloudDescriptorTest {
 
         assertThat(method.isAnnotationPresent(RequirePOST.class), is(true));
     }
+
+    @Test
+    public void credentialsDropdownRequiresPost() throws Exception {
+        Method method = AnkaMgmtCloud.DescriptorImpl.class.getMethod(
+                "doFillCredentialsIdItems",
+                ItemGroup.class,
+                String.class);
+
+        assertThat(method.isAnnotationPresent(RequirePOST.class), is(true));
+    }
 }

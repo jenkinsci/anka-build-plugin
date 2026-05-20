@@ -363,7 +363,7 @@ public class AnkaMgmtCloud extends Cloud {
 
         ankaAPI.setMaxConnections(maxConnections);
         ankaAPI.setConnectionKeepAliveSeconds(connectionKeepAliveSeconds);
-        ankaAPI.setAuthCredentialContext(describeCredential(credentials, credentialsId));
+        ankaAPI.setApiAuthLogContext(describeCredential(credentials, credentialsId));
     }
 
     static String describeCredential(Credentials credentials, String credentialsId) {
@@ -897,6 +897,7 @@ public class AnkaMgmtCloud extends Cloud {
             return "Anka Build Cloud Plugin";
         }
 
+        @RequirePOST
         public ListBoxModel doFillCredentialsIdItems(@AncestorInPath ItemGroup context, @QueryParameter String credentialsId) {
             if (!(context instanceof AccessControlled ? (AccessControlled) context : Jenkins.get()).hasPermission(Computer.CONFIGURE)) {
                 return new ListBoxModel();

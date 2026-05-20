@@ -66,7 +66,8 @@ public class AnkaMgmtCommunicator {
     protected CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
     protected int connectionKeepAliveSeconds = 120;
     protected transient CloseableHttpClient httpClient;
-    protected String authCredentialContext;
+    /** Runtime-only label for error logs; not a secret and not persisted. */
+    protected transient String apiAuthLogContext;
 
     public AnkaMgmtCommunicator(String url) {
         try {
@@ -124,15 +125,15 @@ public class AnkaMgmtCommunicator {
         this.connectionKeepAliveSeconds = connectionKeepAliveSeconds;
     }
 
-    public void setAuthCredentialContext(String authCredentialContext) {
-        this.authCredentialContext = authCredentialContext;
+    public void setApiAuthLogContext(String apiAuthLogContext) {
+        this.apiAuthLogContext = apiAuthLogContext;
     }
 
     protected void logException(Throwable exception) {
-        if (authCredentialContext != null && !authCredentialContext.isEmpty()) {
+        if (apiAuthLogContext != null && !apiAuthLogContext.isEmpty()) {
             AnkaMgmtCloud.Log(
                     "Got exception using credential %s: %s %s",
-                    authCredentialContext,
+                    apiAuthLogContext,
                     exception.getClass().getName(),
                     exception.getMessage());
             return;
