@@ -36,6 +36,11 @@
         <required.workflow-durable-task-step.version>1434.v1b_595c29ddd7</required.workflow-durable-task-step.version>
         <required.ssh-slaves.version>3.1031.v72c6b_883b_869</required.ssh-slaves.version>
         <required.node-iterator-api.version>72.vc90e81737df1</required.node-iterator-api.version>
+
+        <!-- Parent default is -Xms768M -Xmx768M with reuseForks=false; small CI agents hit ENOMEM
+             (os::commit_memory ... errno=12) when many Surefire forks run. Keep Jenkins test opens
+             hooks; lower heap and a single fork/reuse to cap total memory. -->
+        <argLine>-Xms128m -Xmx512m -XX:+HeapDumpOnOutOfMemoryError -XX:+TieredCompilation -XX:TieredStopAtLevel=1 @{jenkins.addOpens} @{jenkins.insaneHook}</argLine>
     </properties>
 
     <name>Anka Plugin</name>
@@ -167,6 +172,15 @@
                 <configuration>
                     <disabledTestInjection>true</disabledTestInjection>
                     <compatibleSinceVersion>2.0.0</compatibleSinceVersion>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <forkCount>1</forkCount>
+                    <reuseForks>true</reuseForks>
+                    <parallel>none</parallel>
                 </configuration>
             </plugin>
             <plugin>
