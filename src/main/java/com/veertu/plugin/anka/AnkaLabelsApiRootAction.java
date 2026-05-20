@@ -46,7 +46,10 @@ public class AnkaLabelsApiRootAction implements hudson.model.UnprotectedRootActi
      *
      * <p>No {@code Permission} check here by design; authorization is the configured labels API token on the target
      * cloud.
+     *
+     * @see hudson.model.UnprotectedRootAction
      */
+    @SuppressWarnings("lgtm[jenkins/no-permission-check]") // Otherwise protected: per-cloud secret before any side effect; see class Javadoc
     @POST
     public void doLabels(StaplerRequest2 req, StaplerResponse2 rsp) throws IOException {
         String rest = req.getRestOfPath();
