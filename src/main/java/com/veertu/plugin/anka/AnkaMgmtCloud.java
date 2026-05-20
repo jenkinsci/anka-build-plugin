@@ -9,7 +9,10 @@ import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
 import hudson.Extension;
 import hudson.Util;
 import hudson.model.*;
+import hudson.security.ACL;
+import hudson.security.ACLContext;
 import hudson.security.AccessControlled;
+import hudson.util.Secret;
 import hudson.slaves.Cloud;
 import hudson.slaves.NodeProvisioner;
 import hudson.slaves.SlaveComputer;
@@ -25,9 +28,13 @@ import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.interceptor.RequirePOST;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
+
+import javax.annotation.Nullable;
 
 import static java.lang.Thread.sleep;
 
@@ -61,6 +68,11 @@ public class AnkaMgmtCloud extends Cloud {
     private int vmIPAssignWaitSeconds;
     private int vmIPAssignRetries;
     private String durabilityMode = "durable";
+    /**
+     * Secret token for HTTP label updates ({@code POST .../anka-build-cloud/labels/...}) without Jenkins admin UI.
+     * When null or empty, the labels API is disabled for this cloud.
+     */
+    private Secret labelsApiToken;
 
     @DataBoundConstructor
     public AnkaMgmtCloud(String ankaMgmtUrl, String cloudName, String credentialsId, String rootCaCredentialsId, boolean skipTLSVerification, List<AnkaCloudSlaveTemplate> templates, int cloudInstanceCap) {
@@ -546,6 +558,81 @@ public class AnkaMgmtCloud extends Cloud {
 
     public List<AnkaCloudSlaveTemplate> getTemplates() {
         return templates;
+    }
+
+    public Secret getLabelsApiToken() {
+        return labelsApiToken;
+    }
+
+    @DataBoundSetter
+    public void setLabelsApiToken(Secret labelsApiToken) {
+        this.labelsApiToken = labelsApiToken;
+    }
+
+    /**
+     * @return true if {@link #labelsApiToken} is configured (non-blank).
+     */
+    public boolean isLabelsApiEnabled() {
+        return labelsApiToken != null && !labelsApiToken.getPlainText().isEmpty();
+    }
+
+    /**
+     * Verifies the caller-supplied token using a constant-time comparison.
+     */
+    boolean verifyLabelsApiToken(@Nullable String providedPlainText) {
+        if (!isLabelsApiEnabled() || providedPlainText == null) {
+            return false;
+        }
+        byte[] a = providedPlainText.getBytes(StandardCharsets.UTF_8);
+        byte[] b = labelsApiToken.getPlainText().getBytes(StandardCharsets.UTF_8);
+        if (a.length != b.length) {
+            return false;
+        }
+        return MessageDigest.isEqual(a, b);
+    }
+
+    /**
+     * Returns a new cloud instance with the same settings as this one but with the static
+     * {@link #getTemplates()} list replaced by {@code newTemplates}, including the Labels API token.
+     * To persist, call {@link #replaceInJenkinsWith(AnkaMgmtCloud)} with this return value.
+     */
+    public AnkaMgmtCloud copyWithTemplates(List<AnkaCloudSlaveTemplate> newTemplates) {
+        AnkaMgmtCloud copy = new AnkaMgmtCloud(
+                ankaMgmtUrl,
+                getCloudName(),
+                credentialsId,
+                rootCaCredentialsId,
+                skipTLSVerification,
+                newTemplates == null ? Collections.emptyList() : newTemplates,
+                cloudInstanceCap);
+        copy.setRootCA(rootCA);
+        copy.setLaunchTimeout(launchTimeout);
+        copy.setMaxLaunchRetries(maxLaunchRetries);
+        copy.setLaunchRetryWaitTime(launchRetryWaitTime);
+        copy.setSshLaunchDelaySeconds(sshLaunchDelaySeconds);
+        copy.setVmIPAssignWaitSeconds(vmIPAssignWaitSeconds);
+        copy.setVmIPAssignRetries(vmIPAssignRetries);
+        copy.setDurabilityMode(durabilityMode);
+        copy.setVmPollTime(vmPollTime);
+        copy.setMaxConnections(maxConnections);
+        copy.setConnectionKeepAliveSeconds(connectionKeepAliveSeconds);
+        copy.setLabelsApiToken(labelsApiToken);
+        copy.setMonitorRecurrenceMinutes(getMonitorRecurrenceMinutes());
+        return copy;
+    }
+
+    /**
+     * Atomically replaces this cloud on Jenkins and saves configuration (runs as {@link ACL#SYSTEM2}).
+     */
+    public void replaceInJenkinsWith(AnkaMgmtCloud replacement) throws IOException {
+        Objects.requireNonNull(replacement);
+        try (ACLContext ignored = ACL.as2(ACL.SYSTEM2)) {
+            Jenkins j = Jenkins.get();
+            if (!j.clouds.contains(this)) {
+                throw new IOException("Anka cloud '" + getCloudName() + "' is no longer registered on this Jenkins instance");
+            }
+            j.clouds.replace(this, replacement);
+        }
     }
 
     public List<DynamicSlaveTemplate> getDynamicTemplates() {

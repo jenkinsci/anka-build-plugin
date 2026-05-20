@@ -10,6 +10,12 @@ Contributors are welcome! Please submit an Issue or PR.
 
 ---
 
+## Node Labels HTTP API (optional)
+
+Each Anka cloud can expose a **token-protected** endpoint so automation can update **Node Labels** (static `AnkaCloudSlaveTemplate` entries) without using the Jenkins UI or Overall/Administer permission. See **[docs/node-labels-api.md](docs/node-labels-api.md)** for setup, request/response reference, `curl` examples, and troubleshooting ([issue #59](https://github.com/jenkinsci/anka-build-plugin/issues/59)).
+
+---
+
 ## Dependency Requirements
 
 The Anka Build plugin requires the following Jenkins plugin dependencies at the

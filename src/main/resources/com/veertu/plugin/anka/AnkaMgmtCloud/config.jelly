@@ -390,6 +390,10 @@
         <f:entry title="Controller Root CA credential" field="rootCaCredentialsId" description="Secret text credential whose value is the controller Root CA PEM. Used for TLS validation when &quot;Skip TLS Verification&quot; is off. Use a dedicated credential; do not reuse UAK or API key secrets.">
           <c:select/>
         </f:entry>
+        <f:entry title="Labels API token" field="labelsApiToken"
+                 description="Optional. When set, automation can POST JSON to ${app.rootUrl}anka-build-cloud/labels/${instance.name} (URL-encode the cloud name in clients if it contains spaces or special characters) with Content-Type: application/json, using Authorization: Bearer &lt;token&gt; or X-Anka-Labels-Token. Leave empty to disable. Prefer HTTPS.">
+          <f:password/>
+        </f:entry>
       </div>
     </div>
     <div class="anka-build-plugin-content-group">
