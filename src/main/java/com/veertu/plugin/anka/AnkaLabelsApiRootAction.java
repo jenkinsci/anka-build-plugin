@@ -8,11 +8,17 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.kohsuke.stapler.StaplerRequest2;
 import org.kohsuke.stapler.StaplerResponse2;
+import org.kohsuke.stapler.verb.POST;
 
 /**
  * Unauthenticated root URL segment for token-based node label updates.
  *
  * <p>POST {@code /anka-build-cloud/labels/<cloudName>} with JSON body (see README).
+ *
+ * <p><b>Security model:</b> Implements {@link hudson.model.UnprotectedRootAction} without {@link hudson.security.ACL}
+ * checks; callers must present the matching per-cloud secret ({@link AnkaMgmtCloud#verifyLabelsApiToken}). CSRF for
+ * this path is handled via a narrow {@link AnkaLabelsApiCrumbExclusion}; {@code POST}-only via {@link POST} below.
+ * See <a href="https://www.jenkins.io/doc/developer/security/misc/">Automation / CSRF trade-offs</a>.
  */
 @Extension
 public class AnkaLabelsApiRootAction implements hudson.model.UnprotectedRootAction {
@@ -35,9 +41,13 @@ public class AnkaLabelsApiRootAction implements hudson.model.UnprotectedRootActi
     }
 
     /**
-     * Stapler maps this to {@code /anka-build-cloud/labels/...}. The cloud name is the first path
-     * segment after {@code labels/} (see {@link StaplerRequest2#getRestOfPath()}).
+     * Stapler maps this to {@code /anka-build-cloud/labels/...}. The cloud name is the first path segment after {@code
+     * labels/} (see {@link StaplerRequest2#getRestOfPath()}).
+     *
+     * <p>No {@code Permission} check here by design; authorization is the configured labels API token on the target
+     * cloud.
      */
+    @POST
     public void doLabels(StaplerRequest2 req, StaplerResponse2 rsp) throws IOException {
         String rest = req.getRestOfPath();
         if (rest == null) {
@@ -53,12 +63,6 @@ public class AnkaLabelsApiRootAction implements hudson.model.UnprotectedRootActi
         int slash = rest.indexOf('/');
         String cloudName = slash < 0 ? rest : rest.substring(0, slash);
 
-        if (!"POST".equalsIgnoreCase(req.getMethod())) {
-            rsp.setStatus(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-            rsp.setContentType("text/plain;charset=UTF-8");
-            rsp.getWriter().print("Only POST is supported");
-            return;
-        }
         AnkaMgmtCloud cloud = AnkaMgmtCloud.get(cloudName);
         if (cloud == null) {
             rsp.sendError(HttpServletResponse.SC_NOT_FOUND, "Unknown cloud: " + cloudName);

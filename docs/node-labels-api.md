@@ -19,7 +19,7 @@ Treat the token like a password: store it in a secret manager, rotate it from th
 
 | Item | Value |
 |------|--------|
-| Method | **POST** only (other methods → `405`) |
+| Method | **POST** only (other methods are rejected, often `404` from Stapler dispatch or `405`) |
 | Path | `{JENKINS_URL}/anka-build-cloud/labels/{cloudName}` |
 | `cloudName` | Must match the Jenkins cloud name **exactly**. URL-encode spaces and special characters (e.g. `Veertu%20anka`). |
 | Content-Type | `application/json` |
@@ -72,8 +72,8 @@ If the controller can reach the Anka Build Cloud and `masterVmId` is not known t
 | **200** | Success. Body is JSON: `cloudName`, `mode`, `previousCount`, `newCount`. |
 | **400** | Invalid JSON, bad `mode`, missing `templates`, binding/validation errors (e.g. duplicate labels in payload, missing `label` / `masterVmId`). |
 | **401** | Missing or invalid token. |
-| **404** | Unknown cloud name or not an Anka Build Cloud. |
-| **405** | Method other than POST. |
+| **404** | Unknown cloud or not an Anka Build Cloud; or non-POST (e.g. GET) when Stapler does not dispatch to the handler. |
+| **405** | Method other than POST (when the request is dispatched but verb is wrong). |
 | **503** | Labels API token not set for that cloud. |
 | **500** | Unexpected server error while applying changes (check Jenkins logs). |
 

@@ -1,6 +1,7 @@
 package com.veertu.plugin.anka;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.is;
 
 import hudson.util.Secret;
@@ -18,7 +19,9 @@ import org.jvnet.hudson.test.JenkinsRule;
 public class AnkaLabelsApiTest {
 
     private static final String CLOUD = "test-anka-cloud";
+    private static final String CLOUD_B = "test-anka-cloud-b";
     private static final String TOKEN = "test-labels-api-token";
+    private static final String TOKEN_B = "test-labels-api-token-b";
 
     @Rule
     public JenkinsRule j = new JenkinsRule();
@@ -69,6 +72,34 @@ public class AnkaLabelsApiTest {
     }
 
     @Test
+    public void secondCloudUrl_rejectsFirstCloudToken_returns401() throws Exception {
+        addCloudWithTemplates(List.of(baselineTemplate("L1", "vm-1")), true);
+        addNamedCloud(
+                CLOUD_B,
+                List.of(baselineTemplateForCloud(CLOUD_B, "L1", "vm-b")),
+                Secret.fromString(TOKEN_B));
+        String body = "{\"mode\":\"replace\",\"templates\":["
+                + singleTemplateJson(CLOUD_B, "L1", "vm-updated", "t")
+                + "]}";
+        int code = postLabels(CLOUD_B, body, "Bearer " + TOKEN);
+        assertThat(code, is(401));
+    }
+
+    @Test
+    public void firstCloudUrl_rejectsSecondCloudToken_returns401() throws Exception {
+        addCloudWithTemplates(List.of(baselineTemplate("L1", "vm-1")), true);
+        addNamedCloud(
+                CLOUD_B,
+                List.of(baselineTemplateForCloud(CLOUD_B, "L1", "vm-b")),
+                Secret.fromString(TOKEN_B));
+        String body = "{\"mode\":\"replace\",\"templates\":["
+                + singleTemplateJson("L1", "vm-updated", "t")
+                + "]}";
+        int code = postLabels(CLOUD, body, "Bearer " + TOKEN_B);
+        assertThat(code, is(401));
+    }
+
+    @Test
     public void missingToken_returns401() throws Exception {
         addCloudWithTemplates(List.of(baselineTemplate("L1", "vm-1")), true);
         int code = postLabels(CLOUD, "{\"mode\":\"replace\",\"templates\":[]}", null);
@@ -87,6 +118,20 @@ public class AnkaLabelsApiTest {
         addCloudWithTemplates(List.of(baselineTemplate("L1", "vm-1")), true);
         int code = postLabels("no-such-cloud", "{\"mode\":\"replace\",\"templates\":[]}", "Bearer " + TOKEN);
         assertThat(code, is(404));
+    }
+
+    @Test
+    public void nonPostMethod_isRejected() throws Exception {
+        addCloudWithTemplates(List.of(baselineTemplate("L1", "vm-1")), true);
+        URL url = new URL(j.getURL(), "anka-build-cloud/labels/" + CLOUD);
+        HttpURLConnection c = (HttpURLConnection) url.openConnection();
+        c.setRequestMethod("GET");
+        try {
+            int code = c.getResponseCode();
+            assertThat(code, anyOf(is(404), is(405)));
+        } finally {
+            c.disconnect();
+        }
     }
 
     @Test
@@ -128,18 +173,28 @@ public class AnkaLabelsApiTest {
     }
 
     private void addCloudWithTemplates(List<AnkaCloudSlaveTemplate> templates, boolean enableApi) throws Exception {
-        AnkaMgmtCloud cloud = new AnkaMgmtCloud(
-                "https://127.0.0.1:9", CLOUD, "", "", true, templates, -1);
-        if (enableApi) {
-            cloud.setLabelsApiToken(Secret.fromString(TOKEN));
+        addNamedCloud(CLOUD, templates, enableApi ? Secret.fromString(TOKEN) : null);
+    }
+
+    private void addNamedCloud(String name, List<AnkaCloudSlaveTemplate> templates, Secret labelsApiTokenOrNull)
+            throws Exception {
+        AnkaMgmtCloud cloud =
+                new AnkaMgmtCloud("https://127.0.0.1:9", name, "", "", true, templates, -1);
+        if (labelsApiTokenOrNull != null) {
+            cloud.setLabelsApiToken(labelsApiTokenOrNull);
         }
         j.jenkins.clouds.add(cloud);
         j.jenkins.save();
     }
 
     private static AnkaCloudSlaveTemplate baselineTemplate(String label, String masterVmId) {
+        return baselineTemplateForCloud(CLOUD, label, masterVmId);
+    }
+
+    private static AnkaCloudSlaveTemplate baselineTemplateForCloud(
+            String cloudName, String label, String masterVmId) {
         return new AnkaCloudSlaveTemplate(
-                CLOUD,
+                cloudName,
                 "/tmp/fs",
                 masterVmId,
                 "baseline-tag",
@@ -167,8 +222,12 @@ public class AnkaLabelsApiTest {
     }
 
     private static String singleTemplateJson(String label, String masterVmId, String tag) {
+        return singleTemplateJson(CLOUD, label, masterVmId, tag);
+    }
+
+    private static String singleTemplateJson(String cloudName, String label, String masterVmId, String tag) {
         return "{"
-                + "\"cloudName\":\"" + CLOUD + "\","
+                + "\"cloudName\":\"" + cloudName + "\","
                 + "\"remoteFS\":\"/tmp/fs\","
                 + "\"masterVmId\":\"" + masterVmId + "\","
                 + "\"tag\":\"" + tag + "\","
