@@ -89,9 +89,7 @@ final class AnkaLabelsTemplateService {
             if (masterVmId == null) {
                 throw new IllegalArgumentException("templates[" + i + "]: masterVmId is required");
             }
-            if (Util.fixEmptyAndTrim(t.getCloudName()) == null) {
-                t.setCloudName(cloud.getCloudName());
-            }
+            t.setCloudName(cloud.getCloudName());
             out.add(t);
         }
         return out;

@@ -177,6 +177,20 @@ public class AnkaLabelsApiTest {
     }
 
     @Test
+    public void templateCloudName_isSetFromTargetCloud() throws Exception {
+        addCloudWithTemplates(List.of(baselineTemplate("L1", "vm-1")), true);
+        String body = "{\"mode\":\"replace\",\"templates\":["
+                + singleTemplateJson(CLOUD_B, "L1", "vm-replaced", "t")
+                + "]}";
+        int code = postLabels(CLOUD, body, "Bearer " + TOKEN);
+        assertThat(code, is(200));
+
+        AnkaMgmtCloud updated = AnkaMgmtCloud.get(CLOUD);
+        assertThat(updated.getTemplates().size(), is(1));
+        assertThat(updated.getTemplates().get(0).getCloudName(), is(CLOUD));
+    }
+
+    @Test
     public void responseBody_onSuccess_isJsonSummary() throws Exception {
         addCloudWithTemplates(List.of(baselineTemplate("L1", "vm-1")), true);
         String body = "{\"mode\":\"replace\",\"templates\":[" + singleTemplateJson("L1", "vm-x", "t") + "]}";

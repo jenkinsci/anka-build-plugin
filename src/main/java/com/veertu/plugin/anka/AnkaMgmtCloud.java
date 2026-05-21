@@ -1111,6 +1111,18 @@ public class AnkaMgmtCloud extends Cloud {
                     null,
                     null
             ).forEach(credentials::add);
+            CredentialsProvider.lookupCredentialsInItemGroup(
+                    StringCredentialsImpl.class,
+                    Jenkins.get(),
+                    null,
+                    null
+            ).forEach(credentials::add);
+            CredentialsProvider.lookupCredentialsInItemGroup(
+                    StandardUsernamePasswordCredentials.class,
+                    Jenkins.get(),
+                    null,
+                    null
+            ).forEach(credentials::add);
             return credentials;
         }
 
@@ -1120,6 +1132,19 @@ public class AnkaMgmtCloud extends Cloud {
             }
             if (credential instanceof AnkaUakTapCredentials uakTapCredentials) {
                 return "UAK/TAP: " + uakTapCredentials.getDescription() + " (" + uakTapCredentials.getUsername() + ")";
+            }
+            if (credential instanceof StringCredentialsImpl stringCredentials) {
+                String descriptionSuffix = Util.fixEmptyAndTrim(stringCredentials.getDescription()) != null
+                        ? " (" + stringCredentials.getDescription() + ")"
+                        : "";
+                return "Secret text (legacy): " + stringCredentials.getId() + descriptionSuffix;
+            }
+            if (credential instanceof StandardUsernamePasswordCredentials userPassCredentials) {
+                return "Username/password (legacy): "
+                        + userPassCredentials.getUsername()
+                        + " ("
+                        + userPassCredentials.getId()
+                        + ")";
             }
             if (credential instanceof IdCredentials idCredentials) {
                 return idCredentials.getId();

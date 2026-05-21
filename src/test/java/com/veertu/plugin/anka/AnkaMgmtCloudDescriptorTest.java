@@ -64,6 +64,33 @@ public class AnkaMgmtCloudDescriptorTest {
         assertThat(values, not(containsInAnyOrder("secret-text-uak", "legacy-userpass")));
     }
 
+    @Test
+    public void credentialsDropdownPreservesLegacySelectedCredential() throws Exception {
+        addCredential(new StringCredentialsImpl(
+                CredentialsScope.GLOBAL,
+                "secret-text-uak",
+                "Secret text UAK",
+                hudson.util.Secret.fromString("not-a-uak-key")));
+        addCredential(new UsernamePasswordCredentialsImpl(
+                CredentialsScope.GLOBAL,
+                "legacy-userpass",
+                "Legacy username/password",
+                "uak-id",
+                "uak-secret"));
+
+        AnkaMgmtCloud.DescriptorImpl descriptor = jenkinsRule.jenkins.getDescriptorByType(AnkaMgmtCloud.DescriptorImpl.class);
+
+        ListBoxModel secretTextOptions = descriptor.doFillCredentialsIdItems(jenkinsRule.jenkins, "secret-text-uak");
+        assertThat(
+                secretTextOptions.stream().anyMatch(option -> "secret-text-uak".equals(option.value)),
+                is(true));
+
+        ListBoxModel userPassOptions = descriptor.doFillCredentialsIdItems(jenkinsRule.jenkins, "legacy-userpass");
+        assertThat(
+                userPassOptions.stream().anyMatch(option -> "legacy-userpass".equals(option.value)),
+                is(true));
+    }
+
     private void addCredential(com.cloudbees.plugins.credentials.Credentials credential) throws Exception {
         CredentialsProvider.lookupStores(jenkinsRule.jenkins)
                 .iterator()

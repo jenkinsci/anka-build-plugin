@@ -76,7 +76,7 @@ JSON object with:
 
 ### Template objects
 
-Each element is deserialized the same way as the cloud UI and **Configuration as Code**: Stapler/DataBound binding into `AnkaCloudSlaveTemplate`. In practice, use the same field names as in your CasC YAML under `jenkins.clouds[].ankaMgmt.templates[]`.
+Each element is deserialized the same way as the cloud UI and **Configuration as Code**: Stapler/DataBound binding into `AnkaCloudSlaveTemplate`. In practice, use the same field names as in your CasC YAML under `jenkins.clouds[].ankaMgmt.templates[]`, except **`cloudName`** — do not send it; the API sets it from the URL.
 
 Reference copy in this repo: [`src/test/resources/com/veertu/plugin/anka/configuration-as-code.yml`](../src/test/resources/com/veertu/plugin/anka/configuration-as-code.yml).
 
@@ -84,7 +84,7 @@ Validation rules:
 
 - **`label`** — required, non-empty.
 - **`masterVmId`** — required, non-empty.
-- **`cloudName`** — if omitted, it is set to the target cloud’s name.
+- **`cloudName`** — ignored if present in the request; always set from the URL path (the cloud you POST to).
 - **Duplicate `label` values** inside the **same request** → **400**.
 
 If the controller can reach the Anka Build Cloud and `masterVmId` is not known there, the API **still succeeds** but may **log a warning** (soft check) so temporary controller or registry issues do not block updates.
