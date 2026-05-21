@@ -132,7 +132,7 @@ public class AnkaMgmtCommunicator {
     protected void logException(Throwable exception) {
         if (apiAuthLogContext != null && !apiAuthLogContext.isEmpty()) {
             AnkaMgmtCloud.Log(
-                    "Got exception using credential %s: %s %s",
+                    "Got exception using credential: %s: %s %s",
                     apiAuthLogContext,
                     exception.getClass().getName(),
                     exception.getMessage());
