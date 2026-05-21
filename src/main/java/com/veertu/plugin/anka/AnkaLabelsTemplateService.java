@@ -9,6 +9,7 @@ import java.util.Locale;
 import java.util.Set;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONException;
+import net.sf.json.JSONNull;
 import net.sf.json.JSONObject;
 import org.kohsuke.stapler.Stapler;
 import org.kohsuke.stapler.StaplerRequest2;
@@ -72,6 +73,7 @@ final class AnkaLabelsTemplateService {
         for (int i = 0; i < templatesArray.size(); i++) {
             Object el = templatesArray.get(i);
             JSONObject jo = el instanceof JSONObject ? (JSONObject) el : JSONObject.fromObject(el);
+            validateTemplateJsonTypes(jo, i);
             AnkaCloudSlaveTemplate t;
             try {
                 t = req.bindJSON(AnkaCloudSlaveTemplate.class, jo);
@@ -93,6 +95,62 @@ final class AnkaLabelsTemplateService {
             out.add(t);
         }
         return out;
+    }
+
+    /**
+     * Stapler {@code bindJSON} coerces mismatched types (e.g. string to int); reject invalid JSON types up front.
+     */
+    private static void validateTemplateJsonTypes(JSONObject jo, int index) {
+        String prefix = "templates[" + index + "]";
+        requireJsonNumberIfPresent(jo, prefix, "numberOfExecutors");
+        requireJsonNumberIfPresent(jo, prefix, "launchDelay");
+        requireJsonNumberIfPresent(jo, prefix, "priority");
+        requireJsonNumberIfPresent(jo, prefix, "schedulingTimeout");
+        requireJsonNumberIfPresent(jo, prefix, "vcpu");
+        requireJsonNumberIfPresent(jo, prefix, "vram");
+        requireJsonNumberIfPresent(jo, prefix, "SSHPort");
+        requireJsonNumberIfPresent(jo, prefix, "idleMinutes");
+        requireJsonNumberIfPresent(jo, prefix, "instanceCapacity");
+        requireJsonBooleanIfPresent(jo, prefix, "keepAliveOnError");
+        requireJsonBooleanIfPresent(jo, prefix, "saveImage");
+        requireJsonBooleanIfPresent(jo, prefix, "dontAppendTimestamp");
+        requireJsonBooleanIfPresent(jo, prefix, "deleteLatest");
+        requireJsonBooleanIfPresent(jo, prefix, "suspend");
+        requireJsonBooleanIfPresent(jo, prefix, "waitForBuildToFinish");
+        if (jo.has("saveImageParameters") && jo.get("saveImageParameters") instanceof JSONObject saveImageParameters) {
+            String nested = prefix + ".saveImageParameters";
+            requireJsonBooleanIfPresent(saveImageParameters, nested, "saveImage");
+            requireJsonBooleanIfPresent(saveImageParameters, nested, "dontAppendTimestamp");
+            requireJsonBooleanIfPresent(saveImageParameters, nested, "deleteLatest");
+            requireJsonBooleanIfPresent(saveImageParameters, nested, "suspend");
+            requireJsonBooleanIfPresent(saveImageParameters, nested, "waitForBuildToFinish");
+        }
+    }
+
+    private static void requireJsonNumberIfPresent(JSONObject jo, String prefix, String field) {
+        if (!jo.has(field)) {
+            return;
+        }
+        Object value = jo.get(field);
+        if (value == null || value == JSONNull.getInstance()) {
+            return;
+        }
+        if (!(value instanceof Number)) {
+            throw new IllegalArgumentException(prefix + ": " + field + " must be a JSON number");
+        }
+    }
+
+    private static void requireJsonBooleanIfPresent(JSONObject jo, String prefix, String field) {
+        if (!jo.has(field)) {
+            return;
+        }
+        Object value = jo.get(field);
+        if (value == null || value == JSONNull.getInstance()) {
+            return;
+        }
+        if (!(value instanceof Boolean)) {
+            throw new IllegalArgumentException(prefix + ": " + field + " must be a JSON boolean");
+        }
     }
 
     private static void validateNoDuplicateLabels(List<AnkaCloudSlaveTemplate> incoming) {

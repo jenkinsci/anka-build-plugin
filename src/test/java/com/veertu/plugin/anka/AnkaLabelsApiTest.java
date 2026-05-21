@@ -155,6 +155,15 @@ public class AnkaLabelsApiTest {
     }
 
     @Test
+    public void templateBindWithWrongFieldType_returns400() throws Exception {
+        addCloudWithTemplates(List.of(baselineTemplate("L1", "vm-1")), true);
+        String bad = singleTemplateJson("L1", "vm-1", "t").replace("\"numberOfExecutors\":1", "\"numberOfExecutors\":\"not-int\"");
+        String body = "{\"mode\":\"replace\",\"templates\":[" + bad + "]}";
+        int code = postLabels(CLOUD, body, "Bearer " + TOKEN);
+        assertThat(code, is(400));
+    }
+
+    @Test
     public void responseBody_onSuccess_isJsonSummary() throws Exception {
         addCloudWithTemplates(List.of(baselineTemplate("L1", "vm-1")), true);
         String body = "{\"mode\":\"replace\",\"templates\":[" + singleTemplateJson("L1", "vm-x", "t") + "]}";
