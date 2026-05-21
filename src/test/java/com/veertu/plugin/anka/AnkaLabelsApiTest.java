@@ -191,6 +191,17 @@ public class AnkaLabelsApiTest {
     }
 
     @Test
+    public void oversizedBody_returns413() throws Exception {
+        addCloudWithTemplates(List.of(baselineTemplate("L1", "vm-1")), true);
+        String prefix = "{\"mode\":\"replace\",\"templates\":[{\"label\":\"L1\",\"masterVmId\":\"vm-1\",\"templateDescription\":\"";
+        String suffix = "\"}]}";
+        int paddingLength = AnkaLabelsApiRootAction.MAX_REQUEST_BODY_BYTES - prefix.length() - suffix.length() + 1;
+        String body = prefix + "x".repeat(paddingLength) + suffix;
+        int code = postLabels(CLOUD, body, "Bearer " + TOKEN);
+        assertThat(code, is(413));
+    }
+
+    @Test
     public void responseBody_onSuccess_isJsonSummary() throws Exception {
         addCloudWithTemplates(List.of(baselineTemplate("L1", "vm-1")), true);
         String body = "{\"mode\":\"replace\",\"templates\":[" + singleTemplateJson("L1", "vm-x", "t") + "]}";

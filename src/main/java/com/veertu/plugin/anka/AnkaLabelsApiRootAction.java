@@ -3,6 +3,7 @@ package com.veertu.plugin.anka;
 import hudson.Extension;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -24,6 +25,9 @@ import org.kohsuke.stapler.verb.POST;
 public class AnkaLabelsApiRootAction implements hudson.model.UnprotectedRootAction {
 
     private static final Logger LOGGER = Logger.getLogger(AnkaLabelsApiRootAction.class.getName());
+
+    /** Maximum Labels API request body size (1 MiB). */
+    static final int MAX_REQUEST_BODY_BYTES = 1_048_576;
 
     @Override
     public String getIconFileName() {
@@ -80,7 +84,13 @@ public class AnkaLabelsApiRootAction implements hudson.model.UnprotectedRootActi
             rsp.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid or missing token");
             return;
         }
-        String body = new String(req.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+        String body;
+        try {
+            body = readBoundedRequestBody(req.getContentLengthLong(), req.getInputStream(), MAX_REQUEST_BODY_BYTES);
+        } catch (RequestBodyTooLargeException e) {
+            rsp.sendError(HttpServletResponse.SC_REQUEST_ENTITY_TOO_LARGE, e.getMessage());
+            return;
+        }
         try {
             AnkaLabelsTemplateService.Result result = AnkaLabelsTemplateService.apply(cloud, body);
             rsp.setStatus(HttpServletResponse.SC_OK);
@@ -104,5 +114,26 @@ public class AnkaLabelsApiRootAction implements hudson.model.UnprotectedRootActi
             return auth.substring(7).trim();
         }
         return null;
+    }
+
+    static String readBoundedRequestBody(long contentLength, InputStream in, int maxBytes) throws IOException {
+        if (contentLength > maxBytes) {
+            throw new RequestBodyTooLargeException(maxBytes);
+        }
+        try (InputStream input = in) {
+            byte[] bytes = input.readNBytes(maxBytes + 1);
+            if (bytes.length > maxBytes) {
+                throw new RequestBodyTooLargeException(maxBytes);
+            }
+            return new String(bytes, StandardCharsets.UTF_8);
+        }
+    }
+
+    static final class RequestBodyTooLargeException extends IOException {
+        private static final long serialVersionUID = 1L;
+
+        RequestBodyTooLargeException(int maxBytes) {
+            super("Request body exceeds " + maxBytes + " bytes");
+        }
     }
 }

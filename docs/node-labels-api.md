@@ -82,9 +82,9 @@ Reference copy in this repo: [`src/test/resources/com/veertu/plugin/anka/configu
 
 Validation rules:
 
+- **Request body** — maximum **1 MiB** (1,048,576 bytes). Larger bodies → **413**.
 - **`label`** — required, non-empty.
 - **`masterVmId`** — required, non-empty.
-- **`cloudName`** — ignored if present in the request; always set from the URL path (the cloud you POST to).
 - **Duplicate `label` values** inside the **same request** → **400**.
 
 If the controller can reach the Anka Build Cloud and `masterVmId` is not known there, the API **still succeeds** but may **log a warning** (soft check) so temporary controller or registry issues do not block updates.
@@ -98,6 +98,7 @@ If the controller can reach the Anka Build Cloud and `masterVmId` is not known t
 | **401** | Missing or invalid token. |
 | **404** | Unknown cloud or not an Anka Build Cloud; or non-POST (e.g. GET) when Stapler does not dispatch to the handler. |
 | **405** | Method other than POST (when the request is dispatched but verb is wrong). |
+| **413** | Request body exceeds 1 MiB. |
 | **503** | Labels API token credential not set for that cloud. |
 | **500** | Unexpected server error while applying changes (check Jenkins logs). |
 
