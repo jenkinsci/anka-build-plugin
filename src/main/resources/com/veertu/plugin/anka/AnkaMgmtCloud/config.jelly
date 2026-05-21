@@ -125,6 +125,23 @@
     .anka-build-plugin-head {
       display: flex;
       flex-wrap: wrap;
+      align-items: flex-start;
+    }
+    .anka-build-plugin-head-cloud-column {
+      display: flex;
+      flex-direction: column;
+      flex: 0 0 auto;
+      align-self: flex-start;
+    }
+    .anka-build-plugin-head-cloud-column .jenkins-form-item {
+      margin: 5px;
+    }
+    .anka-build-plugin-head-cloud-column .setting-main {
+      flex-direction: column;
+    }
+    .anka-build-plugin-head > .jenkins-form-item:has(#ankaMgmtUrl) {
+      flex: 1 1 320px;
+      min-width: 320px;
     }
 
     .anka-build-plugin-head div.welcome {
@@ -147,6 +164,22 @@
       color: #5e2e9b;
     }
 
+    .anka-build-plugin-url-https {
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid #d4c5e8;
+    }
+    .anka-build-plugin-url-https h4 {
+      margin: 0 0 0.5rem;
+    }
+    .anka-build-plugin-head .anka-build-plugin-url-https .jenkins-form-item {
+      margin: 1rem 0 0;
+      padding: 0;
+      border: none;
+      border-radius: 0;
+      background-color: transparent;
+    }
+
     .anka-build-plugin-head-advanced .dropdownList-container div.jenkins-form-item {
       width: 100% !important;
       max-width: 100% !important;
@@ -160,20 +193,63 @@
 
     .anka-build-plugin-security {
       margin: 5px;
-      padding: 10px 17px 17px 17px;
+      padding: 1.25rem 1.5rem 1.5rem;
       color: #5e2e9b;
       border: 1px solid #60259F;
       background-color: #FFF;
       border-radius: .66rem;
     }
+    .anka-build-plugin-security-columns {
+      display: flex;
+      gap: 0;
+      align-items: stretch;
+    }
+    .anka-build-plugin-security-column {
+      flex: 1 1 50%;
+      width: 50%;
+      min-width: 0;
+      box-sizing: border-box;
+      padding: 0.5rem 1.5rem;
+    }
+    .anka-build-plugin-security-column:first-child {
+      padding-left: 0.25rem;
+      padding-right: 1.75rem;
+    }
+    .anka-build-plugin-security-column + .anka-build-plugin-security-column {
+      padding-left: 1.75rem;
+      padding-right: 0.25rem;
+      border-left: 1px solid #d4c5e8;
+    }
     .anka-build-plugin-security button {
       background-color: #FFF;
     }
     .anka-build-plugin-security h3 {
-      border-bottom: 1px solid #fff;
-      padding-bottom: 10px;
+      border-bottom: 1px solid #e8dff2;
+      padding-bottom: 0.75rem;
       color: #5e2e9b;
-      margin-bottom: 10px;
+      margin: 0 0 1rem;
+    }
+    .anka-build-plugin-security-column h4 {
+      margin: 0 0 0.5rem;
+    }
+    .anka-build-plugin-security-column ul {
+      margin: 0 0 1.25rem;
+      padding-left: 1.25rem;
+    }
+    .anka-build-plugin-security-column .jenkins-form-item {
+      margin: 1.25rem 0;
+    }
+    .anka-build-plugin-security-column .jenkins-form-item:first-of-type {
+      margin-top: 0.75rem;
+    }
+    .anka-build-plugin-security-column .jenkins-form-description {
+      padding: 0 0.25rem;
+    }
+    .anka-build-plugin-security-doc-link {
+      margin: 0 0 1.25rem;
+    }
+    .anka-build-plugin-security-doc-link a {
+      color: #e21e79;
     }
 
     .anka-build-plugin-content-group {
@@ -298,6 +374,10 @@
       display: flex;
       flex-direction: column-reverse;
     }
+    .setting-main:has(#ankaMgmtUrl),
+    .anka-build-plugin-url-https .setting-main {
+      flex-direction: column;
+    }
     .jenkins-checkbox {
       margin-top: 10px;
     }
@@ -321,20 +401,34 @@
         <p>Welcome! This Cloud allows you to create Jenkins ephemeral "Nodes" from Anka VMs, on-demand. <a href="https://docs.veertu.com/anka/plugins-and-integrations/controller-+-registry/jenkins/" target="_blank">Official documentation</a></p>
       </div>
       <div class="anka-build-plugin-head">
-        <f:entry title="${%Cloud Name}" field="cloudName">
-          <f:textbox clazz="required string" default="${instance.name}" />
-        </f:entry>
+        <div class="anka-build-plugin-head-cloud-column">
+          <f:entry title="${%Cloud Name}" field="cloudName">
+            <f:textbox clazz="required string" default="${instance.name}" />
+          </f:entry>
+          <f:entry title="Cloud Instance Capacity" description="The maximum number of VMs/Nodes this cloud can run." field="cloudInstanceCap">
+            <ul class="jenkins-form-description-extra">
+              <li><b>0</b> | automatic (obtained from Controller)</li>
+              <li><b>-1</b> | unlimited</li>
+              <li><b>any number</b> | hard code limit</li>
+            </ul>
+            <f:textbox clazz="required number" default="0" />
+          </f:entry>
+        </div>
         <f:entry title="Full Anka Build Cloud Controller URL" field="ankaMgmtUrl" description="ex: http[s]://{URL}:{PORT}">
             <f:textbox clazz="required string" id="ankaMgmtUrl" onblur="validateAnkaMgmtUrl()" />
             <div class="error-message" style="display: none;" id="ankaMgmtUrlError"></div>
-        </f:entry>
-        <f:entry title="Cloud Instance Capacity" description="The maximum number of VMs/Nodes this cloud can run." field="cloudInstanceCap">
-          <ul class="jenkins-form-description-extra">
-            <li><b>0</b> | automatic (obtained from Controller)</li>
-            <li><b>-1</b> | unlimited</li>
-            <li><b>any number</b> | hard code limit</li>
-          </ul>
-          <f:textbox clazz="required number" default="0" />
+            <div class="anka-build-plugin-url-https">
+              <h4>HTTPS</h4>
+              <div class="jenkins-form-description">
+                TLS settings for this URL (client certificate authentication is configured under Security).
+              </div>
+              <f:entry title="Skip TLS Verification" field="skipTLSVerification">
+                <f:checkbox checked="${instance.getSkipTLSVerification()?'true':'false'}" field="skipTLSVerification" />
+              </f:entry>
+              <f:entry title="Controller Root CA credential" field="rootCaCredentialsId" description="Secret text credential whose value is the controller Root CA PEM. Used for TLS validation when &quot;Skip TLS Verification&quot; is off. Use a dedicated credential; do not reuse UAK or API key secrets.">
+                <c:select/>
+              </f:entry>
+            </div>
         </f:entry>
       </div>
       <div class="anka-build-plugin-head-advanced">
@@ -375,25 +469,28 @@
       </div>
       <h2>Security</h2>
       <div class="anka-build-plugin-security">
-        <h3>Authentication</h3>
-        <h4>Supported Authentication Methods</h4>
-        <ul>
-          <li><a href="https://docs.veertu.com/anka/anka-build-cloud/advanced-security-features/certificate-authentication/" target="_blank">mTLS / Certificate Authentication</a></li>
-          <li><a href="https://docs.veertu.com/anka/anka-build-cloud/advanced-security-features/uak-tap-authentication/" target="_blank">UAK / TAP</a></li>
-        </ul>
-        <f:entry title="${%Credentials}" description="Credentials to use for the Controller" field="credentialsId">
-          <c:select/>
-        </f:entry>
-        <f:entry title="Skip TLS Verification" field="skipTLSVerification">
-          <f:checkbox checked="${instance.getSkipTLSVerification()?'true':'false'}" field="skipTLSVerification" />
-        </f:entry>
-        <f:entry title="Controller Root CA credential" field="rootCaCredentialsId" description="Secret text credential whose value is the controller Root CA PEM. Used for TLS validation when &quot;Skip TLS Verification&quot; is off. Use a dedicated credential; do not reuse UAK or API key secrets.">
-          <c:select/>
-        </f:entry>
-        <f:entry title="Labels API token" field="labelsApiToken"
-                 description="Optional. When set, automation can POST JSON to ${app.rootUrl}anka-build-cloud/labels/${instance.name} (URL-encode the cloud name in clients if it contains spaces or special characters) with Content-Type: application/json, using Authorization: Bearer &lt;token&gt; or X-Anka-Labels-Token. Leave empty to disable. Prefer HTTPS.">
-          <f:password/>
-        </f:entry>
+        <div class="anka-build-plugin-security-columns">
+          <div class="anka-build-plugin-security-column">
+            <h3>Authentication</h3>
+            <h4>Supported Authentication Methods</h4>
+            <ul>
+              <li><a href="https://docs.veertu.com/anka/anka-build-cloud/advanced-security-features/certificate-authentication/" target="_blank">mTLS / Certificate Authentication</a></li>
+              <li><a href="https://docs.veertu.com/anka/anka-build-cloud/advanced-security-features/uak-tap-authentication/" target="_blank">UAK / TAP</a></li>
+            </ul>
+            <f:entry title="${%Credentials}" description="Credentials to use for the Controller" field="credentialsId">
+              <c:select/>
+            </f:entry>
+          </div>
+          <div class="anka-build-plugin-security-column">
+            <h3>Label Update API</h3>
+            <div class="jenkins-form-description anka-build-plugin-security-doc-link">
+              <a href="https://github.com/jenkinsci/anka-build-plugin/blob/master/docs/node-labels-api.md" target="_blank">Node Labels HTTP API Documentation</a>
+            </div>
+            <f:entry title="Labels API token credential" field="labelsApiTokenCredentialsId">
+              <c:select/>
+            </f:entry>
+          </div>
+        </div>
       </div>
     </div>
     <div class="anka-build-plugin-content-group">

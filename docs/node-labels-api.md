@@ -8,12 +8,36 @@ Related issue: [jenkinsci/anka-build-plugin#59](https://github.com/jenkinsci/ank
 
 ## Enable the API (per cloud)
 
-1. Open **Manage Jenkins → Nodes and Clouds → Clouds** and edit your **Anka Build Cloud** entry.
-2. Set **Labels API token** (a strong random secret).  
+1. Create a Jenkins credential of type **Anka Build Cloud Plugin: Labels API Token** (**Manage Jenkins → Credentials**) with a strong random secret.
+2. Open **Manage Jenkins → Nodes and Clouds → Clouds** and edit your **Anka Build Cloud** entry.
+3. Under **Security → Label Update API**, select **Labels API token credential** (the credential id from step 1).  
    - **Empty** = the Labels API is **disabled** for that cloud (`503` on use).
-3. Save the configuration.
+4. Save the configuration.
 
-Treat the token like a password: store it in a secret manager, rotate it from the UI when needed, and **use HTTPS** in production so the token is not sent in cleartext.
+Treat the token like a password: store it in a secret manager, rotate it by updating the credential when needed, and **use HTTPS** in production so the token is not sent in cleartext.
+
+### Configuration as Code
+
+Provision the credential first, then reference its id on the cloud:
+
+```yaml
+credentials:
+  system:
+    domainCredentials:
+      - credentials:
+          - labelsApiToken:
+              id: "anka-labels-api-token"
+              scope: GLOBAL
+              token: "${LABELS_API_TOKEN}"
+              description: "Anka Build Cloud Plugin: Labels API Token"
+
+jenkins:
+  clouds:
+    - ankaMgmt:
+        cloudName: "Veertu anka"
+        labelsApiTokenCredentialsId: "anka-labels-api-token"
+        # ...
+```
 
 ## Endpoint
 
@@ -74,7 +98,7 @@ If the controller can reach the Anka Build Cloud and `masterVmId` is not known t
 | **401** | Missing or invalid token. |
 | **404** | Unknown cloud or not an Anka Build Cloud; or non-POST (e.g. GET) when Stapler does not dispatch to the handler. |
 | **405** | Method other than POST (when the request is dispatched but verb is wrong). |
-| **503** | Labels API token not set for that cloud. |
+| **503** | Labels API token credential not set for that cloud. |
 | **500** | Unexpected server error while applying changes (check Jenkins logs). |
 
 ### Success body example
@@ -147,7 +171,7 @@ Automation may POST **without** a Jenkins crumb on this path: only URLs under `/
 - **Static labels only** — Dynamic/runtime templates are not part of this API.
 - **Persistence** — Updates replace the cloud entry in Jenkins configuration and save; a restart is not required for the new templates to apply to provisioning.
 - **Concurrency** — Two simultaneous POSTs can race; the last successful `save()` wins. Serialize updates per cloud if this matters for your automation.
-- **CasC export** — After you add a Labels API token in the UI, it appears in exported Configuration-as-Code like other secrets (typically redacted); verify your export pipeline if you rely on YAML reviews.
+- **CasC export** — The cloud stores the credential **id** (`labelsApiTokenCredentialsId`); the token secret lives in the credentials store and is exported separately (typically redacted).
 
 ## Troubleshooting
 
@@ -155,6 +179,6 @@ Automation may POST **without** a Jenkins crumb on this path: only URLs under `/
 |---------|------------------|
 | `404` | Cloud name spelling and URL encoding; cloud must be `AnkaMgmtCloud`. |
 | `401` | Header name/value; no extra quotes; Bearer spelling. |
-| `503` | Token field empty in cloud config; save configuration after setting. |
+| `503` | Labels API token credential not selected in cloud config; save configuration after setting. |
 | `400` on templates | Match CasC/UI shape; ensure nested objects (`retentionStrategy`, `saveImageParameters`, etc.) match what the UI would save; see `configuration-as-code.yml` in this repo. |
 | Changes not reflected | Confirm HTTP `200` and `newCount`; check Jenkins system log for warnings about `masterVmId`. |

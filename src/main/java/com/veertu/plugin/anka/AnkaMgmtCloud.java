@@ -28,6 +28,7 @@ import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.interceptor.RequirePOST;
 
 import java.io.IOException;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.*;
@@ -69,9 +70,14 @@ public class AnkaMgmtCloud extends Cloud {
     private int vmIPAssignRetries;
     private String durabilityMode = "durable";
     /**
-     * Secret token for HTTP label updates ({@code POST .../anka-build-cloud/labels/...}) without Jenkins admin UI.
+     * Jenkins credential id ({@link AnkaLabelsApiTokenCredentials}) whose secret is the Labels API bearer token.
      * When null or empty, the labels API is disabled for this cloud.
      */
+    private String labelsApiTokenCredentialsId;
+    /**
+     * @deprecated Inline token stored in cloud config. Use {@link #labelsApiTokenCredentialsId}.
+     */
+    @Deprecated
     private Secret labelsApiToken;
 
     @DataBoundConstructor
@@ -560,31 +566,95 @@ public class AnkaMgmtCloud extends Cloud {
         return templates;
     }
 
+    public String getLabelsApiTokenCredentialsId() {
+        return labelsApiTokenCredentialsId;
+    }
+
+    @DataBoundSetter
+    public void setLabelsApiTokenCredentialsId(String labelsApiTokenCredentialsId) {
+        this.labelsApiTokenCredentialsId = Util.fixEmptyAndTrim(labelsApiTokenCredentialsId);
+    }
+
+    /**
+     * @deprecated Retained for Configuration as Code and older serialized configs that inlined the token.
+     *             Configure {@link #labelsApiTokenCredentialsId} instead.
+     */
+    @Deprecated
     public Secret getLabelsApiToken() {
         return labelsApiToken;
     }
 
+    /**
+     * @deprecated Retained for Configuration as Code and older serialized configs that inlined the token.
+     *             Configure {@link #labelsApiTokenCredentialsId} instead.
+     */
+    @Deprecated
     @DataBoundSetter
     public void setLabelsApiToken(Secret labelsApiToken) {
         this.labelsApiToken = labelsApiToken;
     }
 
     /**
-     * @return true if {@link #labelsApiToken} is configured (non-blank).
+     * Resolves the Labels API token from {@link #labelsApiTokenCredentialsId}, falling back to legacy {@link #labelsApiToken}.
+     */
+    @Nullable
+    private String resolveLabelsApiTokenPlainText() {
+        if (labelsApiTokenCredentialsId != null && !labelsApiTokenCredentialsId.isEmpty()) {
+            AnkaLabelsApiTokenCredentials tokenCredentials = CredentialsProvider.lookupCredentialsInItemGroup(
+                            AnkaLabelsApiTokenCredentials.class,
+                            Jenkins.get(),
+                            null,
+                            null
+                    ).stream()
+                    .filter(c -> labelsApiTokenCredentialsId.equals(c.getId()))
+                    .findFirst()
+                    .orElse(null);
+            if (tokenCredentials != null) {
+                return tokenCredentials.getToken().getPlainText();
+            }
+            Log("Labels API token credential id '%s' was not found", labelsApiTokenCredentialsId);
+            return null;
+        }
+        if (labelsApiToken != null && !labelsApiToken.getPlainText().isEmpty()) {
+            return labelsApiToken.getPlainText();
+        }
+        return null;
+    }
+
+    /**
+     * @return true if a Labels API token is configured (credential id or legacy inline secret).
      */
     public boolean isLabelsApiEnabled() {
-        return labelsApiToken != null && !labelsApiToken.getPlainText().isEmpty();
+        String token = resolveLabelsApiTokenPlainText();
+        return token != null && !token.isEmpty();
+    }
+
+    /**
+     * Full Labels API POST URL for this cloud, with the cloud name path-encoded for UI display and client use.
+     */
+    public String getLabelsApiEndpointUrl() {
+        String cloudName = Util.fixEmptyAndTrim(getCloudName());
+        if (cloudName == null) {
+            cloudName = "<cloud-name>";
+        }
+        String rootUrl = Util.fixNull(Jenkins.get().getRootUrl());
+        if (!rootUrl.isEmpty() && !rootUrl.endsWith("/")) {
+            rootUrl = rootUrl + "/";
+        }
+        String encodedCloudName = URLEncoder.encode(cloudName, StandardCharsets.UTF_8).replace("+", "%20");
+        return rootUrl + "anka-build-cloud/labels/" + encodedCloudName;
     }
 
     /**
      * Verifies the caller-supplied token using a constant-time comparison.
      */
     boolean verifyLabelsApiToken(@Nullable String providedPlainText) {
-        if (!isLabelsApiEnabled() || providedPlainText == null) {
+        String configuredToken = resolveLabelsApiTokenPlainText();
+        if (configuredToken == null || configuredToken.isEmpty() || providedPlainText == null) {
             return false;
         }
         byte[] a = providedPlainText.getBytes(StandardCharsets.UTF_8);
-        byte[] b = labelsApiToken.getPlainText().getBytes(StandardCharsets.UTF_8);
+        byte[] b = configuredToken.getBytes(StandardCharsets.UTF_8);
         if (a.length != b.length) {
             return false;
         }
@@ -616,6 +686,7 @@ public class AnkaMgmtCloud extends Cloud {
         copy.setVmPollTime(vmPollTime);
         copy.setMaxConnections(maxConnections);
         copy.setConnectionKeepAliveSeconds(connectionKeepAliveSeconds);
+        copy.setLabelsApiTokenCredentialsId(labelsApiTokenCredentialsId);
         copy.setLabelsApiToken(labelsApiToken);
         copy.setMonitorRecurrenceMinutes(getMonitorRecurrenceMinutes());
         return copy;
@@ -1007,13 +1078,6 @@ public class AnkaMgmtCloud extends Cloud {
                     null
             ).forEach(c -> listBox.add(formatControllerCredentialLabel(c), c.getId()));
 
-            CredentialsProvider.lookupCredentialsInItemGroup(
-                    StringCredentialsImpl.class,
-                    Jenkins.get(),
-                    null,
-                    null
-            ).forEach(c -> listBox.add(formatControllerCredentialLabel(c), c.getId()));
-
             addSelectedCredentialIfMissing(listBox, credentialsId);
 
             return listBox;
@@ -1027,25 +1091,27 @@ public class AnkaMgmtCloud extends Cloud {
                 return;
             }
 
-            CredentialsProvider.lookupCredentialsInItemGroup(
-                    Credentials.class,
-                    Jenkins.get(),
-                    null,
-                    null
-            ).stream()
-                    .filter(c -> credentialMatchesId(c, credentialsId))
+            lookupControllerAuthCredentials().stream()
+                    .filter(c -> credentialsId.equals(c.getId()))
                     .findFirst()
                     .ifPresent(c -> listBox.add(formatControllerCredentialLabel(c), credentialsId));
         }
 
-        private static boolean credentialMatchesId(Credentials credential, String credentialsId) {
-            if (credential instanceof IdCredentials) {
-                return credentialsId.equals(((IdCredentials) credential).getId());
-            }
-            if (credential instanceof CertCredentials) {
-                return credentialsId.equals(((CertCredentials) credential).getId());
-            }
-            return false;
+        private static List<IdCredentials> lookupControllerAuthCredentials() {
+            List<IdCredentials> credentials = new ArrayList<>();
+            CredentialsProvider.lookupCredentialsInItemGroup(
+                    CertCredentials.class,
+                    Jenkins.get(),
+                    null,
+                    null
+            ).forEach(credentials::add);
+            CredentialsProvider.lookupCredentialsInItemGroup(
+                    AnkaUakTapCredentials.class,
+                    Jenkins.get(),
+                    null,
+                    null
+            ).forEach(credentials::add);
+            return credentials;
         }
 
         private static String formatControllerCredentialLabel(Credentials credential) {
@@ -1055,16 +1121,6 @@ public class AnkaMgmtCloud extends Cloud {
             if (credential instanceof AnkaUakTapCredentials uakTapCredentials) {
                 return "UAK/TAP: " + uakTapCredentials.getDescription() + " (" + uakTapCredentials.getUsername() + ")";
             }
-            if (credential instanceof StandardUsernamePasswordCredentials userPassCredentials) {
-                return "UAK/TAP (legacy): " + userPassCredentials.getUsername() + " (" + userPassCredentials.getId() + ")";
-            }
-            if (credential instanceof StringCredentialsImpl stringCredentials) {
-                return "UAK/TAP (DEPRECATED): " + stringCredentials.getId();
-            }
-            return credentialsIdLabel(credential);
-        }
-
-        private static String credentialsIdLabel(Credentials credential) {
             if (credential instanceof IdCredentials idCredentials) {
                 return idCredentials.getId();
             }
@@ -1089,6 +1145,29 @@ public class AnkaMgmtCloud extends Cloud {
                 String labelSuffix = (c.getDescription() != null && !c.getDescription().isEmpty())
                         ? " (" + c.getDescription() + ")" : "";
                 listBox.add("Secret text: " + c.getId() + labelSuffix, c.getId());
+            });
+
+            return listBox;
+        }
+
+        @RequirePOST
+        public ListBoxModel doFillLabelsApiTokenCredentialsIdItems(@AncestorInPath ItemGroup context) {
+            if (!(context instanceof AccessControlled ? (AccessControlled) context : Jenkins.get()).hasPermission(Computer.CONFIGURE)) {
+                return new ListBoxModel();
+            }
+
+            ListBoxModel listBox = new ListBoxModel();
+            listBox.add("None", "");
+
+            CredentialsProvider.lookupCredentialsInItemGroup(
+                    AnkaLabelsApiTokenCredentials.class,
+                    Jenkins.get(),
+                    null,
+                    null
+            ).forEach(c -> {
+                String labelSuffix = (c.getDescription() != null && !c.getDescription().isEmpty())
+                        ? " (" + c.getDescription() + ")" : "";
+                listBox.add("Labels API token: " + c.getId() + labelSuffix, c.getId());
             });
 
             return listBox;

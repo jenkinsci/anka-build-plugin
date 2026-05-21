@@ -2,9 +2,12 @@ package com.veertu.plugin.anka;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
-import hudson.util.Secret;
+import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.CredentialsScope;
+import com.cloudbees.plugins.credentials.domains.Domain;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -22,9 +25,19 @@ public class AnkaLabelsApiTest {
     private static final String CLOUD_B = "test-anka-cloud-b";
     private static final String TOKEN = "test-labels-api-token";
     private static final String TOKEN_B = "test-labels-api-token-b";
+    private static final String TOKEN_CREDENTIAL_ID = "test-labels-api-token-cred";
+    private static final String TOKEN_B_CREDENTIAL_ID = "test-labels-api-token-b-cred";
 
     @Rule
     public JenkinsRule j = new JenkinsRule();
+
+    @Test
+    public void labelsApiEndpointUrl_encodesCloudNameWithSpaces() {
+        AnkaMgmtCloud cloud = new AnkaMgmtCloud(
+                "https://127.0.0.1:9", "Anka Build Cloud", "", "", true, new ArrayList<>(), -1);
+
+        assertThat(cloud.getLabelsApiEndpointUrl(), containsString("anka-build-cloud/labels/Anka%20Build%20Cloud"));
+    }
 
     @Test
     public void replace_withValidToken_updatesTemplates() throws Exception {
@@ -77,7 +90,7 @@ public class AnkaLabelsApiTest {
         addNamedCloud(
                 CLOUD_B,
                 List.of(baselineTemplateForCloud(CLOUD_B, "L1", "vm-b")),
-                Secret.fromString(TOKEN_B));
+                TOKEN_B_CREDENTIAL_ID);
         String body = "{\"mode\":\"replace\",\"templates\":["
                 + singleTemplateJson(CLOUD_B, "L1", "vm-updated", "t")
                 + "]}";
@@ -91,7 +104,7 @@ public class AnkaLabelsApiTest {
         addNamedCloud(
                 CLOUD_B,
                 List.of(baselineTemplateForCloud(CLOUD_B, "L1", "vm-b")),
-                Secret.fromString(TOKEN_B));
+                TOKEN_B_CREDENTIAL_ID);
         String body = "{\"mode\":\"replace\",\"templates\":["
                 + singleTemplateJson("L1", "vm-updated", "t")
                 + "]}";
@@ -182,18 +195,35 @@ public class AnkaLabelsApiTest {
     }
 
     private void addCloudWithTemplates(List<AnkaCloudSlaveTemplate> templates, boolean enableApi) throws Exception {
-        addNamedCloud(CLOUD, templates, enableApi ? Secret.fromString(TOKEN) : null);
+        addNamedCloud(CLOUD, templates, enableApi ? TOKEN_CREDENTIAL_ID : null);
     }
 
-    private void addNamedCloud(String name, List<AnkaCloudSlaveTemplate> templates, Secret labelsApiTokenOrNull)
+    private void addNamedCloud(String name, List<AnkaCloudSlaveTemplate> templates, String labelsApiTokenCredentialIdOrNull)
             throws Exception {
+        if (labelsApiTokenCredentialIdOrNull != null) {
+            String token = TOKEN_CREDENTIAL_ID.equals(labelsApiTokenCredentialIdOrNull) ? TOKEN : TOKEN_B;
+            addLabelsApiTokenCredential(labelsApiTokenCredentialIdOrNull, token);
+        }
         AnkaMgmtCloud cloud =
                 new AnkaMgmtCloud("https://127.0.0.1:9", name, "", "", true, templates, -1);
-        if (labelsApiTokenOrNull != null) {
-            cloud.setLabelsApiToken(labelsApiTokenOrNull);
+        if (labelsApiTokenCredentialIdOrNull != null) {
+            cloud.setLabelsApiTokenCredentialsId(labelsApiTokenCredentialIdOrNull);
         }
         j.jenkins.clouds.add(cloud);
         j.jenkins.save();
+    }
+
+    private void addLabelsApiTokenCredential(String credentialId, String token) throws Exception {
+        CredentialsProvider.lookupStores(j.jenkins)
+                .iterator()
+                .next()
+                .addCredentials(
+                        Domain.global(),
+                        new AnkaLabelsApiTokenCredentials(
+                                CredentialsScope.GLOBAL,
+                                credentialId,
+                                AnkaCredentialNaming.PREFIX + credentialId,
+                                token));
     }
 
     private static AnkaCloudSlaveTemplate baselineTemplate(String label, String masterVmId) {

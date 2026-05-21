@@ -69,6 +69,12 @@ Build locally with Maven:
 mvn -Daether.remoteRepositoryFilter.prefixes=false clean package
 ```
 
+Build without tests:
+
+```bash
+mvn -Daether.remoteRepositoryFilter.prefixes=false -DskipTests -Dspotbugs.skip=true -Dinvoker.skip=true clean package
+```
+
 If you use Maven 3, you can usually omit `-Daether.remoteRepositoryFilter.prefixes=false`.
 
 Or, alternatively, build in Docker:
