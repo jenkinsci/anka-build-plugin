@@ -4,6 +4,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.CredentialsScope;
@@ -18,6 +19,7 @@ import net.sf.json.JSONObject;
 import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
+import hudson.util.Secret;
 
 public class AnkaLabelsApiTest {
 
@@ -35,8 +37,17 @@ public class AnkaLabelsApiTest {
     public void labelsApiEndpointUrl_encodesCloudNameWithSpaces() {
         AnkaMgmtCloud cloud = new AnkaMgmtCloud(
                 "https://127.0.0.1:9", "Anka Build Cloud", "", "", true, new ArrayList<>(), -1);
+        cloud.setLabelsApiToken(Secret.fromString("test-token"));
 
         assertThat(cloud.getLabelsApiEndpointUrl(), containsString("anka-build-cloud/labels/Anka%20Build%20Cloud"));
+    }
+
+    @Test
+    public void labelsApiEndpointUrl_isNullWhenApiDisabled() {
+        AnkaMgmtCloud cloud = new AnkaMgmtCloud(
+                "https://127.0.0.1:9", "Anka Build Cloud", "", "", true, new ArrayList<>(), -1);
+
+        assertThat(cloud.getLabelsApiEndpointUrl(), is(nullValue()));
     }
 
     @Test
@@ -120,10 +131,10 @@ public class AnkaLabelsApiTest {
     }
 
     @Test
-    public void whenApiDisabled_returns503() throws Exception {
+    public void whenApiDisabled_returns404() throws Exception {
         addCloudWithTemplates(List.of(baselineTemplate("L1", "vm-1")), false);
         int code = postLabels(CLOUD, "{\"mode\":\"replace\",\"templates\":[]}", "Bearer " + TOKEN);
-        assertThat(code, is(503));
+        assertThat(code, is(404));
     }
 
     @Test

@@ -9,7 +9,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 /**
- * Allows POST to the labels API without a CSRF crumb (token auth replaces crumb).
+ * Allows POST to the labels API without a CSRF crumb (token auth replaces crumb). Applies to {@code
+ * /anka-build-cloud/labels/...} so unconfigured paths reach Stapler and are not routed (404) instead of failing CSRF
+ * (403).
  */
 @Extension
 public class AnkaLabelsApiCrumbExclusion extends CrumbExclusion {

@@ -630,9 +630,27 @@ public class AnkaMgmtCloud extends Cloud {
     }
 
     /**
-     * Full Labels API POST URL for this cloud, with the cloud name path-encoded for UI display and client use.
+     * @return true if at least one Anka cloud has a Labels API token configured.
      */
+    static boolean isAnyLabelsApiEnabled() {
+        for (Cloud cloud : Jenkins.get().clouds) {
+            if (cloud instanceof AnkaMgmtCloud ankaCloud && ankaCloud.isLabelsApiEnabled()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Full Labels API POST URL for this cloud, with the cloud name path-encoded for UI display and client use.
+     *
+     * @return the URL when a Labels API token is configured; {@code null} when the endpoint is not registered
+     */
+    @Nullable
     public String getLabelsApiEndpointUrl() {
+        if (!isLabelsApiEnabled()) {
+            return null;
+        }
         String cloudName = Util.fixEmptyAndTrim(getCloudName());
         if (cloudName == null) {
             cloudName = "<cloud-name>";

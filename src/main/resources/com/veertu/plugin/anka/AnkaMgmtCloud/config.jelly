@@ -486,7 +486,7 @@
             <div class="jenkins-form-description anka-build-plugin-security-doc-link">
               <a href="https://github.com/jenkinsci/anka-build-plugin/blob/master/docs/node-labels-api.md" target="_blank">Node Labels HTTP API Documentation</a>
             </div>
-            <f:entry title="Labels API token credential" field="labelsApiTokenCredentialsId">
+            <f:entry title="Labels API token credential" field="labelsApiTokenCredentialsId" description="Optional. When unset, this cloud's Labels API URL is not registered (Stapler does not route requests to the plugin). Select a credential to enable the endpoint.">
               <c:select/>
             </f:entry>
           </div>

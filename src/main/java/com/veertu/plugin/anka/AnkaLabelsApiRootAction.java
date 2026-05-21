@@ -4,11 +4,14 @@ import hudson.Extension;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.kohsuke.stapler.Stapler;
 import org.kohsuke.stapler.StaplerRequest2;
 import org.kohsuke.stapler.StaplerResponse2;
+import org.kohsuke.stapler.StaplerProxy;
 import org.kohsuke.stapler.verb.POST;
 
 /**
@@ -17,14 +20,17 @@ import org.kohsuke.stapler.verb.POST;
  * <p>POST {@code /anka-build-cloud/labels/<cloudName>} with JSON body (see README).
  *
  * <p><b>Security model:</b> Implements {@link hudson.model.UnprotectedRootAction} without {@link hudson.security.ACL}
- * checks; callers must present the matching per-cloud secret ({@link AnkaMgmtCloud#verifyLabelsApiToken}). CSRF for
- * this path is handled via a narrow {@link AnkaLabelsApiCrumbExclusion}; {@code POST}-only via {@link POST} below.
- * See <a href="https://www.jenkins.io/doc/developer/security/misc/">Automation / CSRF trade-offs</a>.
+ * checks; callers must present the matching per-cloud secret ({@link AnkaMgmtCloud#verifyLabelsApiToken}). {@link
+ * StaplerProxy#getTarget()} returns {@code null} when no cloud has a Labels API token configured, or when the target
+ * cloud is missing or has no token, so Stapler does not route the request to {@link #doLabels}. CSRF for enabled paths
+ * is handled via a narrow {@link AnkaLabelsApiCrumbExclusion}; {@code POST}-only via {@link POST} below. See
+ * <a href="https://www.jenkins.io/doc/developer/security/misc/">Automation / CSRF trade-offs</a>.
  */
 @Extension
-public class AnkaLabelsApiRootAction implements hudson.model.UnprotectedRootAction {
+public class AnkaLabelsApiRootAction implements hudson.model.UnprotectedRootAction, StaplerProxy {
 
     private static final Logger LOGGER = Logger.getLogger(AnkaLabelsApiRootAction.class.getName());
+    private static final String LABELS_PATH_PREFIX = "/anka-build-cloud/labels/";
 
     /** Maximum Labels API request body size (1 MiB). */
     static final int MAX_REQUEST_BODY_BYTES = 1_048_576;
@@ -45,11 +51,34 @@ public class AnkaLabelsApiRootAction implements hudson.model.UnprotectedRootActi
     }
 
     /**
+     * Hide this action from Stapler unless the request targets {@code /labels/<cloudName>} for a cloud with a configured
+     * Labels API token.
+     */
+    @Override
+    public Object getTarget() {
+        if (!AnkaMgmtCloud.isAnyLabelsApiEnabled()) {
+            return null;
+        }
+        StaplerRequest2 req = Stapler.getCurrentRequest2();
+        if (req == null) {
+            return null;
+        }
+        String cloudName = cloudNameFromLabelsRequest(req.getPathInfo());
+        if (cloudName == null) {
+            return null;
+        }
+        AnkaMgmtCloud cloud = AnkaMgmtCloud.get(cloudName);
+        if (cloud == null || !cloud.isLabelsApiEnabled()) {
+            return null;
+        }
+        return this;
+    }
+
+    /**
      * Stapler maps this to {@code /anka-build-cloud/labels/...}. The cloud name is the first path segment after {@code
      * labels/} (see {@link StaplerRequest2#getRestOfPath()}).
      *
-     * <p>No {@code Permission} check here by design; authorization is the configured labels API token on the target
-     * cloud.
+     * <p>Only reachable when {@link #getTarget()} returns {@code this}.
      *
      * @see hudson.model.UnprotectedRootAction
      */
@@ -71,14 +100,6 @@ public class AnkaLabelsApiRootAction implements hudson.model.UnprotectedRootActi
         String cloudName = slash < 0 ? rest : rest.substring(0, slash);
 
         AnkaMgmtCloud cloud = AnkaMgmtCloud.get(cloudName);
-        if (cloud == null) {
-            rsp.sendError(HttpServletResponse.SC_NOT_FOUND, "Unknown cloud: " + cloudName);
-            return;
-        }
-        if (!cloud.isLabelsApiEnabled()) {
-            rsp.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE, "Labels API is not configured for this cloud");
-            return;
-        }
         String token = extractToken(req);
         if (!cloud.verifyLabelsApiToken(token)) {
             rsp.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid or missing token");
@@ -102,6 +123,19 @@ public class AnkaLabelsApiRootAction implements hudson.model.UnprotectedRootActi
             LOGGER.log(Level.WARNING, "Labels API failed for cloud " + cloudName, e);
             rsp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
         }
+    }
+
+    static String cloudNameFromLabelsRequest(String pathInfo) {
+        if (pathInfo == null || !pathInfo.startsWith(LABELS_PATH_PREFIX)) {
+            return null;
+        }
+        String rest = pathInfo.substring(LABELS_PATH_PREFIX.length());
+        int slash = rest.indexOf('/');
+        String encodedCloudName = slash < 0 ? rest : rest.substring(0, slash);
+        if (encodedCloudName.isEmpty()) {
+            return null;
+        }
+        return URLDecoder.decode(encodedCloudName, StandardCharsets.UTF_8);
     }
 
     private static String extractToken(StaplerRequest2 req) {
