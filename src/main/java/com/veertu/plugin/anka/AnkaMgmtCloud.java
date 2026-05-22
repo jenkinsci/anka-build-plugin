@@ -41,7 +41,7 @@ import static java.lang.Thread.sleep;
 
 public class AnkaMgmtCloud extends Cloud {
     private static final java.util.logging.Logger MgmtLogger = java.util.logging.Logger.getLogger("anka-host");
-    private final List<AnkaCloudSlaveTemplate> templates;
+    private List<AnkaCloudSlaveTemplate> templates;
     private final String ankaMgmtUrl;
     private final String credentialsId;
     /**
@@ -682,7 +682,8 @@ public class AnkaMgmtCloud extends Cloud {
     /**
      * Returns a new cloud instance with the same settings as this one but with the static
      * {@link #getTemplates()} list replaced by {@code newTemplates}, including the Labels API token.
-     * To persist, call {@link #replaceInJenkinsWith(AnkaMgmtCloud)} with this return value.
+     * To persist, call {@link #updateStaticTemplatesAndSave(List)} or
+     * {@link #replaceInJenkinsWith(AnkaMgmtCloud)} with this return value.
      */
     public AnkaMgmtCloud copyWithTemplates(List<AnkaCloudSlaveTemplate> newTemplates) {
         AnkaMgmtCloud copy = new AnkaMgmtCloud(
@@ -711,6 +712,22 @@ public class AnkaMgmtCloud extends Cloud {
     }
 
     /**
+     * Replaces static templates on this cloud and persists {@code config.xml}. Mutates the registered
+     * cloud instance in place so XStream serializes the updated {@link #templates} field.
+     */
+    void updateStaticTemplatesAndSave(List<AnkaCloudSlaveTemplate> newTemplates) throws IOException {
+        Objects.requireNonNull(newTemplates);
+        try (ACLContext ignored = ACL.as2(ACL.SYSTEM2)) {
+            Jenkins j = Jenkins.get();
+            if (!j.clouds.contains(this)) {
+                throw new IOException("Anka cloud '" + getCloudName() + "' is no longer registered on this Jenkins instance");
+            }
+            this.templates = new ArrayList<>(newTemplates);
+        }
+        Jenkins.get().save();
+    }
+
+    /**
      * Atomically replaces this cloud on Jenkins and saves configuration (runs as {@link ACL#SYSTEM2}).
      */
     public void replaceInJenkinsWith(AnkaMgmtCloud replacement) throws IOException {
@@ -722,6 +739,7 @@ public class AnkaMgmtCloud extends Cloud {
             }
             j.clouds.replace(this, replacement);
         }
+        Jenkins.get().save();
     }
 
     public List<DynamicSlaveTemplate> getDynamicTemplates() {

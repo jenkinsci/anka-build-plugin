@@ -169,7 +169,7 @@ Automation may POST **without** a Jenkins crumb on this path: only URLs under `/
 ## Behavior notes
 
 - **Static labels only** — Dynamic/runtime templates are not part of this API.
-- **Persistence** — Updates replace the cloud entry in Jenkins configuration and save; a restart is not required for the new templates to apply to provisioning.
+- **Persistence** — Updates mutate static templates on the registered cloud and call `Jenkins.save()`; a restart is not required for the new templates to apply to provisioning.
 - **Concurrency** — Two simultaneous POSTs can race; the last successful `save()` wins. Serialize updates per cloud if this matters for your automation.
 - **CasC export** — The cloud stores the credential **id** (`labelsApiTokenCredentialsId`); the token secret lives in the credentials store and is exported separately (typically redacted).
 

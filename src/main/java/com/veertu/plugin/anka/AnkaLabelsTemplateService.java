@@ -59,8 +59,7 @@ final class AnkaLabelsTemplateService {
             }
         }
 
-        AnkaMgmtCloud replacement = cloud.copyWithTemplates(merged);
-        cloud.replaceInJenkinsWith(replacement);
+        cloud.updateStaticTemplatesAndSave(merged);
         return new Result(cloud.getCloudName(), mode, previousCount, merged.size());
     }
 
