@@ -32,36 +32,100 @@ public class ClientCertAuthenticator {
     }
 
     public KeyStore makeTrustStore() throws CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException {
-        try {
-            PEMParser reader;
-            BouncyCastleProvider bouncyCastleProvider = new BouncyCastleProvider();
+        Certificate certificate = parseClientCertificate(clientCert);
+        PrivateKey privateKey = parseClientPrivateKey(clientCertKey);
 
-            reader = new PEMParser(new StringReader(clientCert));
-            X509CertificateHolder holder = (X509CertificateHolder)reader.readObject();
-            Certificate certificate = new JcaX509CertificateConverter().setProvider(bouncyCastleProvider).getCertificate(holder);
+        KeyStore keystore = KeyStore.getInstance("JKS");
+        keystore.load(null);
+        keystore.setCertificateEntry(certAlias, certificate);
+        keystore.setKeyEntry(keyAlias, privateKey, pemPassword.toCharArray(), new Certificate[] {certificate});
+        return keystore;
+    }
 
-            reader = new PEMParser(new StringReader(clientCertKey));
-            Object obj = reader.readObject();
-            PrivateKeyInfo privateKeyInfo;
-            if (obj instanceof PrivateKeyInfo) {
-                privateKeyInfo = (PrivateKeyInfo) obj;
-            } else if (obj instanceof PEMKeyPair) {
-                privateKeyInfo = ((PEMKeyPair)obj).getPrivateKeyInfo();
-            } else {
-                throw new IllegalArgumentException("Invalid private key format");
+    static Certificate parseClientCertificate(String clientCertificatePem) throws CertificateException, IOException {
+        if (clientCertificatePem == null) {
+            throw new CertificateException("Client certificate PEM is null");
+        }
+        String trimmed = clientCertificatePem.trim();
+        if (trimmed.isEmpty()) {
+            throw new CertificateException("Client certificate PEM is empty");
+        }
+
+        try (PEMParser reader = new PEMParser(new StringReader(trimmed))) {
+            final Object parsed;
+            try {
+                parsed = reader.readObject();
+            } catch (Exception e) {
+                throw new CertificateException(
+                        "Client certificate is not valid PEM (could not decode). "
+                                + "Expected a block starting with -----BEGIN CERTIFICATE-----",
+                        e);
+            }
+            if (parsed == null) {
+                throw new CertificateException(
+                        "Client certificate is not valid PEM: no certificate was parsed. "
+                                + "Expected a block starting with -----BEGIN CERTIFICATE-----");
+            }
+            if (!(parsed instanceof X509CertificateHolder)) {
+                throw new CertificateException(
+                        "Client certificate PEM must contain an X.509 certificate; found "
+                                + parsed.getClass().getSimpleName()
+                                + " instead");
+            }
+            try {
+                return new JcaX509CertificateConverter()
+                        .setProvider(new BouncyCastleProvider())
+                        .getCertificate((X509CertificateHolder) parsed);
+            } catch (Exception e) {
+                throw new CertificateException("Client certificate PEM is not a valid X.509 certificate", e);
+            }
+        }
+    }
+
+    static PrivateKey parseClientPrivateKey(String clientKeyPem) throws CertificateException, IOException {
+        if (clientKeyPem == null) {
+            throw new CertificateException("Client key PEM is null");
+        }
+        String trimmed = clientKeyPem.trim();
+        if (trimmed.isEmpty()) {
+            throw new CertificateException("Client key PEM is empty");
+        }
+
+        try (PEMParser reader = new PEMParser(new StringReader(trimmed))) {
+            final Object parsed;
+            try {
+                parsed = reader.readObject();
+            } catch (Exception e) {
+                throw new CertificateException(
+                        "Client key is not valid PEM (could not decode). "
+                                + "Expected a block starting with -----BEGIN ... PRIVATE KEY-----",
+                        e);
+            }
+            if (parsed == null) {
+                throw new CertificateException(
+                        "Client key is not valid PEM: no private key was parsed. "
+                                + "Expected a block starting with -----BEGIN ... PRIVATE KEY-----");
             }
 
-            PrivateKey privateKey = new JcaPEMKeyConverter().setProvider(bouncyCastleProvider).getPrivateKey(privateKeyInfo);
+            PrivateKeyInfo privateKeyInfo;
+            if (parsed instanceof PrivateKeyInfo) {
+                privateKeyInfo = (PrivateKeyInfo) parsed;
+            } else if (parsed instanceof PEMKeyPair) {
+                privateKeyInfo = ((PEMKeyPair) parsed).getPrivateKeyInfo();
+            } else {
+                throw new CertificateException(
+                        "Client key PEM must contain a private key; found "
+                                + parsed.getClass().getSimpleName()
+                                + " instead");
+            }
 
-            KeyStore keystore = KeyStore.getInstance("JKS");
-            keystore.load(null);
-            keystore.setCertificateEntry(certAlias, certificate);
-            keystore.setKeyEntry(keyAlias, privateKey, pemPassword.toCharArray(), new Certificate[] {certificate});
-            return keystore;
-
-        } catch (CertificateException | NoSuchAlgorithmException | KeyStoreException | IOException e) {
-            e.printStackTrace();
-            throw e;
+            try {
+                return new JcaPEMKeyConverter()
+                        .setProvider(new BouncyCastleProvider())
+                        .getPrivateKey(privateKeyInfo);
+            } catch (Exception e) {
+                throw new CertificateException("Client key PEM is not a valid private key", e);
+            }
         }
     }
 
@@ -71,7 +135,6 @@ public class ClientCertAuthenticator {
         }
         return this.keyStore;
     }
-
 
     public String getPemPassword() {
         return pemPassword;

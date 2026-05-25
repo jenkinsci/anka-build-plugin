@@ -11,22 +11,26 @@ import hudson.slaves.JNLPLauncher;
 import hudson.slaves.SlaveComputer;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 
 public class AnkaLauncher extends DelegatingComputerLauncher {
 
     protected static final int defaultLaunchTimeoutSeconds = 2000;
     protected static final int defaultMaxNumRetries = 5;
     protected static final int defaultRetryWaitTime = 5;
-    protected static final int defaultSSHLaunchDelay = 15;  // 15 seconds for ssh delay
-    protected static final int defaultVmIPAssignWaitSeconds = 10;  // 15 seconds for ssh delay
-    protected static final int defaultVmIPAssignRetries = 6;  // 15 seconds for ssh delay
+    protected static final int defaultSSHPortWaitTimeoutSeconds = 60;
+    protected static final int defaultSSHPollIntervalSeconds = 1;
+    protected static final int defaultTcpConnectTimeoutMs = 2000;
+    protected static final int defaultVmIPAssignWaitSeconds = 10;
+    protected static final int defaultVmIPAssignRetries = 6;
     private final AnkaMgmtCloud cloud;
     private final AnkaCloudSlaveTemplate template;
     private final String instanceId;
     private int launchTimeoutSeconds = 2000;
     private int maxRetries = 5;
     private int retryWaitTime = 5;
-    private int sshLaunchDelaySeconds = 15;
+    private int sshLaunchDelaySeconds = defaultSSHPortWaitTimeoutSeconds;
     private int vmIPAssignWaitSeconds = 10;
     private int vmIPAssignRetries = 6;
 
@@ -68,9 +72,37 @@ public class AnkaLauncher extends DelegatingComputerLauncher {
     }
 
     public AnkaLauncher(AnkaMgmtCloud cloud, AnkaCloudSlaveTemplate template, String instanceId) {
-        this(cloud, template, instanceId, defaultLaunchTimeoutSeconds, defaultMaxNumRetries, defaultRetryWaitTime, defaultSSHLaunchDelay, defaultVmIPAssignWaitSeconds, defaultVmIPAssignRetries);
+        this(cloud, template, instanceId, defaultLaunchTimeoutSeconds, defaultMaxNumRetries, defaultRetryWaitTime, defaultSSHPortWaitTimeoutSeconds, defaultVmIPAssignWaitSeconds, defaultVmIPAssignRetries);
     }
 
+    static boolean isTcpPortOpen(String host, int port, int connectTimeoutMs) {
+        try (Socket socket = new Socket()) {
+            socket.connect(new InetSocketAddress(host, port), connectTimeoutMs);
+            return true;
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    static void waitForSshPortReady(String host, int port, int maxWaitSeconds, int pollIntervalSeconds, TaskListener listener)
+            throws InterruptedException {
+        long deadlineMillis = System.currentTimeMillis() + maxWaitSeconds * 1000L;
+        int attempt = 0;
+        while (System.currentTimeMillis() < deadlineMillis) {
+            attempt++;
+            if (isTcpPortOpen(host, port, defaultTcpConnectTimeoutMs)) {
+                listener.getLogger().printf("SSH port %s:%d is ready (attempt #%d)%n", host, port, attempt);
+                return;
+            }
+            listener.getLogger().printf(
+                    "Waiting for SSH port %s:%d to be ready (timeout: %d seconds, poll interval: %d seconds, attempt #%d)...%n",
+                    host, port, maxWaitSeconds, pollIntervalSeconds, attempt);
+            Thread.sleep(pollIntervalSeconds * 1000L);
+        }
+        listener.getLogger().printf(
+                "SSH port %s:%d did not become ready within %d seconds, proceeding with launch anyway%n",
+                host, port, maxWaitSeconds);
+    }
 
     @Override
     public boolean isLaunchSupported() {
@@ -96,9 +128,6 @@ public class AnkaLauncher extends DelegatingComputerLauncher {
                 AnkaVmInfo vmInfo = instance.getVmInfo();
                 if (vmInfo != null) {
                     if (template.getLaunchMethod().equalsIgnoreCase(LaunchMethod.SSH)) {
-                        listener.getLogger().printf("Waiting for SSH to be ready (Launch Delay (seconds): %d)...%n", sshLaunchDelaySeconds);
-                        Thread.sleep(sshLaunchDelaySeconds * 1000L);
-
                         String ip;
                         int port = vmInfo.getForwardedPort(template.SSHPort);
 
@@ -141,6 +170,8 @@ public class AnkaLauncher extends DelegatingComputerLauncher {
                             listener.getLogger().println("Failed to get port for SSH connection");
                             return;
                         }
+
+                        waitForSshPortReady(ip, port, sshLaunchDelaySeconds, defaultSSHPollIntervalSeconds, listener);
 
                         this.launcher = new SSHLauncher(ip, port, template.getCredentialsId(), template.getJavaArgs(), null, null, null, launchTimeoutSeconds, maxRetries, retryWaitTime, null);
 

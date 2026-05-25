@@ -1,21 +1,15 @@
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form" xmlns:st="jelly:stapler">
+  <f:entry title="${%Token}" field="token" description="Secret token sent by automation as Authorization: Bearer or X-Anka-Labels-Token.">
+    <f:password/>
+  </f:entry>
   <f:entry title="${%ID}" description="${%Unique identifier shown in the Jenkins credentials list. Use letters, numbers, dots, dashes, or underscores.}">
     <f:textbox name="_.id"
                value="${instance != null ? instance.id : ''}"
                readonly="${instance != null ? 'readonly' : null}"
-               placeholder="e.g. anka-controller-mtls"/>
-  </f:entry>
-  <f:entry title="${%Client Key}" field="clientKey">
-    <f:textarea/>
-  </f:entry>
-  <f:entry title="${%Client Certificate}" field="clientCertificate">
-    <f:textarea/>
-  </f:entry>
-  <f:entry title="${%Name}" field="name">
-    <f:textbox default="Anka Build Cloud Plugin: Certificate Authentication"/>
+               placeholder="e.g. anka-labels-api-token"/>
   </f:entry>
   <f:entry title="${%Description}" field="description">
-    <f:textbox default="Anka Build Cloud Plugin: Certificate Authentication"/>
+    <f:textbox default="Anka Build Cloud Plugin: Labels API Token"/>
   </f:entry>
 </j:jelly>

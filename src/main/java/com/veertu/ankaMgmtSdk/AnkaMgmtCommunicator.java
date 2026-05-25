@@ -66,6 +66,8 @@ public class AnkaMgmtCommunicator {
     protected CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
     protected int connectionKeepAliveSeconds = 120;
     protected transient CloseableHttpClient httpClient;
+    /** Runtime-only label for error logs; not a secret and not persisted. */
+    protected transient String apiAuthLogContext;
 
     public AnkaMgmtCommunicator(String url) {
         try {
@@ -121,6 +123,22 @@ public class AnkaMgmtCommunicator {
 
     public void setConnectionKeepAliveSeconds(int connectionKeepAliveSeconds) {
         this.connectionKeepAliveSeconds = connectionKeepAliveSeconds;
+    }
+
+    public void setApiAuthLogContext(String apiAuthLogContext) {
+        this.apiAuthLogContext = apiAuthLogContext;
+    }
+
+    protected void logException(Throwable exception) {
+        if (apiAuthLogContext != null && !apiAuthLogContext.isEmpty()) {
+            AnkaMgmtCloud.Log(
+                    "Got exception using credential: %s: %s %s",
+                    apiAuthLogContext,
+                    exception.getClass().getName(),
+                    exception.getMessage());
+            return;
+        }
+        AnkaMgmtCloud.Log("Got exception: %s %s", exception.getClass().getName(), exception.getMessage());
     }
 
     public List<AnkaVmTemplate> listTemplates() throws AnkaMgmtException {
@@ -620,11 +638,11 @@ public class AnkaMgmtCommunicator {
                      | AnkaUnAuthenticatedRequestException
                      | AnkaUnauthorizedRequestException e) {
                 // don't retry on client exception
-                AnkaMgmtCloud.Log("Got exception: %s %s", e.getClass().getName(), e.getMessage());
+                logException(e);
 
                 throw new AnkaMgmtException(e);
             } catch (Exception e) {
-                AnkaMgmtCloud.Log("Got exception: %s %s", e.getClass().getName(), e.getMessage());
+                logException(e);
 
                 if (retry < maxRetries) {
                     continue;

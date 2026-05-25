@@ -36,6 +36,12 @@
         <required.workflow-durable-task-step.version>1434.v1b_595c29ddd7</required.workflow-durable-task-step.version>
         <required.ssh-slaves.version>3.1031.v72c6b_883b_869</required.ssh-slaves.version>
         <required.node-iterator-api.version>72.vc90e81737df1</required.node-iterator-api.version>
+
+        <!-- Parent default is -Xms768M -Xmx768M with reuseForks=false. Small CI agents fail when many
+             forks run in parallel (errno=12), or when reuseForks=true lets one JVM run many
+             JenkinsRule-heavy classes and exhaust native/metaspace mid-run. forkCount=1 +
+             reuseForks=false uses one JVM at a time but recycles the process per test class. -->
+        <argLine>-Xms128m -Xmx512m -XX:+HeapDumpOnOutOfMemoryError -XX:+TieredCompilation -XX:TieredStopAtLevel=1 @{jenkins.addOpens} @{jenkins.insaneHook}</argLine>
     </properties>
 
     <name>Anka Plugin</name>
@@ -167,6 +173,15 @@
                 <configuration>
                     <disabledTestInjection>true</disabledTestInjection>
                     <compatibleSinceVersion>2.0.0</compatibleSinceVersion>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <forkCount>1</forkCount>
+                    <reuseForks>false</reuseForks>
+                    <parallel>none</parallel>
                 </configuration>
             </plugin>
             <plugin>

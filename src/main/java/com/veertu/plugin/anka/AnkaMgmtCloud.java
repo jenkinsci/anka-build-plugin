@@ -9,7 +9,10 @@ import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
 import hudson.Extension;
 import hudson.Util;
 import hudson.model.*;
+import hudson.security.ACL;
+import hudson.security.ACLContext;
 import hudson.security.AccessControlled;
+import hudson.util.Secret;
 import hudson.slaves.Cloud;
 import hudson.slaves.NodeProvisioner;
 import hudson.slaves.SlaveComputer;
@@ -21,18 +24,24 @@ import org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.interceptor.RequirePOST;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
+
+import javax.annotation.Nullable;
 
 import static java.lang.Thread.sleep;
 
 public class AnkaMgmtCloud extends Cloud {
     private static final java.util.logging.Logger MgmtLogger = java.util.logging.Logger.getLogger("anka-host");
-    private final List<AnkaCloudSlaveTemplate> templates;
+    private List<AnkaCloudSlaveTemplate> templates;
     private final String ankaMgmtUrl;
     private final String credentialsId;
     /**
@@ -60,6 +69,16 @@ public class AnkaMgmtCloud extends Cloud {
     private int vmIPAssignWaitSeconds;
     private int vmIPAssignRetries;
     private String durabilityMode = "durable";
+    /**
+     * Jenkins credential id ({@link AnkaLabelsApiTokenCredentials}) whose secret is the Labels API bearer token.
+     * When null or empty, the labels API is disabled for this cloud.
+     */
+    private String labelsApiTokenCredentialsId;
+    /**
+     * @deprecated Inline token stored in cloud config. Use {@link #labelsApiTokenCredentialsId}.
+     */
+    @Deprecated
+    private Secret labelsApiToken;
 
     @DataBoundConstructor
     public AnkaMgmtCloud(String ankaMgmtUrl, String cloudName, String credentialsId, String rootCaCredentialsId, boolean skipTLSVerification, List<AnkaCloudSlaveTemplate> templates, int cloudInstanceCap) {
@@ -221,7 +240,7 @@ public class AnkaMgmtCloud extends Cloud {
 
     public int getSshLaunchDelaySeconds() {
         if (sshLaunchDelaySeconds <= 0) {
-            return AnkaLauncher.defaultSSHLaunchDelay;
+            return AnkaLauncher.defaultSSHPortWaitTimeoutSeconds;
         }
         return sshLaunchDelaySeconds;
     }
@@ -362,6 +381,36 @@ public class AnkaMgmtCloud extends Cloud {
 
         ankaAPI.setMaxConnections(maxConnections);
         ankaAPI.setConnectionKeepAliveSeconds(connectionKeepAliveSeconds);
+        ankaAPI.setApiAuthLogContext(describeCredential(credentials, credentialsId));
+    }
+
+    static String describeCredential(Credentials credentials, String credentialsId) {
+        if (credentials instanceof CertCredentials certCredentials) {
+            return String.format("mTLS id=%s name=%s", certCredentials.getId(), certCredentials.getName());
+        }
+        if (credentials instanceof AnkaUakTapCredentials uakTapCredentials) {
+            return String.format(
+                    "UAK/TAP id=%s description=%s username=%s",
+                    uakTapCredentials.getId(),
+                    uakTapCredentials.getDescription(),
+                    uakTapCredentials.getUsername());
+        }
+        if (credentials instanceof StandardUsernamePasswordCredentials userPassCredentials) {
+            return String.format(
+                    "username/password id=%s username=%s",
+                    userPassCredentials.getId(),
+                    userPassCredentials.getUsername());
+        }
+        if (credentials instanceof StringCredentialsImpl stringCredentials) {
+            return String.format("secret text id=%s", stringCredentials.getId());
+        }
+        if (credentials instanceof IdCredentials idCredentials) {
+            return String.format("id=%s", idCredentials.getId());
+        }
+        if (Util.fixEmptyAndTrim(credentialsId) != null) {
+            return String.format("configured id=%s (not found in credential store)", credentialsId);
+        }
+        return "none configured";
     }
 
     /**
@@ -515,6 +564,182 @@ public class AnkaMgmtCloud extends Cloud {
 
     public List<AnkaCloudSlaveTemplate> getTemplates() {
         return templates;
+    }
+
+    public String getLabelsApiTokenCredentialsId() {
+        return labelsApiTokenCredentialsId;
+    }
+
+    @DataBoundSetter
+    public void setLabelsApiTokenCredentialsId(String labelsApiTokenCredentialsId) {
+        this.labelsApiTokenCredentialsId = Util.fixEmptyAndTrim(labelsApiTokenCredentialsId);
+    }
+
+    /**
+     * @deprecated Retained for Configuration as Code and older serialized configs that inlined the token.
+     *             Configure {@link #labelsApiTokenCredentialsId} instead.
+     */
+    @Deprecated
+    public Secret getLabelsApiToken() {
+        return labelsApiToken;
+    }
+
+    /**
+     * @deprecated Retained for Configuration as Code and older serialized configs that inlined the token.
+     *             Configure {@link #labelsApiTokenCredentialsId} instead.
+     */
+    @Deprecated
+    @DataBoundSetter
+    public void setLabelsApiToken(Secret labelsApiToken) {
+        this.labelsApiToken = labelsApiToken;
+    }
+
+    /**
+     * Resolves the Labels API token from {@link #labelsApiTokenCredentialsId}, falling back to legacy {@link #labelsApiToken}.
+     */
+    @Nullable
+    private String resolveLabelsApiTokenPlainText() {
+        if (labelsApiTokenCredentialsId != null && !labelsApiTokenCredentialsId.isEmpty()) {
+            AnkaLabelsApiTokenCredentials tokenCredentials = CredentialsProvider.lookupCredentialsInItemGroup(
+                            AnkaLabelsApiTokenCredentials.class,
+                            Jenkins.get(),
+                            null,
+                            null
+                    ).stream()
+                    .filter(c -> labelsApiTokenCredentialsId.equals(c.getId()))
+                    .findFirst()
+                    .orElse(null);
+            if (tokenCredentials != null) {
+                return tokenCredentials.getToken().getPlainText();
+            }
+            Log("Labels API token credential id '%s' was not found", labelsApiTokenCredentialsId);
+            return null;
+        }
+        if (labelsApiToken != null && !labelsApiToken.getPlainText().isEmpty()) {
+            return labelsApiToken.getPlainText();
+        }
+        return null;
+    }
+
+    /**
+     * @return true if a Labels API token is configured (credential id or legacy inline secret).
+     */
+    public boolean isLabelsApiEnabled() {
+        String token = resolveLabelsApiTokenPlainText();
+        return token != null && !token.isEmpty();
+    }
+
+    /**
+     * @return true if at least one Anka cloud has a Labels API token configured.
+     */
+    static boolean isAnyLabelsApiEnabled() {
+        for (Cloud cloud : Jenkins.get().clouds) {
+            if (cloud instanceof AnkaMgmtCloud ankaCloud && ankaCloud.isLabelsApiEnabled()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Full Labels API POST URL for this cloud, with the cloud name path-encoded for UI display and client use.
+     *
+     * @return the URL when a Labels API token is configured; {@code null} when the endpoint is not registered
+     */
+    @Nullable
+    public String getLabelsApiEndpointUrl() {
+        if (!isLabelsApiEnabled()) {
+            return null;
+        }
+        String cloudName = Util.fixEmptyAndTrim(getCloudName());
+        if (cloudName == null) {
+            cloudName = "<cloud-name>";
+        }
+        String rootUrl = Util.fixNull(Jenkins.get().getRootUrl());
+        if (!rootUrl.isEmpty() && !rootUrl.endsWith("/")) {
+            rootUrl = rootUrl + "/";
+        }
+        String encodedCloudName = URLEncoder.encode(cloudName, StandardCharsets.UTF_8).replace("+", "%20");
+        return rootUrl + "anka-build-cloud/labels/" + encodedCloudName;
+    }
+
+    /**
+     * Verifies the caller-supplied token using a constant-time comparison.
+     */
+    boolean verifyLabelsApiToken(@Nullable String providedPlainText) {
+        String configuredToken = resolveLabelsApiTokenPlainText();
+        if (configuredToken == null || configuredToken.isEmpty() || providedPlainText == null) {
+            return false;
+        }
+        byte[] a = providedPlainText.getBytes(StandardCharsets.UTF_8);
+        byte[] b = configuredToken.getBytes(StandardCharsets.UTF_8);
+        if (a.length != b.length) {
+            return false;
+        }
+        return MessageDigest.isEqual(a, b);
+    }
+
+    /**
+     * Returns a new cloud instance with the same settings as this one but with the static
+     * {@link #getTemplates()} list replaced by {@code newTemplates}, including the Labels API token.
+     * To persist, call {@link #updateStaticTemplatesAndSave(List)} or
+     * {@link #replaceInJenkinsWith(AnkaMgmtCloud)} with this return value.
+     */
+    public AnkaMgmtCloud copyWithTemplates(List<AnkaCloudSlaveTemplate> newTemplates) {
+        AnkaMgmtCloud copy = new AnkaMgmtCloud(
+                ankaMgmtUrl,
+                getCloudName(),
+                credentialsId,
+                rootCaCredentialsId,
+                skipTLSVerification,
+                newTemplates == null ? Collections.emptyList() : newTemplates,
+                cloudInstanceCap);
+        copy.setRootCA(rootCA);
+        copy.setLaunchTimeout(launchTimeout);
+        copy.setMaxLaunchRetries(maxLaunchRetries);
+        copy.setLaunchRetryWaitTime(launchRetryWaitTime);
+        copy.setSshLaunchDelaySeconds(sshLaunchDelaySeconds);
+        copy.setVmIPAssignWaitSeconds(vmIPAssignWaitSeconds);
+        copy.setVmIPAssignRetries(vmIPAssignRetries);
+        copy.setDurabilityMode(durabilityMode);
+        copy.setVmPollTime(vmPollTime);
+        copy.setMaxConnections(maxConnections);
+        copy.setConnectionKeepAliveSeconds(connectionKeepAliveSeconds);
+        copy.setLabelsApiTokenCredentialsId(labelsApiTokenCredentialsId);
+        copy.setLabelsApiToken(labelsApiToken);
+        copy.setMonitorRecurrenceMinutes(getMonitorRecurrenceMinutes());
+        return copy;
+    }
+
+    /**
+     * Replaces static templates on this cloud and persists {@code config.xml}. Mutates the registered
+     * cloud instance in place so XStream serializes the updated {@link #templates} field.
+     */
+    void updateStaticTemplatesAndSave(List<AnkaCloudSlaveTemplate> newTemplates) throws IOException {
+        Objects.requireNonNull(newTemplates);
+        try (ACLContext ignored = ACL.as2(ACL.SYSTEM2)) {
+            Jenkins j = Jenkins.get();
+            if (!j.clouds.contains(this)) {
+                throw new IOException("Anka cloud '" + getCloudName() + "' is no longer registered on this Jenkins instance");
+            }
+            this.templates = new ArrayList<>(newTemplates);
+        }
+        Jenkins.get().save();
+    }
+
+    /**
+     * Atomically replaces this cloud on Jenkins and saves configuration (runs as {@link ACL#SYSTEM2}).
+     */
+    public void replaceInJenkinsWith(AnkaMgmtCloud replacement) throws IOException {
+        Objects.requireNonNull(replacement);
+        try (ACLContext ignored = ACL.as2(ACL.SYSTEM2)) {
+            Jenkins j = Jenkins.get();
+            if (!j.clouds.contains(this)) {
+                throw new IOException("Anka cloud '" + getCloudName() + "' is no longer registered on this Jenkins instance");
+            }
+            j.clouds.replace(this, replacement);
+        }
+        Jenkins.get().save();
     }
 
     public List<DynamicSlaveTemplate> getDynamicTemplates() {
@@ -866,7 +1091,8 @@ public class AnkaMgmtCloud extends Cloud {
             return "Anka Build Cloud Plugin";
         }
 
-        public ListBoxModel doFillCredentialsIdItems(@AncestorInPath ItemGroup context) {
+        @RequirePOST
+        public ListBoxModel doFillCredentialsIdItems(@AncestorInPath ItemGroup context, @QueryParameter String credentialsId) {
             if (!(context instanceof AccessControlled ? (AccessControlled) context : Jenkins.get()).hasPermission(Computer.CONFIGURE)) {
                 return new ListBoxModel();
             }
@@ -879,27 +1105,87 @@ public class AnkaMgmtCloud extends Cloud {
                     Jenkins.get(),
                     null,
                     null
-            ).forEach(c -> listBox.add("mTLS: " + c.getName(), c.getId()));
+            ).forEach(c -> listBox.add(formatControllerCredentialLabel(c), c.getId()));
 
             CredentialsProvider.lookupCredentialsInItemGroup(
-                    StandardUsernamePasswordCredentials.class,
+                    AnkaUakTapCredentials.class,
                     Jenkins.get(),
                     null,
                     null
-            ).forEach(c -> {
-                listBox.add("UAK/TAP: " + c.getUsername() + " (" + c.getId() + ")", c.getId());
-            });
+            ).forEach(c -> listBox.add(formatControllerCredentialLabel(c), c.getId()));
 
+            addSelectedCredentialIfMissing(listBox, credentialsId);
+
+            return listBox;
+        }
+
+        private static void addSelectedCredentialIfMissing(ListBoxModel listBox, String credentialsId) {
+            if (Util.fixEmptyAndTrim(credentialsId) == null) {
+                return;
+            }
+            if (listBox.stream().anyMatch(option -> credentialsId.equals(option.value))) {
+                return;
+            }
+
+            lookupControllerAuthCredentials().stream()
+                    .filter(c -> credentialsId.equals(c.getId()))
+                    .findFirst()
+                    .ifPresent(c -> listBox.add(formatControllerCredentialLabel(c), credentialsId));
+        }
+
+        private static List<IdCredentials> lookupControllerAuthCredentials() {
+            List<IdCredentials> credentials = new ArrayList<>();
+            CredentialsProvider.lookupCredentialsInItemGroup(
+                    CertCredentials.class,
+                    Jenkins.get(),
+                    null,
+                    null
+            ).forEach(credentials::add);
+            CredentialsProvider.lookupCredentialsInItemGroup(
+                    AnkaUakTapCredentials.class,
+                    Jenkins.get(),
+                    null,
+                    null
+            ).forEach(credentials::add);
             CredentialsProvider.lookupCredentialsInItemGroup(
                     StringCredentialsImpl.class,
                     Jenkins.get(),
                     null,
                     null
-            ).forEach(c -> {
-                listBox.add("UAK/TAP (DEPRECATED): " + c.getId(), c.getId());
-            });
+            ).forEach(credentials::add);
+            CredentialsProvider.lookupCredentialsInItemGroup(
+                    StandardUsernamePasswordCredentials.class,
+                    Jenkins.get(),
+                    null,
+                    null
+            ).forEach(credentials::add);
+            return credentials;
+        }
 
-            return listBox;
+        private static String formatControllerCredentialLabel(Credentials credential) {
+            if (credential instanceof CertCredentials certCredentials) {
+                return "mTLS: " + AnkaCredentialNaming.displayLabel(certCredentials.getName(), "Certificate Authentication");
+            }
+            if (credential instanceof AnkaUakTapCredentials uakTapCredentials) {
+                return "UAK/TAP: " + uakTapCredentials.getDescription() + " (" + uakTapCredentials.getUsername() + ")";
+            }
+            if (credential instanceof StringCredentialsImpl stringCredentials) {
+                String descriptionSuffix = Util.fixEmptyAndTrim(stringCredentials.getDescription()) != null
+                        ? " (" + stringCredentials.getDescription() + ")"
+                        : "";
+                return "Secret text (legacy): " + stringCredentials.getId() + descriptionSuffix;
+            }
+            if (credential instanceof StandardUsernamePasswordCredentials userPassCredentials) {
+                return "Username/password (legacy): "
+                        + userPassCredentials.getUsername()
+                        + " ("
+                        + userPassCredentials.getId()
+                        + ")";
+            }
+            if (credential instanceof IdCredentials idCredentials) {
+                return idCredentials.getId();
+            }
+            return credential.getClass().getSimpleName();
         }
 
         @RequirePOST
@@ -920,6 +1206,29 @@ public class AnkaMgmtCloud extends Cloud {
                 String labelSuffix = (c.getDescription() != null && !c.getDescription().isEmpty())
                         ? " (" + c.getDescription() + ")" : "";
                 listBox.add("Secret text: " + c.getId() + labelSuffix, c.getId());
+            });
+
+            return listBox;
+        }
+
+        @RequirePOST
+        public ListBoxModel doFillLabelsApiTokenCredentialsIdItems(@AncestorInPath ItemGroup context) {
+            if (!(context instanceof AccessControlled ? (AccessControlled) context : Jenkins.get()).hasPermission(Computer.CONFIGURE)) {
+                return new ListBoxModel();
+            }
+
+            ListBoxModel listBox = new ListBoxModel();
+            listBox.add("None", "");
+
+            CredentialsProvider.lookupCredentialsInItemGroup(
+                    AnkaLabelsApiTokenCredentials.class,
+                    Jenkins.get(),
+                    null,
+                    null
+            ).forEach(c -> {
+                String labelSuffix = (c.getDescription() != null && !c.getDescription().isEmpty())
+                        ? " (" + c.getDescription() + ")" : "";
+                listBox.add("Labels API token: " + c.getId() + labelSuffix, c.getId());
             });
 
             return listBox;

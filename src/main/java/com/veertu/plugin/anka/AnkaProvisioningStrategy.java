@@ -29,6 +29,8 @@ package com.veertu.plugin.anka;
 import hudson.Extension;
 import hudson.model.Label;
 import hudson.model.LoadStatistics;
+import hudson.model.Queue;
+import hudson.model.queue.QueueListener;
 import hudson.slaves.Cloud;
 import hudson.slaves.NodeProvisioner;
 import jenkins.model.Jenkins;
@@ -83,6 +85,29 @@ public class AnkaProvisioningStrategy extends NodeProvisioner.Strategy {
         } else {
             AnkaMgmtCloud.Log("Provisioning not complete, consulting remaining strategies");
             return NodeProvisioner.StrategyDecision.CONSULT_REMAINING_STRATEGIES;
+        }
+    }
+
+    /**
+     * Ping the nodeProvisioner as a new task enters the queue, so it can provision an Anka agent
+     * without waiting for the next NodeProvisioner cycle.
+     */
+    @Extension
+    public static class FastProvisioning extends QueueListener {
+        @Override
+        public void onEnterBuildable(Queue.BuildableItem item) {
+            suggestReviewForBuildableLabel(Jenkins.get(), item.getAssignedLabel());
+        }
+    }
+
+    static void suggestReviewForBuildableLabel(Jenkins jenkins, Label label) {
+        final Cloud.CloudState cloudState = new Cloud.CloudState(label, 0);
+        for (Cloud cloud : jenkins.clouds) {
+            if (cloud instanceof AnkaMgmtCloud && cloud.canProvision(cloudState)) {
+                final NodeProvisioner provisioner =
+                        label == null ? jenkins.unlabeledNodeProvisioner : label.nodeProvisioner;
+                provisioner.suggestReviewNow();
+            }
         }
     }
 }

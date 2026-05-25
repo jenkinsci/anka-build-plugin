@@ -1,4 +1,4 @@
-# Anka Jenkins Build Plugin
+# Anka Jenkins Build Cloud Plugin
 
 [![PR Maven Tests](https://github.com/jenkinsci/anka-build-plugin/actions/workflows/pr-maven-tests.yml/badge.svg)](https://github.com/jenkinsci/anka-build-plugin/actions/workflows/pr-maven-tests.yml)
 
@@ -7,6 +7,12 @@ Usage of this plugin is detailed on our [Official Documentation](https://docs.ve
 This plugin integrates with the [Anka Build Cloud](https://ankadocs.veertu.com/docs/anka-build-cloud/) and allows on-demand provisioning of Anka VMs for your Jenkins jobs.
 
 Contributors are welcome! Please submit an Issue or PR.
+
+---
+
+## Node Labels HTTP API (optional)
+
+Each Anka cloud can expose a **token-protected** endpoint so automation can update **Node Labels** (static `AnkaCloudSlaveTemplate` entries) without using the Jenkins UI or Overall/Administer permission. See **[docs/node-labels-api.md](docs/node-labels-api.md)** for setup, request/response reference, `curl` examples, and troubleshooting ([issue #59](https://github.com/jenkinsci/anka-build-plugin/issues/59)).
 
 ---
 
@@ -61,6 +67,12 @@ Build locally with Maven:
 
 ```bash
 mvn -Daether.remoteRepositoryFilter.prefixes=false clean package
+```
+
+Build without tests:
+
+```bash
+mvn -Daether.remoteRepositoryFilter.prefixes=false -DskipTests -Dspotbugs.skip=true -Dinvoker.skip=true clean package
 ```
 
 If you use Maven 3, you can usually omit `-Daether.remoteRepositoryFilter.prefixes=false`.
