@@ -54,6 +54,15 @@ public class UakAuthenticator {
         this.cloudName = cloudName;
     }
 
+    private boolean controllerUsesHttps() {
+        for (String mgmtURL : mgmtURLs) {
+            if (mgmtURL != null && mgmtURL.regionMatches(true, 0, "https://", 0, 8)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /**
      * Parses a UAK credential string and returns the RSA private key.
      * UAK can be either a PEM formatted private key or just a concatenated string without header and footer.
@@ -250,26 +259,32 @@ public class UakAuthenticator {
      */
     private CloseableHttpClient createHttpClient(boolean skipTLSVerification, String rootCA) throws Exception {
         SSLConnectionSocketFactory sslSocketFactory;
+        boolean usesHttps = controllerUsesHttps();
 
         if (skipTLSVerification) {
-            AnkaMgmtCloud.Log("%s: UAK auth: TLS verification DISABLED (Skip TLS Verification is on). "
-                    + "The controller certificate is NOT validated; this is insecure and intended for testing only.",
-                    AnkaSdkLog.cloudLabel(cloudName));
+            if (usesHttps) {
+                AnkaMgmtCloud.Log("%s: UAK auth: TLS verification DISABLED (Skip TLS Verification is on). "
+                        + "The controller certificate is NOT validated; this is insecure and intended for testing only.",
+                        AnkaSdkLog.cloudLabel(cloudName));
+            }
             SSLContext sslContext = SSLContexts.custom()
                     .loadTrustMaterial(null, TrustAllStrategy.INSTANCE)
                     .build();
             sslSocketFactory = new SSLConnectionSocketFactory(sslContext, NoopHostnameVerifier.INSTANCE);
 
-        } else if (rootCA != null && !rootCA.isEmpty()) {
+        } else if (usesHttps && rootCA != null && !rootCA.isEmpty()) {
             AnkaMgmtCloud.Log("%s: UAK auth: validating the controller certificate against the configured Root CA "
                     + "via standard PKIX path validation.",
                     AnkaSdkLog.cloudLabel(cloudName));
             sslSocketFactory = createCustomSSLSocketFactory(rootCA);
 
-        } else {
+        } else if (usesHttps) {
             AnkaMgmtCloud.Log("%s: UAK auth: validating the controller certificate against the JVM default trust store "
                     + "(no Root CA configured).",
                     AnkaSdkLog.cloudLabel(cloudName));
+            sslSocketFactory = SSLConnectionSocketFactory.getSocketFactory();
+
+        } else {
             sslSocketFactory = SSLConnectionSocketFactory.getSocketFactory();
         }
 

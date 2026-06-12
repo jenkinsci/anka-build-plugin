@@ -134,6 +134,16 @@ public class AnkaMgmtCommunicator {
         this.cloudName = cloudName;
     }
 
+    protected boolean controllerUsesHttps() {
+        if (mgmtUrl != null) {
+            return "https".equalsIgnoreCase(mgmtUrl.getProtocol());
+        }
+        if (roundRobin != null) {
+            return roundRobin.anyEndpointUsesHttps();
+        }
+        return false;
+    }
+
     protected void logException(Throwable exception) {
         if (apiAuthLogContext != null && !apiAuthLogContext.isEmpty()) {
             AnkaMgmtCloud.Log(
@@ -727,7 +737,7 @@ public class AnkaMgmtCommunicator {
         RequestConfig defaultRequestConfig = makeRequestConfig(timeout, null);
         HttpClientBuilder builder = HttpClientBuilder.create();
         KeyStore keystore = this.getKeyStore();
-        if (rootCA != null) {
+        if (controllerUsesHttps() && rootCA != null && !rootCA.isBlank()) {
             if (keystore == null) {
                 keystore = KeyStore.getInstance("JKS");
                 keystore.load(null);
@@ -735,7 +745,9 @@ public class AnkaMgmtCommunicator {
             Certificate certificate = RootCaCertificateParser.parsePemToCertificate(rootCA);
             keystore.setCertificateEntry("rootCA", certificate);
         }
-        logTlsTrustPosture();
+        if (controllerUsesHttps()) {
+            logTlsTrustPosture();
+        }
 
         SSLContext sslContext = this.getSSLContext(keystore);
         PoolingHttpClientConnectionManager cm = getConnectionManager(sslContext);
@@ -795,7 +807,7 @@ public class AnkaMgmtCommunicator {
             AnkaMgmtCloud.Log("%s: TLS verification DISABLED (Skip TLS Verification is on). "
                             + "The controller certificate is NOT validated; this is insecure and intended for testing only.",
                     AnkaSdkLog.cloudLabel(cloudName));
-        } else if (rootCA != null) {
+        } else if (rootCA != null && !rootCA.isBlank()) {
             AnkaMgmtCloud.Log("%s: TLS verification enabled - validating the controller certificate "
                             + "against the configured Root CA via standard PKIX path validation.",
                     AnkaSdkLog.cloudLabel(cloudName));

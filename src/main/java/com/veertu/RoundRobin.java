@@ -140,4 +140,16 @@ public class RoundRobin {
             }
         }
     }
+
+    public boolean anyEndpointUsesHttps() {
+        synchronized (valuesLock) {
+            for (WeighedURL endpoint : values) {
+                String url = endpoint.getUrl();
+                if (url != null && url.regionMatches(true, 0, "https://", 0, 8)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 }
