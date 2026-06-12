@@ -1,0 +1,2 @@
+# Limit automatic code review requests to production code changes
+/src/main/ @jenkinsci/anka-build-plugin-developers
