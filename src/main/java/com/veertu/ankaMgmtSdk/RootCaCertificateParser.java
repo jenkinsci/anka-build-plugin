@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -23,6 +24,8 @@ import java.util.regex.Pattern;
  * (certificate bundles, PEMs surrounded by OpenSSL metadata, etc.) are therefore never rejected.
  */
 final class RootCaCertificateParser {
+
+    private static final Logger LOGGER = Logger.getLogger(RootCaCertificateParser.class.getName());
 
     /** Matches a single PEM block, capturing the label (group 1) and the base64 body (group 2). */
     private static final Pattern PEM_BLOCK = Pattern.compile(
@@ -49,8 +52,14 @@ final class RootCaCertificateParser {
             if (repaired == null) {
                 throw originalFailure;
             }
+            LOGGER.info(AnkaSdkLog.prefix(String.format(
+                    "Root CA PEM could not be parsed as stored (%s); attempting repair for whitespace-flattened certificate block",
+                    originalFailure.getMessage())));
             try {
-                return readCertificate(repaired);
+                Certificate certificate = readCertificate(repaired);
+                LOGGER.warning(AnkaSdkLog.prefix(
+                        "Root CA PEM parsed successfully after repairing whitespace-flattened certificate block"));
+                return certificate;
             } catch (CertificateException repairDidNotHelp) {
                 // Surface the original failure so the message reflects exactly what the user provided.
                 throw originalFailure;
