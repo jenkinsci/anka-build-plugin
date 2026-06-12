@@ -25,7 +25,6 @@ import org.apache.http.conn.socket.PlainConnectionSocketFactory;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.conn.ssl.TrustAllStrategy;
-import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -68,6 +67,8 @@ public class AnkaMgmtCommunicator {
     protected transient CloseableHttpClient httpClient;
     /** Runtime-only label for error logs; not a secret and not persisted. */
     protected transient String apiAuthLogContext;
+    /** Runtime-only name of the Anka cloud this communicator serves; used to attribute logs. */
+    protected transient String cloudName;
 
     public AnkaMgmtCommunicator(String url) {
         try {
@@ -129,16 +130,24 @@ public class AnkaMgmtCommunicator {
         this.apiAuthLogContext = apiAuthLogContext;
     }
 
+    public void setCloudName(String cloudName) {
+        this.cloudName = cloudName;
+    }
+
     protected void logException(Throwable exception) {
         if (apiAuthLogContext != null && !apiAuthLogContext.isEmpty()) {
             AnkaMgmtCloud.Log(
-                    "Got exception using credential: %s: %s %s",
+                    "%s: Got exception using credential: %s: %s %s",
+                    AnkaSdkLog.cloudLabel(cloudName),
                     apiAuthLogContext,
                     exception.getClass().getName(),
                     exception.getMessage());
             return;
         }
-        AnkaMgmtCloud.Log("Got exception: %s %s", exception.getClass().getName(), exception.getMessage());
+        AnkaMgmtCloud.Log("%s: Got exception: %s %s",
+                AnkaSdkLog.cloudLabel(cloudName),
+                exception.getClass().getName(),
+                exception.getMessage());
     }
 
     public List<AnkaVmTemplate> listTemplates() throws AnkaMgmtException {
@@ -726,6 +735,7 @@ public class AnkaMgmtCommunicator {
             Certificate certificate = RootCaCertificateParser.parsePemToCertificate(rootCA);
             keystore.setCertificateEntry("rootCA", certificate);
         }
+        logTlsTrustPosture();
 
         SSLContext sslContext = this.getSSLContext(keystore);
         PoolingHttpClientConnectionManager cm = getConnectionManager(sslContext);
@@ -772,11 +782,28 @@ public class AnkaMgmtCommunicator {
             return TrustAllStrategy.INSTANCE;
         }
 
-        if (rootCA != null) {
-            return TrustSelfSignedStrategy.INSTANCE;
-        }
-
+        // When a Root CA is configured it is loaded into the truststore (see makeHttpClient) and used
+        // as the trust anchor for standard PKIX path validation. We intentionally return null (no custom
+        // TrustStrategy) so the keystore-backed trust manager actually verifies the controller certificate
+        // against the configured Root CA. Returning TrustSelfSignedStrategy here would trust ANY
+        // single-certificate chain and silently bypass the configured Root CA for self-signed controllers.
         return null;
+    }
+
+    private void logTlsTrustPosture() {
+        if (skipTLSVerification) {
+            AnkaMgmtCloud.Log("%s: TLS verification DISABLED (Skip TLS Verification is on). "
+                            + "The controller certificate is NOT validated; this is insecure and intended for testing only.",
+                    AnkaSdkLog.cloudLabel(cloudName));
+        } else if (rootCA != null) {
+            AnkaMgmtCloud.Log("%s: TLS verification enabled - validating the controller certificate "
+                            + "against the configured Root CA via standard PKIX path validation.",
+                    AnkaSdkLog.cloudLabel(cloudName));
+        } else {
+            AnkaMgmtCloud.Log("%s: TLS verification enabled - validating the controller certificate "
+                            + "against the JVM default trust store (no Root CA configured).",
+                    AnkaSdkLog.cloudLabel(cloudName));
+        }
     }
 
     protected HttpRequestBase setBody(HttpEntityEnclosingRequestBase request, JSONObject requestBody) throws UnsupportedEncodingException {

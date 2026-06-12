@@ -17,6 +17,12 @@ public class AnkaMgmtUakCommunicator extends AnkaMgmtCommunicator {
     }
 
     @Override
+    public void setCloudName(String cloudName) {
+        super.setCloudName(cloudName);
+        this.authenticator.setCloudName(cloudName);
+    }
+
+    @Override
     protected void addHeaders(HttpRequestBase request) throws AnkaMgmtException, ClientException {
         NameValuePair authHeader = this.authenticator.getAuthorization();
         request.setHeader(authHeader.getName(), authHeader.getValue());

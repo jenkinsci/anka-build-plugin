@@ -382,6 +382,7 @@ public class AnkaMgmtCloud extends Cloud {
         ankaAPI.setMaxConnections(maxConnections);
         ankaAPI.setConnectionKeepAliveSeconds(connectionKeepAliveSeconds);
         ankaAPI.setApiAuthLogContext(describeCredential(credentials, credentialsId));
+        ankaAPI.setCloudName(getCloudName());
     }
 
     static String describeCredential(Credentials credentials, String credentialsId) {

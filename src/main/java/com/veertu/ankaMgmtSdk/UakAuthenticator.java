@@ -14,7 +14,6 @@ import org.apache.http.client.methods.RequestBuilder;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.conn.ssl.TrustAllStrategy;
-import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
@@ -49,6 +48,11 @@ public class UakAuthenticator {
     private final String rootCA;
     private final String id;
     private PrivateKey key;
+    private String cloudName;
+
+    public void setCloudName(String cloudName) {
+        this.cloudName = cloudName;
+    }
 
     /**
      * Parses a UAK credential string and returns the RSA private key.
@@ -217,14 +221,16 @@ public class UakAuthenticator {
                             return responseText;
                         }
 
-                        AnkaMgmtCloud.Log("POST request to " + endpoint + " failed: " + statusCode + " - " + responseText);
+                        AnkaMgmtCloud.Log(AnkaSdkLog.cloudLabel(cloudName) + ": POST request to " + endpoint
+                                + " failed: " + statusCode + " - " + responseText);
 
                         if (statusCode >= 400 && statusCode < 500) {
                             break retryLoop;
                         }
                     }
                 } catch (Exception e) {
-                    AnkaMgmtCloud.Log("Failed to send request to: " + endpoint + " - " + e.getMessage());
+                    AnkaMgmtCloud.Log(AnkaSdkLog.cloudLabel(cloudName) + ": Failed to send request to: " + endpoint
+                            + " - " + e.getMessage());
                 }
             }
 
@@ -246,15 +252,24 @@ public class UakAuthenticator {
         SSLConnectionSocketFactory sslSocketFactory;
 
         if (skipTLSVerification) {
+            AnkaMgmtCloud.Log("%s: UAK auth: TLS verification DISABLED (Skip TLS Verification is on). "
+                    + "The controller certificate is NOT validated; this is insecure and intended for testing only.",
+                    AnkaSdkLog.cloudLabel(cloudName));
             SSLContext sslContext = SSLContexts.custom()
                     .loadTrustMaterial(null, TrustAllStrategy.INSTANCE)
                     .build();
             sslSocketFactory = new SSLConnectionSocketFactory(sslContext, NoopHostnameVerifier.INSTANCE);
 
         } else if (rootCA != null && !rootCA.isEmpty()) {
+            AnkaMgmtCloud.Log("%s: UAK auth: validating the controller certificate against the configured Root CA "
+                    + "via standard PKIX path validation.",
+                    AnkaSdkLog.cloudLabel(cloudName));
             sslSocketFactory = createCustomSSLSocketFactory(rootCA);
 
         } else {
+            AnkaMgmtCloud.Log("%s: UAK auth: validating the controller certificate against the JVM default trust store "
+                    + "(no Root CA configured).",
+                    AnkaSdkLog.cloudLabel(cloudName));
             sslSocketFactory = SSLConnectionSocketFactory.getSocketFactory();
         }
 
@@ -281,9 +296,12 @@ public class UakAuthenticator {
         keyStore.load(null);
         keyStore.setCertificateEntry("rootCA", certificate);
 
-
+        // Validate the controller certificate against the configured Root CA using standard PKIX.
+        // Passing a null TrustStrategy (instead of TrustSelfSignedStrategy) keeps the keystore-backed
+        // trust manager in effect; TrustSelfSignedStrategy would trust ANY single-certificate chain and
+        // bypass the configured Root CA for self-signed controller certificates.
         SSLContext sslContext = SSLContexts.custom()
-                .loadTrustMaterial(keyStore, new TrustSelfSignedStrategy())
+                .loadTrustMaterial(keyStore, null)
                 .build();
 
         return new SSLConnectionSocketFactory(sslContext);

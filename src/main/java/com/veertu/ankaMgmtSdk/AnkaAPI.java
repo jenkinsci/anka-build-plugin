@@ -52,6 +52,10 @@ public class AnkaAPI {
         this.communicator.setApiAuthLogContext(apiAuthLogContext);
     }
 
+    public void setCloudName(String cloudName) {
+        this.communicator.setCloudName(cloudName);
+    }
+
     public List<AnkaVmTemplate> listTemplates() throws AnkaMgmtException {
         return communicator.listTemplates();
     }

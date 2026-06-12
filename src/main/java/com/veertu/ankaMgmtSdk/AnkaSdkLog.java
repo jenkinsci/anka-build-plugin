@@ -12,4 +12,11 @@ final class AnkaSdkLog {
         }
         return PREFIX + message;
     }
+
+    static String cloudLabel(String cloudName) {
+        if (cloudName != null && !cloudName.isEmpty()) {
+            return String.format("Anka cloud '%s'", cloudName);
+        }
+        return "Anka cloud (unnamed)";
+    }
 }
