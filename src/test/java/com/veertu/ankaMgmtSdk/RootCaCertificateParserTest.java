@@ -27,6 +27,28 @@ public class RootCaCertificateParserTest {
             -----END CERTIFICATE-----
             """;
 
+    private static final String SECOND_CERTIFICATE = """
+            -----BEGIN CERTIFICATE-----
+            MIIDJzCCAg+gAwIBAgIUHdi0mjZCogldRA9wblQa29ipuMYwDQYJKoZIhvcNAQEL
+            BQAwIzEhMB8GA1UEAwwYQW5rYSBSb290IENBIFBhcnNlciBUZXN0MB4XDTI2MDYx
+            MjE0MjAwOVoXDTM2MDYwOTE0MjAwOVowIzEhMB8GA1UEAwwYQW5rYSBSb290IENB
+            IFBhcnNlciBUZXN0MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqnpf
+            Q1O7kN9kcOLlS7GYHoKMcNrog1scCmaYRcsTLcpiqNhbe46q/S7cKC0Jef/kcHP1
+            r9lhwyNgemKn462wMws9tJok7D8Lf+6ICNXQzbbv4p2BiNiQb6BGhs3mVnM1FS4m
+            pFpQEFEOLHhE/II5cAR2Ct6mY3EXQKRyt+m8AUxt6l5Ye8EuiDWTmc00lWCrWIg4
+            SIPFIHTzz6bEYcPJYOtRPhQTUsl6kboGzEWY/967aMn6mUgioIl+n7QC9WyhvMep
+            hmtV935gtiDTt18hURgTB7N5qxMZRGW/XcZ6iasFA+Eq+juPFf9BdecD2Nnr3h0w
+            ipS7a+S4ivQk9EF1LwIDAQABo1MwUTAdBgNVHQ4EFgQUv2hcL2t2z2H7fJLLq96n
+            mjQBc5IwHwYDVR0jBBgwFoAUv2hcL2t2z2H7fJLLq96nmjQBc5IwDwYDVR0TAQH/
+            BAUwAwEB/zANBgkqhkiG9w0BAQsFAAOCAQEAb4wG4EHfO+uhFKilqKI5v2Cpaob1
+            kV/Dn3SRzZa90ZxZzVedPH/2Or+uFRrPqFddp0m/HySsZ/1JpMFlznr7TgWyAzff
+            +pwqPvG/UQLULyazuNj4unVJfhO8u2luXOxs0yk73oh0L9Bo1ElqBLeWy4TLoxxK
+            dRvSj1J0lJ59u7wkP9Q6Wo+Euxz0XlqMNrCjeXKBHouQPM+x/1o7yk0cAc+sU6G9
+            k4cdttFWV1Kun9PLI/2n3qgQT2VdsW26km6+3OYDw/5w97QI6XEMm3yxNQliJP5Y
+            3TEI6HNBplSFlB+RoZG8mcGHT1pz+JwIdkKJ+nosKOGvTIGMJ9eyHI4Qkw==
+            -----END CERTIFICATE-----
+            """;
+
     @Test
     public void parsePemToCertificate_acceptsMultilinePem() throws Exception {
         assertNotNull(RootCaCertificateParser.parsePemToCertificate(VALID_CERTIFICATE));
@@ -39,11 +61,18 @@ public class RootCaCertificateParserTest {
     }
 
     @Test
-    public void parsePemToCertificate_rejectsTextOutsideCertificateBlock() {
-        CertificateException ex = assertThrows(
-                CertificateException.class,
-                () -> RootCaCertificateParser.parsePemToCertificate("unexpected " + VALID_CERTIFICATE));
-        assertThat(ex.getMessage(), containsString("exactly one certificate block"));
+    public void parsePemToCertificate_acceptsCertificateBundle() throws Exception {
+        assertNotNull(RootCaCertificateParser.parsePemToCertificate(
+                VALID_CERTIFICATE + SECOND_CERTIFICATE));
+    }
+
+    @Test
+    public void parsePemToCertificate_acceptsPemWithSurroundingMetadata() throws Exception {
+        String withMetadata = "subject=/CN=Anka Root CA Parser Test\n"
+                + "issuer=/CN=Anka Root CA Parser Test\n"
+                + VALID_CERTIFICATE
+                + "\ntrailing metadata that openssl x509 -text may append\n";
+        assertNotNull(RootCaCertificateParser.parsePemToCertificate(withMetadata));
     }
 
     @Test
