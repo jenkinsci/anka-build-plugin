@@ -213,6 +213,7 @@ public class UakAuthenticator {
      */
     private String postRequest(String endpoint, String jsonData) throws ClientException {
         int retries = 1;
+        Exception lastFailure = null;
         retryLoop:
         while (retries <= maxRetries && mgmtURLs.size() == 1) { // Only retry if there is a single endpoint
             for (String mgmtURL : mgmtURLs) {
@@ -240,12 +241,16 @@ public class UakAuthenticator {
                 } catch (Exception e) {
                     AnkaMgmtCloud.Log(AnkaSdkLog.cloudLabel(cloudName) + ": Failed to send request to: " + endpoint
                             + " - " + e.getMessage());
+                    lastFailure = e;
                 }
             }
 
             retries++;
         }
 
+        if (lastFailure != null) {
+            throw new ClientException(lastFailure);
+        }
         throw new ClientException("Failed to send request to any of the endpoints");
     }
 
