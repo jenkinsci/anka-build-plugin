@@ -32,6 +32,10 @@ def runPluginMavenRelease = { String mvnGoals ->
             git config user.email "support@veertu.com"
             git config user.name "Veertu Jenkins Release"
 
+            # Jenkins multibranch checks out a commit (detached HEAD); release plugin needs a branch ref.
+            git fetch origin "${env.BRANCH_NAME}"
+            git checkout -B "${env.BRANCH_NAME}" "origin/${env.BRANCH_NAME}"
+
             mvn -B ${mvnGoals}
         """
     }
