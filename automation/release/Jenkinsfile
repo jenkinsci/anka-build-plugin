@@ -1,10 +1,6 @@
 def jenkins_ci_credentials_id = "accounts.jenkins.com"
 def github_ssh_credentials_id = "github-service-user-veertu"
 
-def encodeBranchForJob = { String branchName ->
-    return branchName.replace('/', '%2F')
-}
-
 def runPluginMavenRelease = { String mvnGoals ->
     withCredentials([
         usernamePassword(
@@ -51,7 +47,6 @@ properties(
         copyArtifactPermission('*'),
         durabilityHint('PERFORMANCE_OPTIMIZED'),
         parameters([
-            booleanParam(defaultValue: false, description: 'Skip plugin HPI build and integration tests (only if they already passed)', name: 'skip_prerequisites'),
             booleanParam(defaultValue: false, description: 'Run mvn release:rollback instead of release:prepare release:perform', name: 'rollback_release'),
         ]),
     ]
@@ -66,28 +61,6 @@ pipeline {
         args "--name ${env.JOB_NAME.replace('%2F', '_').replace('/', '_')}-${env.BUILD_NUMBER}"
     } }
     stages {
-        stage('Plugin HPI build') {
-            when {
-                allOf {
-                    expression { !params.skip_prerequisites }
-                    expression { !params.rollback_release }
-                }
-            }
-            steps {
-                build job: "plugin-jenkins-build/${encodeBranchForJob(env.BRANCH_NAME)}", wait: true
-            }
-        }
-        stage('Integration tests') {
-            when {
-                allOf {
-                    expression { !params.skip_prerequisites }
-                    expression { !params.rollback_release }
-                }
-            }
-            steps {
-                build job: "cloud-integration-jenkins/${encodeBranchForJob(env.BRANCH_NAME)}", wait: true
-            }
-        }
         stage('Perform release') {
             when { expression { !params.rollback_release } }
             steps {
