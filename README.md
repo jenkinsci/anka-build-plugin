@@ -96,18 +96,3 @@ Run a single test class:
 ```bash
 mvn -Daether.remoteRepositoryFilter.prefixes=false -Dtest=ConfigurationAsCodeTest test
 ```
-
-## Release
-
-1. Run Jenkins hpi Build, then Tests (veertu team only)
-2. Once complete, pull branches locally to be sure they're up to date and then run:
-
-```bash
-mvn release:prepare release:perform
-```
-
-If needed, rollback the release:
-
-```bash
-mvn release:rollback
-```
