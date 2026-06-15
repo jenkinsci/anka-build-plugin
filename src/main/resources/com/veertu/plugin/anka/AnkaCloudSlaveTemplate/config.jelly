@@ -1,6 +1,6 @@
 <j:jelly xmlns:j="jelly:core"  xmlns:f="/lib/form" xmlns:c="/lib/credentials">
   
-  <div style="display: none;">
+  <div class="anka-cloud-slave-template-hidden">
     <f:entry title="Cloud Name" field="cloudName" description="The Anka Build Cloud this Node Template/Label is attached to">
         <f:textbox value="${cloudName}" disabled="true" />
     </f:entry>
@@ -98,7 +98,8 @@
   <hr />
     <label class="label"></label>
     <h4>Anka VM Template/Tag Creation</h4>
-    <f:section style="font-size: 10px;" description="Pushes a new Anka VM Tag to the registry when the build finishes">
+    <div class="anka-save-image-section">
+    <f:section description="Pushes a new Anka VM Tag to the registry when the build finishes">
       <f:optionalBlock inline="true" field="saveImage" title="Enabled" checked="${instance.getSaveImage()}">
         <f:entry title="${%Target Anka VM Template}"  field="templateId" description="The Anka VM Template to save the new Tag to">
             <f:select />
@@ -123,6 +124,7 @@
         </f:entry>
       </f:optionalBlock>
     </f:section>
+    </div>
   <hr />
   <f:advanced>
       <f:entry title="${%Node Group}" field="group" description="The Anka Build Cloud Node group the Anka VM is started on (enterprise only)">

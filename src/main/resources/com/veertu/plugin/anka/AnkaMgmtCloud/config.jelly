@@ -1,7 +1,6 @@
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:f="/lib/form" xmlns:c="/lib/credentials" xmlns:l="/lib/layout">
-  <link rel="stylesheet" href="${rootURL}/plugin/anka-build/css/anka-mgmt-cloud-config.css" type="text/css" />
-  <script src="${rootURL}/plugin/anka-build/js/anka-mgmt-cloud-config.js"></script>
+  <st:adjunct includes="com.veertu.plugin.anka.AnkaMgmtCloud.config"/>
   <div class="anka-build-plugin-group">
     <div class="anka-build-plugin-head-group">
       <div class="welcome">
