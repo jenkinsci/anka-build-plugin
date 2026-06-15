@@ -21,6 +21,7 @@
         <hpi.compatibleSinceVersion>2.0.0</hpi.compatibleSinceVersion>
         <spotbugs.effort>Max</spotbugs.effort>
         <spotbugs.threshold>Low</spotbugs.threshold>
+        <spotbugs.skip>true</spotbugs.skip>
         <release.skipTests>true</release.skipTests>
         <no-test-jar>true</no-test-jar>
         <hpi.strictBundledArtifacts>true</hpi.strictBundledArtifacts>
@@ -178,7 +179,7 @@
                 <groupId>com.github.spotbugs</groupId>
                 <artifactId>spotbugs-maven-plugin</artifactId>
                 <configuration>
-                    <skip>true</skip>
+                    <skip>${spotbugs.skip}</skip>
                 </configuration>
             </plugin>
             <!-- Maven 4 may not see parent-inherited profile ids in the tag checkout; drop -P jenkins-release,!consume-incrementals from release:perform. -->

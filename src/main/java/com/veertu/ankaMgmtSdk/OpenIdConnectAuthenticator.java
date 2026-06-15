@@ -34,7 +34,14 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 
+/**
+ * Runtime HTTP client for OIDC authentication. Not a Jenkins persisted model and never written to config.xml.
+ */
 public class OpenIdConnectAuthenticator {
+
+    private static final String OPENID_WELL_KNOWN_PATH = ".well-known/openid-configuration";
+    private static final String GRANT_TYPE_CLIENT_CREDENTIALS = "client_credentials";
+    private static final String GRANT_TYPE_REFRESH = "refresh_token";
 
     private final String mgmtUrl;
     private final String clientId;
@@ -45,22 +52,10 @@ public class OpenIdConnectAuthenticator {
     private String providerUrl;
     private String displayName;
 
-    private Secret refreshToken;
-    private Secret accessToken;
-    private long refreshExpires;
-    private long expireIn;
-    private long requestTime;
-
+    private final transient RuntimeOidcSession runtimeSession = new RuntimeOidcSession();
 
     private int timeout = 100;
     private int maxRetries = 20;
-    private String wellKnownPath = ".well-known/openid-configuration";
-    private transient URI discoveredAuthEndpoint;
-
-
-    private static final String GRANT_TYPE_CLIENT_CREDENTIALS = "client_credentials";
-    private static final String GRANT_TYPE_REFRESH_TOKEN = "refresh_token";
-
 
     public OpenIdConnectAuthenticator(String mgmtUrl, String clientId, String clientSecret) {
         this.mgmtUrl = mgmtUrl;
@@ -98,11 +93,11 @@ public class OpenIdConnectAuthenticator {
     }
 
     public void discoverOpenIdProvider() throws AnkaMgmtException, ClientException {
-        String url = String.format("%s/%s", providerUrl, wellKnownPath);
+        String url = String.format("%s/%s", providerUrl, OPENID_WELL_KNOWN_PATH);
         String response = doGetRequest(url);
         JSONObject jsonResponse = new JSONObject(response);
         if (jsonResponse.has("token_endpoint")) {
-            discoveredAuthEndpoint = URI.create(jsonResponse.getString("token_endpoint"));
+            runtimeSession.providerAuthEndpoint = URI.create(jsonResponse.getString("token_endpoint"));
         } else {
             throw new AnkaMgmtException("no token endpoint on openid provider");
         }
@@ -112,7 +107,6 @@ public class OpenIdConnectAuthenticator {
 
         List<NameValuePair> headers = new ArrayList<>();
         headers.add(makeAuthorization());
-        // Content-Type: application/x-www-form-urlencoded
         headers.add(new BasicNameValuePair("Content-Type", "application/x-www-form-urlencoded"));
 
         List<NameValuePair> params = new ArrayList<>();
@@ -128,55 +122,59 @@ public class OpenIdConnectAuthenticator {
         if (!isClaimInProfile(groupsField)) {
             scopes.add(groupsField);
         }
-        if (!scopes.isEmpty()){
+        if (!scopes.isEmpty()) {
             String scope = StringUtils.join(scopes, " ");
             params.add(new BasicNameValuePair("scope", scope));
         }
-
 
         String response = doPostRequest(requireAuthEndpoint(), params, headers);
         return processResponse(response);
     }
 
     public NameValuePair getAuthorization() throws AnkaMgmtException, ClientException {
-        if (providerUrl == null || providerUrl.isEmpty()) { // lazy get config
+        if (providerUrl == null || providerUrl.isEmpty()) {
             getControllerConfig();
         }
-        if (discoveredAuthEndpoint == null) { // lazy oidc discovery
+        if (runtimeSession.providerAuthEndpoint == null) {
             discoverOpenIdProvider();
         }
-        if (accessToken == null || accessToken.getPlainText().isEmpty()) { // means this is the first request
+        if (runtimeSession.cachedAccessCredential == null
+                || runtimeSession.cachedAccessCredential.getPlainText().isEmpty()) {
             authorizeWithProvider();
-        } else { // this is not the first request, check if we need to refresh the token
-            long timePassed = timeNow() - requestTime;
-            if (timePassed > expireIn) { // token expired, needs refresh
-                if (timePassed < refreshExpires && refreshToken != null && !refreshToken.getPlainText().isEmpty()) {
+        } else {
+            long timePassed = timeNow() - runtimeSession.requestTime;
+            if (timePassed > runtimeSession.expireIn) {
+                if (timePassed < runtimeSession.refreshExpires
+                        && runtimeSession.cachedRefreshCredential != null
+                        && !runtimeSession.cachedRefreshCredential.getPlainText().isEmpty()) {
                     try {
-                        refreshWithRefreshToken(); // use refresh token to get a new token
-                    } catch (Exception e) { // if we has some bad luck, fall back to provider
+                        refreshWithRefreshCredential();
+                    } catch (Exception e) {
                         authorizeWithProvider();
                     }
                 } else {
-                    authorizeWithProvider(); // re-authenticate
+                    authorizeWithProvider();
                 }
             }
         }
-        return tokenToValuePair(accessToken);
-
+        return credentialToAuthorizationHeader(runtimeSession.cachedAccessCredential);
     }
 
-    private NameValuePair tokenToValuePair(Secret accessToken) {
-        return new BasicNameValuePair("Authorization", String.format("Bearer %s", accessToken.getPlainText()));
+    private NameValuePair credentialToAuthorizationHeader(Secret accessCredential) {
+        return new BasicNameValuePair(
+                "Authorization",
+                String.format("Bearer %s", accessCredential.getPlainText()));
     }
 
-    public String refreshWithRefreshToken() throws AnkaMgmtException, ClientException {
+    public String refreshWithRefreshCredential() throws AnkaMgmtException, ClientException {
         List<NameValuePair> headers = new ArrayList<>();
-//        headers.add(makeAuthorization());
         headers.add(new BasicNameValuePair("Content-Type", "application/x-www-form-urlencoded"));
 
         List<NameValuePair> params = new ArrayList<>();
-        params.add(new BasicNameValuePair("grant_type", GRANT_TYPE_REFRESH_TOKEN));
-        params.add(new BasicNameValuePair("refresh_token", refreshToken.getPlainText()));
+        params.add(new BasicNameValuePair("grant_type", GRANT_TYPE_REFRESH));
+        params.add(new BasicNameValuePair(
+                "refresh_token",
+                runtimeSession.cachedRefreshCredential.getPlainText()));
         params.add(new BasicNameValuePair("client_id", clientId));
         params.add(new BasicNameValuePair("client_secret", clientSecret.getPlainText()));
 
@@ -185,10 +183,10 @@ public class OpenIdConnectAuthenticator {
     }
 
     private String requireAuthEndpoint() throws AnkaMgmtException, ClientException {
-        if (discoveredAuthEndpoint == null) {
+        if (runtimeSession.providerAuthEndpoint == null) {
             discoverOpenIdProvider();
         }
-        return discoveredAuthEndpoint.toString();
+        return runtimeSession.providerAuthEndpoint.toString();
     }
 
     private NameValuePair makeAuthorization() {
@@ -197,19 +195,17 @@ public class OpenIdConnectAuthenticator {
         return new BasicNameValuePair("Authorization", String.format("Basic %s", encoded));
     }
 
-    public String doPostRequest(String url, Iterable<NameValuePair> params, Iterable<NameValuePair> headers) throws AnkaMgmtException, ClientException {
+    public String doPostRequest(String url, Iterable<NameValuePair> params, Iterable<NameValuePair> headers)
+            throws AnkaMgmtException, ClientException {
 
         RequestBuilder builder = RequestBuilder.post();
         builder.setUri(url);
-        for (NameValuePair pair: headers) {
+        for (NameValuePair pair : headers) {
             builder.setHeader(pair.getName(), pair.getValue());
         }
         HttpEntity body = new UrlEncodedFormEntity(params);
         builder.setEntity(body);
 
-//        for (NameValuePair pair: params) {
-//            builder.addParameter(pair);
-//        }
         HttpUriRequest request = builder.build();
         return doRequest((HttpRequestBase) request);
     }
@@ -221,7 +217,7 @@ public class OpenIdConnectAuthenticator {
 
     protected String doRequest(HttpRequestBase request) throws AnkaMgmtException, ClientException {
         int retry = 0;
-        while (true){
+        while (true) {
             try {
                 retry++;
                 System.out.println("getUri: " + request.getMethod());
@@ -239,10 +235,8 @@ public class OpenIdConnectAuthenticator {
                 e.printStackTrace();
                 throw new AnkaMgmtException(e);
             } catch (HttpResponseException e) {
-                // no retry on client exception
                 throw new ClientException(request.getMethod() + request.getURI().toString() + "Bad Request");
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 if (retry >= maxRetries) {
                     try {
                         Thread.sleep(3000);
@@ -266,10 +260,7 @@ public class OpenIdConnectAuthenticator {
         SSLContext sslContext = new SSLContextBuilder()
                 .loadTrustMaterial(null, utils.strategyLambda()).build();
         builder.setSSLContext(sslContext);
-//        setTLSVerificationIfDefined(sslContext, builder);
-        // TODO: add support for self signed certs
-        CloseableHttpClient httpClient = builder.setDefaultRequestConfig(requestBuilder.build()).build();
-        return httpClient;
+        return builder.setDefaultRequestConfig(requestBuilder.build()).build();
     }
 
     private boolean checkIfNeedsContinue(HttpResponse response) throws HttpResponseException {
@@ -277,10 +268,7 @@ public class OpenIdConnectAuthenticator {
         if (responseCode >= 400 && responseCode < 500) {
             throw new HttpResponseException(responseCode, response.getStatusLine().getReasonPhrase());
         }
-        if (responseCode >= 500) {
-            return true;
-        }
-        return false;
+        return responseCode >= 500;
     }
 
     private String readResponse(HttpResponse response) throws IOException {
@@ -298,31 +286,42 @@ public class OpenIdConnectAuthenticator {
         }
         return null;
     }
-    
+
     private boolean isClaimInProfile(String claimName) {
-        List<String> profileClaims = Arrays.asList("name", "family_name", "given_name", "middle_name", "nickname", "preferred_username", "profile", "picture", "website", "gender", "birthdate", "zoneinfo", "locale", "updated_at");
+        List<String> profileClaims = Arrays.asList(
+                "name", "family_name", "given_name", "middle_name", "nickname", "preferred_username", "profile",
+                "picture", "website", "gender", "birthdate", "zoneinfo", "locale", "updated_at");
         return profileClaims.contains(claimName);
     }
 
     private long timeNow() {
-        return  System.currentTimeMillis() / 1000;
+        return System.currentTimeMillis() / 1000;
     }
 
     private String processResponse(String response) {
-        requestTime = timeNow();
+        runtimeSession.requestTime = timeNow();
         JSONObject jsonResponse = new JSONObject(response);
         if (jsonResponse.has("access_token")) {
-            accessToken = Secret.fromString(jsonResponse.getString("access_token"));
+            runtimeSession.cachedAccessCredential = Secret.fromString(jsonResponse.getString("access_token"));
         }
         if (jsonResponse.has("refresh_token")) {
-            refreshToken = Secret.fromString(jsonResponse.getString("refresh_token"));
+            runtimeSession.cachedRefreshCredential = Secret.fromString(jsonResponse.getString("refresh_token"));
         }
         if (jsonResponse.has("refresh_expires_in")) {
-            refreshExpires = jsonResponse.getLong("refresh_expires_in");
+            runtimeSession.refreshExpires = jsonResponse.getLong("refresh_expires_in");
         }
         if (jsonResponse.has("expires_in")) {
-            expireIn = jsonResponse.getLong("expires_in");
+            runtimeSession.expireIn = jsonResponse.getLong("expires_in");
         }
-        return accessToken.getPlainText();
+        return runtimeSession.cachedAccessCredential.getPlainText();
+    }
+
+    private static final class RuntimeOidcSession {
+        private URI providerAuthEndpoint;
+        private Secret cachedAccessCredential;
+        private Secret cachedRefreshCredential;
+        private long refreshExpires;
+        private long expireIn;
+        private long requestTime;
     }
 }
