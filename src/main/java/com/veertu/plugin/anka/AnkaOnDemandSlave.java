@@ -4,7 +4,7 @@ import hudson.model.Descriptor;
 import hudson.slaves.ComputerLauncher;
 import hudson.slaves.NodeProperty;
 import jenkins.model.Jenkins;
-import org.apache.commons.lang.RandomStringUtils;
+import org.apache.commons.lang3.RandomStringUtils;
 
 import java.io.IOException;
 import java.util.List;

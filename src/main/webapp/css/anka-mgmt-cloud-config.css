@@ -1,0 +1,400 @@
+    #main-panel {
+      padding-top: 10px !important;
+      background-color: rgb(244 244 248);
+    }
+    .app-page-body {
+      display: block;
+    }
+    body.two-column #side-panel {
+      width: 100%;
+    }
+    #tasks {
+      flex-direction: row;
+      gap: 1rem;
+    }
+
+    .anka-build-plugin-group a {
+      color: #e21e79;
+    }
+  
+    .error {
+      background-color: #e21e79;
+      color: white;
+      padding: 10px 10px 10px 40px;
+    }
+
+    .error:before, .info:before, .warning:before {
+      background-color: currentColor;
+      bottom: unset;
+      content: "";
+      height: 22px;
+      left: 10px;
+      -webkit-mask-position: top center;
+      mask-position: top center;
+      -webkit-mask-repeat: no-repeat;
+      mask-repeat: no-repeat;
+      -webkit-mask-size: contain;
+      mask-size: contain;
+      position: absolute;
+      top: unset;
+      width: 22px;
+    }
+
+    .help .from-plugin {
+        color: #ccc;
+    }
+
+    #main-panel {
+      width: 100% !important;
+      padding-top: 10px !important;
+    }
+
+    #main-panel form.jenkins-form {
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+
+    .app-page-body--one-column {
+        margin: revert;
+        max-width: revert;
+    }
+
+    .anka-build-plugin-group h2 {
+      margin: 20px 0px;
+      color: #5e2e9b;
+    }
+    .anka-build-plugin-group h3 {
+      color: #5e2e9b;
+    }
+    .anka-build-plugin-group h4 {
+      color: #5e2e9b;
+      font-weight: bold;
+      text-transform: uppercase;
+      margin-top: 15px;
+      margin-bottom: 0px;
+    }
+    .anka-build-plugin-group h5 {
+      color: #5e2e9b;
+    }
+
+    div[descriptorid="com.veertu.plugin.anka.AnkaMgmtCloud"] {
+      background-color: #e6e6e6;
+      border: 1px solid #ccc;
+      padding: 0.5em 1.9rem !important;
+    }
+
+    div[descriptorid="com.veertu.plugin.anka.AnkaMgmtCloud"] hr {
+      border: 0;
+      border-top: 1px solid #ccc;
+      border-bottom: 1px solid #e6e6e6;
+      margin-bottom: 20px;
+    }
+
+    div[descriptorid="com.veertu.plugin.anka.AnkaMgmtCloud"] .form-group {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 0px !important;
+      flex: 1;
+    }
+
+    div[descriptorid="com.veertu.plugin.anka.AnkaMgmtCloud"] select.credentials-select {
+      width: 100%;
+      min-width: 100%;
+    }
+
+    div[descriptorid="com.veertu.plugin.anka.AnkaMgmtCloud"] .dd-handle {
+      font-size: 1.5em;
+      margin-bottom: 10px;
+    }
+
+    div[descriptorid="com.veertu.plugin.anka.AnkaMgmtCloud"] .yui-button {
+      width: 25%;
+    }
+
+    div[descriptorid="com.veertu.plugin.anka.AnkaMgmtCloud"] .yui-button button {
+      border-radius: 0px !important;
+      margin: 0px !important;
+      border-width: 1px;
+      width: 10%;
+    }
+
+    .anka-build-plugin-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+    }
+    .anka-build-plugin-head-cloud-column {
+      display: flex;
+      flex-direction: column;
+      flex: 0 0 auto;
+      align-self: flex-start;
+    }
+    .anka-build-plugin-head-cloud-column .jenkins-form-item {
+      margin: 5px;
+    }
+    .anka-build-plugin-head-cloud-column .setting-main {
+      flex-direction: column;
+    }
+    .anka-build-plugin-head > .jenkins-form-item:has(#ankaMgmtUrl) {
+      flex: 1 1 320px;
+      min-width: 320px;
+    }
+
+    .anka-build-plugin-head div.welcome {
+        padding: 0px 10px;
+    }
+    .anka-build-plugin-head div.welcome p {
+        padding: 0px;
+        font-size: 1rem;
+    }
+
+    .anka-build-plugin-head div.jenkins-form-item {
+      margin: 5px;
+      padding: 10px 17px 17px 17px;
+      color: #5e2e9b;
+      border: 1px solid #60259F;
+      background-color: #FFF;
+      border-radius: .66rem;
+    }
+    .anka-build-plugin-head div.jenkins-form-item p {
+      color: #5e2e9b;
+    }
+
+    .anka-build-plugin-url-https {
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid #d4c5e8;
+    }
+    .anka-build-plugin-url-https h4 {
+      margin: 0 0 0.5rem;
+    }
+    .anka-build-plugin-head .anka-build-plugin-url-https .jenkins-form-item {
+      margin: 1rem 0 0;
+      padding: 0;
+      border: none;
+      border-radius: 0;
+      background-color: transparent;
+    }
+
+    .anka-build-plugin-head-advanced .dropdownList-container div.jenkins-form-item {
+      width: 100% !important;
+      max-width: 100% !important;
+      margin: 5px;
+      padding: 10px 17px 17px 17px;
+      color: #5e2e9b;
+      border: 1px solid #60259F;
+      background-color: #FFF;
+      border-radius: .66rem;
+    }
+
+    .anka-build-plugin-security {
+      margin: 5px;
+      padding: 1.25rem 1.5rem 1.5rem;
+      color: #5e2e9b;
+      border: 1px solid #60259F;
+      background-color: #FFF;
+      border-radius: .66rem;
+    }
+    .anka-build-plugin-security-columns {
+      display: flex;
+      gap: 0;
+      align-items: stretch;
+    }
+    .anka-build-plugin-security-column {
+      flex: 1 1 50%;
+      width: 50%;
+      min-width: 0;
+      box-sizing: border-box;
+      padding: 0.5rem 1.5rem;
+    }
+    .anka-build-plugin-security-column:first-child {
+      padding-left: 0.25rem;
+      padding-right: 1.75rem;
+    }
+    .anka-build-plugin-security-column + .anka-build-plugin-security-column {
+      padding-left: 1.75rem;
+      padding-right: 0.25rem;
+      border-left: 1px solid #d4c5e8;
+    }
+    .anka-build-plugin-security button {
+      background-color: #FFF;
+    }
+    .anka-build-plugin-security h3 {
+      border-bottom: 1px solid #e8dff2;
+      padding-bottom: 0.75rem;
+      color: #5e2e9b;
+      margin: 0 0 1rem;
+    }
+    .anka-build-plugin-security-column h4 {
+      margin: 0 0 0.5rem;
+    }
+    .anka-build-plugin-security-column ul {
+      margin: 0 0 1.25rem;
+      padding-left: 1.25rem;
+    }
+    .anka-build-plugin-security-column .jenkins-form-item {
+      margin: 1.25rem 0;
+    }
+    .anka-build-plugin-security-column .jenkins-form-item:first-of-type {
+      margin-top: 0.75rem;
+    }
+    .anka-build-plugin-security-column .jenkins-form-description {
+      padding: 0 0.25rem;
+    }
+    .anka-build-plugin-security-doc-link {
+      margin: 0 0 1.25rem;
+    }
+    .anka-build-plugin-security-doc-link a {
+      color: #e21e79;
+    }
+
+    .anka-build-plugin-content-group {
+        padding: 10px;
+        margin-top: 20px;
+    }
+
+
+    .anka-build-plugin-templates-list .optionalBlock-container.jenkins-form-item {
+      max-width: 100%;
+    }
+
+    .anka-build-plugin-templates-list .form-container .jenkins-form-item {
+        max-width: 100%;
+        margin-top: 20px;
+    }
+
+    .repeatable-add {
+      width: 100%;
+      background-color: #e21e79;
+      color: #FFF !important;
+    }
+
+    .jenkins-form-item {
+      margin: 13px 0px;
+    }
+
+    .jenkins-form-item:last-child {
+      margin-bottom: 0px;
+    }
+
+    .jenkins-form-label {
+      font-size: 1rem;
+    }
+
+    .jenkins-form-description {
+      font-size: 0.8rem;
+      color: #717171 !important;
+      line-height: 1.30 !important;
+    margin: -.2rem 0 .9rem !important;
+      padding: 0 7px;
+    }
+    .jenkins-form-description-extra {
+      font-size: 0.8rem;
+      color: #717171 !important;
+      line-height: 1.30 !important;
+      margin: 17px 0px 5px 0px;
+    }
+
+    .anka-build-plugin-head-advanced .advancedButton {
+        margin: 10px;
+        background-color: #FFF;
+        color: #5e2e9b !important;
+    }
+
+    .anka-build-plugin-head-advanced .advancedBody .form-group {
+      max-width: 300px;
+    }
+    .anka-build-plugin-head-advanced .advancedLink {
+      text-align: center !important;
+    }
+
+    .anka-build-plugin-templates-list .repeated-container {
+      display: flex;
+      flex-wrap: wrap-reverse;
+      justify-content: center;
+    }
+
+    .anka-build-plugin-templates-list .repeated-chunk {
+      border: 1px solid #60259F;
+      background-color: #FFF;
+      padding: 7px 15px !important;
+      flex: 1;
+      margin: 10px 5px;
+      color: #5e2e9b;
+      flex-basis: 25%;
+    }
+    .anka-build-plugin-templates-list .repeated-chunk button:not(.repeatable-delete) {
+      background-color: #FFF;
+      color: #5e2e9b !important;
+    }
+    .anka-build-plugin-templates-list .repeated-chunk:nth-child(odd) {
+      background-color:#f2e8fd;
+    }
+    .anka-build-plugin-templates-list .repeated-chunk .label {
+      background-color: #e21e79;
+      padding: 6px;
+      display: block;
+      text-align: center;
+      color: #fff;
+    }
+
+    .hide-me {
+      display: none;
+    }
+
+    .optionalBlock-container>.form-container {
+      padding-left: 0px !important;
+    }
+
+    .optionalBlock-container>.form-container:after {
+      display: none;
+    }
+
+    .optionalBlock-container>.form-container:before {
+      display: none;
+    }
+
+    .error-message {
+      color: #FFF;
+      font-size: 0.8rem;
+      margin-top: 5px;
+      background-color: #e21e79;
+      padding: 10px;
+    }
+
+    .error-message.hidden {
+      display: none;
+    }
+
+    .jenkins-section__description {
+      color: #717171;
+    }
+
+    .setting-main {
+      display: flex;
+      flex-direction: column-reverse;
+    }
+    .setting-main:has(#ankaMgmtUrl),
+    .anka-build-plugin-url-https .setting-main {
+      flex-direction: column;
+    }
+    .jenkins-checkbox {
+      margin-top: 10px;
+    }
+
+    :root, .app-theme-picker__picker[data-theme="none"] {
+        --secondary: #5e2e9b !important;
+    }
+
+    .jenkins-section__description {
+      margin: 10px 0px 0px 0px;
+    }
+
+    .anka-build-plugin-cloud-offline {
+      color: red;
+    }
+
+    .repeated-chunk__header {
+      display: none !important;
+    }
+

@@ -3,7 +3,7 @@ package com.veertu.ankaMgmtSdk;
 import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
 import com.veertu.ankaMgmtSdk.exceptions.ClientException;
 import hudson.util.Secret;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
@@ -54,7 +54,7 @@ public class OpenIdConnectAuthenticator {
     private int timeout = 100;
     private int maxRetries = 20;
     private String wellKnownPath = ".well-known/openid-configuration";
-    private String oidcTokenEndpoint;
+    private transient String providerAuthEndpointUrl;
 
 
     private static final String GRANT_TYPE_CLIENT_CREDENTIALS = "client_credentials";
@@ -101,7 +101,7 @@ public class OpenIdConnectAuthenticator {
         String response = doGetRequest(url);
         JSONObject jsonResponse = new JSONObject(response);
         if (jsonResponse.has("token_endpoint")) {
-            oidcTokenEndpoint = jsonResponse.getString("token_endpoint");
+            providerAuthEndpointUrl = jsonResponse.getString("token_endpoint");
         } else {
             throw new AnkaMgmtException("no token endpoint on openid provider");
         }
@@ -133,7 +133,7 @@ public class OpenIdConnectAuthenticator {
         }
 
 
-        String response = doPostRequest(oidcTokenEndpoint, params, headers);
+        String response = doPostRequest(providerAuthEndpointUrl, params, headers);
         return processResponse(response);
     }
 
@@ -141,7 +141,7 @@ public class OpenIdConnectAuthenticator {
         if (providerUrl == null || providerUrl.isEmpty()) { // lazy get config
             getControllerConfig();
         }
-        if (oidcTokenEndpoint == null || oidcTokenEndpoint.isEmpty()) { // lazy oidc discovery
+        if (providerAuthEndpointUrl == null || providerAuthEndpointUrl.isEmpty()) { // lazy oidc discovery
             discoverOpenIdProvider();
         }
         if (accessToken == null || accessToken.getPlainText().isEmpty()) { // means this is the first request
@@ -179,7 +179,7 @@ public class OpenIdConnectAuthenticator {
         params.add(new BasicNameValuePair("client_id", clientId));
         params.add(new BasicNameValuePair("client_secret", clientSecret.getPlainText()));
 
-        String response = doPostRequest(oidcTokenEndpoint, params, headers);
+        String response = doPostRequest(providerAuthEndpointUrl, params, headers);
         return processResponse(response);
     }
 
