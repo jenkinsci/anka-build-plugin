@@ -5,17 +5,6 @@ def encodeBranchForJob = { String branchName ->
     return branchName.replace('/', '%2F')
 }
 
-def resolvePluginBranch = {
-    def branchFromParam = params.PLUGIN_BRANCH?.trim()
-    if (branchFromParam) {
-        return branchFromParam
-    }
-    if (env.BRANCH_NAME?.trim()) {
-        return env.BRANCH_NAME.trim()
-    }
-    error('Set PLUGIN_BRANCH (e.g. release/v2.16.0) or run from a multibranch pipeline with BRANCH_NAME set')
-}
-
 def runPluginMavenRelease = { String mvnGoals ->
     withCredentials([
         usernamePassword(
@@ -62,7 +51,6 @@ properties(
         copyArtifactPermission('*'),
         durabilityHint('PERFORMANCE_OPTIMIZED'),
         parameters([
-            string(defaultValue: 'master', description: 'anka-build-plugin branch to release (e.g. release/v2.16.0)', name: 'PLUGIN_BRANCH', trim: true),
             booleanParam(defaultValue: false, description: 'Skip plugin HPI build and integration tests (only if they already passed)', name: 'skip_prerequisites'),
             booleanParam(defaultValue: false, description: 'Run mvn release:rollback instead of release:prepare release:perform', name: 'rollback_release'),
         ]),
@@ -86,10 +74,7 @@ pipeline {
                 }
             }
             steps {
-                script {
-                    def pluginBranch = resolvePluginBranch()
-                    build job: "plugin-jenkins-build/${encodeBranchForJob(pluginBranch)}", wait: true
-                }
+                build job: "plugin-jenkins-build/${encodeBranchForJob(env.BRANCH_NAME)}", wait: true
             }
         }
         stage('Integration tests') {
@@ -100,10 +85,7 @@ pipeline {
                 }
             }
             steps {
-                script {
-                    def pluginBranch = resolvePluginBranch()
-                    build job: "cloud-integration-jenkins/${encodeBranchForJob(pluginBranch)}", wait: true
-                }
+                build job: "cloud-integration-jenkins/${encodeBranchForJob(env.BRANCH_NAME)}", wait: true
             }
         }
         stage('Perform release') {
