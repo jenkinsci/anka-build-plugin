@@ -2,6 +2,7 @@ package com.veertu.ankaMgmtSdk;
 
 import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
 import com.veertu.ankaMgmtSdk.exceptions.ClientException;
+import hudson.util.Secret;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -36,15 +37,15 @@ public class OpenIdConnectAuthenticator {
 
     private final String mgmtUrl;
     private final String clientId;
-    private final String clientSecret;
+    private final Secret clientSecret;
 
     private String userNameField;
     private String groupsField;
     private String providerUrl;
     private String displayName;
 
-    private String refreshToken;
-    private String accessToken;
+    private Secret refreshToken;
+    private Secret accessToken;
     private long refreshExpires;
     private long expireIn;
     private long requestTime;
@@ -53,17 +54,17 @@ public class OpenIdConnectAuthenticator {
     private int timeout = 100;
     private int maxRetries = 20;
     private String wellKnownPath = ".well-known/openid-configuration";
-    private String tokenUrl;
+    private String oidcTokenEndpoint;
 
 
-    private final String grantTypeClientCredentials = "client_credentials";
-    private final String grantTypeRefreshToken = "refresh_token";
+    private static final String GRANT_TYPE_CLIENT_CREDENTIALS = "client_credentials";
+    private static final String GRANT_TYPE_REFRESH_TOKEN = "refresh_token";
 
 
     public OpenIdConnectAuthenticator(String mgmtUrl, String clientId, String clientSecret) {
         this.mgmtUrl = mgmtUrl;
         this.clientId = clientId;
-        this.clientSecret = clientSecret;
+        this.clientSecret = Secret.fromString(clientSecret);
     }
 
     public void getControllerConfig() throws AnkaMgmtException, ClientException {
@@ -95,12 +96,12 @@ public class OpenIdConnectAuthenticator {
         }
     }
 
-    public void doDiscovery() throws AnkaMgmtException, ClientException {
+    public void discoverOpenIdProvider() throws AnkaMgmtException, ClientException {
         String url = String.format("%s/%s", providerUrl, wellKnownPath);
         String response = doGetRequest(url);
         JSONObject jsonResponse = new JSONObject(response);
         if (jsonResponse.has("token_endpoint")) {
-            tokenUrl = jsonResponse.getString("token_endpoint");
+            oidcTokenEndpoint = jsonResponse.getString("token_endpoint");
         } else {
             throw new AnkaMgmtException("no token endpoint on openid provider");
         }
@@ -114,7 +115,7 @@ public class OpenIdConnectAuthenticator {
         headers.add(new BasicNameValuePair("Content-Type", "application/x-www-form-urlencoded"));
 
         List<NameValuePair> params = new ArrayList<>();
-        params.add(new BasicNameValuePair("grant_type", grantTypeClientCredentials));
+        params.add(new BasicNameValuePair("grant_type", GRANT_TYPE_CLIENT_CREDENTIALS));
 
         List<String> scopes = new ArrayList<>();
         if (isClaimInProfile(userNameField) || isClaimInProfile(groupsField)) {
@@ -132,7 +133,7 @@ public class OpenIdConnectAuthenticator {
         }
 
 
-        String response = doPostRequest(tokenUrl, params, headers);
+        String response = doPostRequest(oidcTokenEndpoint, params, headers);
         return processResponse(response);
     }
 
@@ -140,15 +141,15 @@ public class OpenIdConnectAuthenticator {
         if (providerUrl == null || providerUrl.isEmpty()) { // lazy get config
             getControllerConfig();
         }
-        if (tokenUrl == null || tokenUrl.isEmpty()) { // lazy oidc discovery
-            doDiscovery();
+        if (oidcTokenEndpoint == null || oidcTokenEndpoint.isEmpty()) { // lazy oidc discovery
+            discoverOpenIdProvider();
         }
-        if (accessToken == null || accessToken.isEmpty()) { // means this is the first request
+        if (accessToken == null || accessToken.getPlainText().isEmpty()) { // means this is the first request
             authorizeWithProvider();
         } else { // this is not the first request, check if we need to refresh the token
             long timePassed = timeNow() - requestTime;
             if (timePassed > expireIn) { // token expired, needs refresh
-                if (timePassed < refreshExpires && refreshToken != null && !refreshToken.isEmpty()) {
+                if (timePassed < refreshExpires && refreshToken != null && !refreshToken.getPlainText().isEmpty()) {
                     try {
                         refreshWithRefreshToken(); // use refresh token to get a new token
                     } catch (Exception e) { // if we has some bad luck, fall back to provider
@@ -163,8 +164,8 @@ public class OpenIdConnectAuthenticator {
 
     }
 
-    private NameValuePair tokenToValuePair(String accessToken) {
-        return new BasicNameValuePair("Authorization", String.format("Bearer %s", accessToken));
+    private NameValuePair tokenToValuePair(Secret accessToken) {
+        return new BasicNameValuePair("Authorization", String.format("Bearer %s", accessToken.getPlainText()));
     }
 
     public String refreshWithRefreshToken() throws AnkaMgmtException, ClientException {
@@ -173,17 +174,17 @@ public class OpenIdConnectAuthenticator {
         headers.add(new BasicNameValuePair("Content-Type", "application/x-www-form-urlencoded"));
 
         List<NameValuePair> params = new ArrayList<>();
-        params.add(new BasicNameValuePair("grant_type", grantTypeRefreshToken));
-        params.add(new BasicNameValuePair("refresh_token", refreshToken));
+        params.add(new BasicNameValuePair("grant_type", GRANT_TYPE_REFRESH_TOKEN));
+        params.add(new BasicNameValuePair("refresh_token", refreshToken.getPlainText()));
         params.add(new BasicNameValuePair("client_id", clientId));
-        params.add(new BasicNameValuePair("client_secret", clientSecret));
+        params.add(new BasicNameValuePair("client_secret", clientSecret.getPlainText()));
 
-        String response = doPostRequest(tokenUrl, params, headers);
+        String response = doPostRequest(oidcTokenEndpoint, params, headers);
         return processResponse(response);
     }
 
     private NameValuePair makeAuthorization() {
-        String authorizationPair = String.format("%s:%s", clientId, clientSecret);
+        String authorizationPair = String.format("%s:%s", clientId, clientSecret.getPlainText());
         String encoded = Base64.getEncoder().encodeToString(authorizationPair.getBytes());
         return new BasicNameValuePair("Authorization", String.format("Basic %s", encoded));
     }
@@ -303,10 +304,10 @@ public class OpenIdConnectAuthenticator {
         requestTime = timeNow();
         JSONObject jsonResponse = new JSONObject(response);
         if (jsonResponse.has("access_token")) {
-            accessToken = jsonResponse.getString("access_token");
+            accessToken = Secret.fromString(jsonResponse.getString("access_token"));
         }
         if (jsonResponse.has("refresh_token")) {
-            refreshToken = jsonResponse.getString("refresh_token");
+            refreshToken = Secret.fromString(jsonResponse.getString("refresh_token"));
         }
         if (jsonResponse.has("refresh_expires_in")) {
             refreshExpires = jsonResponse.getLong("refresh_expires_in");
@@ -314,6 +315,6 @@ public class OpenIdConnectAuthenticator {
         if (jsonResponse.has("expires_in")) {
             expireIn = jsonResponse.getLong("expires_in");
         }
-        return accessToken;
+        return accessToken.getPlainText();
     }
 }

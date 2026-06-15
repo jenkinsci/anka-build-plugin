@@ -13,6 +13,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.interceptor.RequirePOST;
 
 import static com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
@@ -225,6 +226,7 @@ public class AnkaCloudSlaveTemplate extends AbstractSlaveTemplate implements Des
         }
 
 
+        @RequirePOST
         public ListBoxModel doFillCredentialsIdItems(@AncestorInPath ItemGroup context) {
             if (!(context instanceof AccessControlled ? (AccessControlled) context : Jenkins.get()).hasPermission(Computer.CONFIGURE)) {
                 return new ListBoxModel();
@@ -263,7 +265,11 @@ public class AnkaCloudSlaveTemplate extends AbstractSlaveTemplate implements Des
             return new ArrayList<>();
         }
 
+        @RequirePOST
         public ListBoxModel doFillGroupItems(@QueryParameter String cloudName) {
+            if (!Jenkins.get().hasPermission(Computer.CONFIGURE)) {
+                return new ListBoxModel();
+            }
             AnkaMgmtCloud cloud = (AnkaMgmtCloud) Jenkins.get().getCloud(cloudName);
             ListBoxModel models = new ListBoxModel();
             models.add("Choose Node Group Or Leave Empty for all", "");
@@ -283,7 +289,11 @@ public class AnkaCloudSlaveTemplate extends AbstractSlaveTemplate implements Des
             return models;
         }
 
+        @RequirePOST
         public ListBoxModel doFillMasterVmIdItems(@QueryParameter String cloudName) {
+            if (!Jenkins.get().hasPermission(Computer.CONFIGURE)) {
+                return new ListBoxModel();
+            }
             AnkaMgmtCloud cloud = (AnkaMgmtCloud) Jenkins.get().getCloud(cloudName);
             // java.util.logging.Logger logger = java.util.logging.Logger.getLogger("jenkins.system.log");
             // logger.info("cloudName: " + cloudName);
@@ -307,11 +317,16 @@ public class AnkaCloudSlaveTemplate extends AbstractSlaveTemplate implements Des
             return models;
         }
 
+        @RequirePOST
         public ListBoxModel doFillTemplateIdItems(@QueryParameter String cloudName) {
             return doFillMasterVmIdItems(cloudName);
         }
 
+        @RequirePOST
         public ListBoxModel doFillTagItems(@QueryParameter String cloudName , @QueryParameter String masterVmId) {
+            if (!Jenkins.get().hasPermission(Computer.CONFIGURE)) {
+                return new ListBoxModel();
+            }
             AnkaMgmtCloud cloud = (AnkaMgmtCloud) Jenkins.get().getCloud(cloudName);
             ListBoxModel models = new ListBoxModel();
             models.add("Choose a Tag or leave empty for latest", "");

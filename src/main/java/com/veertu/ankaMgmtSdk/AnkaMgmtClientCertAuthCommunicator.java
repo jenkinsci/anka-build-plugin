@@ -30,7 +30,7 @@ public class AnkaMgmtClientCertAuthCommunicator extends AnkaMgmtCommunicator {
     @Override
     protected SSLContext getSSLContext(KeyStore keystore) throws KeyStoreException, NoSuchAlgorithmException, KeyManagementException, UnrecoverableKeyException {
         return new SSLContextBuilder()
-                .loadKeyMaterial(keystore, authenticator.getPemPassword().toCharArray())
+                .loadKeyMaterial(keystore, authenticator.getKeyStoreEntryPassword())
                 .loadTrustMaterial(keystore, getTrustStrategy()).build();
     }
 }

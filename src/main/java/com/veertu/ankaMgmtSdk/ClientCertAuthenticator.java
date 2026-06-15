@@ -1,5 +1,6 @@
 package com.veertu.ankaMgmtSdk;
 
+import hudson.util.Secret;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
@@ -19,26 +20,27 @@ import java.security.cert.CertificateException;
 
 public class ClientCertAuthenticator {
 
+    private static final char[] KEYSTORE_ENTRY_PASSWORD = "somePassword".toCharArray();
+    private static final String CERTIFICATE_ENTRY_ALIAS = "cert-alias";
+    private static final String PRIVATE_ENTRY_ALIAS = "key-alias";
+
     private final String clientCert;
-    private final String clientCertKey;
-    private final String pemPassword = "somePassword";
-    private final String keyAlias = "key-alias";
-    private final String certAlias = "cert-alias";
+    private final Secret clientCertKey;
     private transient KeyStore keyStore;
 
     public ClientCertAuthenticator(String clientCert, String clientCertKey) {
         this.clientCert = clientCert;
-        this.clientCertKey = clientCertKey;
+        this.clientCertKey = Secret.fromString(clientCertKey);
     }
 
     public KeyStore makeTrustStore() throws CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException {
         Certificate certificate = parseClientCertificate(clientCert);
-        PrivateKey privateKey = parseClientPrivateKey(clientCertKey);
+        PrivateKey privateKey = parseClientPrivateKey(clientCertKey.getPlainText());
 
         KeyStore keystore = KeyStore.getInstance("JKS");
         keystore.load(null);
-        keystore.setCertificateEntry(certAlias, certificate);
-        keystore.setKeyEntry(keyAlias, privateKey, pemPassword.toCharArray(), new Certificate[] {certificate});
+        keystore.setCertificateEntry(CERTIFICATE_ENTRY_ALIAS, certificate);
+        keystore.setKeyEntry(PRIVATE_ENTRY_ALIAS, privateKey, KEYSTORE_ENTRY_PASSWORD, new Certificate[] {certificate});
         return keystore;
     }
 
@@ -136,7 +138,7 @@ public class ClientCertAuthenticator {
         return this.keyStore;
     }
 
-    public String getPemPassword() {
-        return pemPassword;
+    public char[] getKeyStoreEntryPassword() {
+        return KEYSTORE_ENTRY_PASSWORD;
     }
 }
