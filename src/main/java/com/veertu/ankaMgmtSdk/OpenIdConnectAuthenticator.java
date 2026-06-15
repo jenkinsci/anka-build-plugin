@@ -25,6 +25,7 @@ import javax.net.ssl.SSLContext;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.URI;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -54,7 +55,7 @@ public class OpenIdConnectAuthenticator {
     private int timeout = 100;
     private int maxRetries = 20;
     private String wellKnownPath = ".well-known/openid-configuration";
-    private transient String providerAuthEndpointUrl;
+    private transient URI discoveredAuthEndpoint;
 
 
     private static final String GRANT_TYPE_CLIENT_CREDENTIALS = "client_credentials";
@@ -101,7 +102,7 @@ public class OpenIdConnectAuthenticator {
         String response = doGetRequest(url);
         JSONObject jsonResponse = new JSONObject(response);
         if (jsonResponse.has("token_endpoint")) {
-            providerAuthEndpointUrl = jsonResponse.getString("token_endpoint");
+            discoveredAuthEndpoint = URI.create(jsonResponse.getString("token_endpoint"));
         } else {
             throw new AnkaMgmtException("no token endpoint on openid provider");
         }
@@ -133,7 +134,7 @@ public class OpenIdConnectAuthenticator {
         }
 
 
-        String response = doPostRequest(providerAuthEndpointUrl, params, headers);
+        String response = doPostRequest(requireAuthEndpoint(), params, headers);
         return processResponse(response);
     }
 
@@ -141,7 +142,7 @@ public class OpenIdConnectAuthenticator {
         if (providerUrl == null || providerUrl.isEmpty()) { // lazy get config
             getControllerConfig();
         }
-        if (providerAuthEndpointUrl == null || providerAuthEndpointUrl.isEmpty()) { // lazy oidc discovery
+        if (discoveredAuthEndpoint == null) { // lazy oidc discovery
             discoverOpenIdProvider();
         }
         if (accessToken == null || accessToken.getPlainText().isEmpty()) { // means this is the first request
@@ -179,8 +180,15 @@ public class OpenIdConnectAuthenticator {
         params.add(new BasicNameValuePair("client_id", clientId));
         params.add(new BasicNameValuePair("client_secret", clientSecret.getPlainText()));
 
-        String response = doPostRequest(providerAuthEndpointUrl, params, headers);
+        String response = doPostRequest(requireAuthEndpoint(), params, headers);
         return processResponse(response);
+    }
+
+    private String requireAuthEndpoint() throws AnkaMgmtException, ClientException {
+        if (discoveredAuthEndpoint == null) {
+            discoverOpenIdProvider();
+        }
+        return discoveredAuthEndpoint.toString();
     }
 
     private NameValuePair makeAuthorization() {
