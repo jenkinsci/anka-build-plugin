@@ -130,7 +130,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>node-iterator-api</artifactId>
-            <version>49.v58a_8b_35f8363</version>
+            <version>72.vc90e81737df1</version>
             <optional>true</optional>
         </dependency>
         <dependency>
