@@ -11,8 +11,8 @@ properties(
 )
 pipeline {
     agent { dockerfile {
-        filename 'Dockerfile'
-        dir '_ci'
+        filename '../Dockerfile'
+        dir 'automation/build'
         label 'poweredge'
         reuseNode true
         args "--name ${env.JOB_NAME.replace('%2F', '_').replace('/', '_')}-${env.BUILD_NUMBER}"

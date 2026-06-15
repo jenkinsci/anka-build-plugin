@@ -1,0 +1,126 @@
+def jenkins_ci_credentials_id = "accounts.jenkins.com"
+def github_ssh_credentials_id = "github-service-user-veertu"
+
+def encodeBranchForJob = { String branchName ->
+    return branchName.replace('/', '%2F')
+}
+
+def resolvePluginBranch = {
+    def branchFromParam = params.PLUGIN_BRANCH?.trim()
+    if (branchFromParam) {
+        return branchFromParam
+    }
+    if (env.BRANCH_NAME?.trim()) {
+        return env.BRANCH_NAME.trim()
+    }
+    error('Set PLUGIN_BRANCH (e.g. release/v2.16.0) or run from a multibranch pipeline with BRANCH_NAME set')
+}
+
+def runPluginMavenRelease = { String mvnGoals ->
+    withCredentials([
+        usernamePassword(
+            credentialsId: jenkins_ci_credentials_id,
+            usernameVariable: 'JENKINS_CI_USER',
+            passwordVariable: 'JENKINS_CI_PASSWORD'
+        ),
+        sshUserPrivateKey(
+            credentialsId: github_ssh_credentials_id,
+            keyFileVariable: 'GITHUB_SSH_KEY',
+            usernameVariable: 'GITHUB_SSH_USER'
+        ),
+    ]) {
+        sh """
+            set -euo pipefail
+
+            mkdir -p "\${HOME}/.m2"
+            curl -fsSL -u "\${JENKINS_CI_USER}:\${JENKINS_CI_PASSWORD}" \\
+                https://repo.jenkins-ci.org/setup/settings.xml \\
+                -o "\${HOME}/.m2/settings.xml"
+
+            mkdir -p "\${HOME}/.ssh"
+            chmod 700 "\${HOME}/.ssh"
+            cp "\${GITHUB_SSH_KEY}" "\${HOME}/.ssh/id_rsa"
+            chmod 600 "\${HOME}/.ssh/id_rsa"
+            ssh-keyscan -t rsa,ed25519 github.com >> "\${HOME}/.ssh/known_hosts" 2>/dev/null
+            export GIT_SSH_COMMAND="ssh -i \${GITHUB_SSH_KEY} -o StrictHostKeyChecking=yes"
+
+            git config user.email "support@veertu.com"
+            git config user.name "Veertu Jenkins Release"
+
+            mvn -B ${mvnGoals}
+        """
+    }
+}
+
+properties(
+    [
+        buildDiscarder(
+            logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '', numToKeepStr: '5')
+        ),
+        disableConcurrentBuilds(),
+        disableResume(),
+        copyArtifactPermission('*'),
+        durabilityHint('PERFORMANCE_OPTIMIZED'),
+        parameters([
+            string(defaultValue: 'master', description: 'anka-build-plugin branch to release (e.g. release/v2.16.0)', name: 'PLUGIN_BRANCH', trim: true),
+            booleanParam(defaultValue: false, description: 'Skip plugin HPI build and integration tests (only if they already passed)', name: 'skip_prerequisites'),
+            booleanParam(defaultValue: false, description: 'Run mvn release:rollback instead of release:prepare release:perform', name: 'rollback_release'),
+        ]),
+    ]
+)
+
+pipeline {
+    agent { dockerfile {
+        filename '../Dockerfile'
+        dir 'automation/release'
+        label 'poweredge'
+        reuseNode true
+        args "--name ${env.JOB_NAME.replace('%2F', '_').replace('/', '_')}-${env.BUILD_NUMBER}"
+    } }
+    stages {
+        stage('Plugin HPI build') {
+            when {
+                allOf {
+                    expression { !params.skip_prerequisites }
+                    expression { !params.rollback_release }
+                }
+            }
+            steps {
+                script {
+                    def pluginBranch = resolvePluginBranch()
+                    build job: "plugin-jenkins-build/${encodeBranchForJob(pluginBranch)}", wait: true
+                }
+            }
+        }
+        stage('Integration tests') {
+            when {
+                allOf {
+                    expression { !params.skip_prerequisites }
+                    expression { !params.rollback_release }
+                }
+            }
+            steps {
+                script {
+                    def pluginBranch = resolvePluginBranch()
+                    build job: "cloud-integration-jenkins/${encodeBranchForJob(pluginBranch)}", wait: true
+                }
+            }
+        }
+        stage('Perform release') {
+            when { expression { !params.rollback_release } }
+            steps {
+                script {
+                    runPluginMavenRelease('release:prepare release:perform')
+                }
+            }
+        }
+        stage('Rollback release') {
+            when { expression { params.rollback_release } }
+            steps {
+                script {
+                    runPluginMavenRelease('release:rollback')
+                }
+            }
+        }
+    }
+}
