@@ -2,6 +2,7 @@ package com.veertu.plugin.anka;
 
 import com.cloudbees.plugins.credentials.domains.SchemeRequirement;
 import com.veertu.ankaMgmtSdk.NodeGroup;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.model.Node;
 import com.veertu.plugin.anka.AnkaMgmtCloud;
 import hudson.slaves.EnvironmentVariablesNodeProperty;
@@ -262,10 +263,7 @@ public class AbstractSlaveTemplate {
             
             // Get all node groups from the cloud
             List<NodeGroup> nodeGroups = cloud.getNodeGroups();
-            if (nodeGroups == null) {
-                return null;
-            }
-            
+
             // Find the group with the matching UUID
             for (NodeGroup nodeGroup : nodeGroups) {
                 if (groupId.equals(nodeGroup.getId())) {
@@ -301,10 +299,7 @@ public class AbstractSlaveTemplate {
             
             // Get all node groups from the cloud
             List<NodeGroup> nodeGroups = cloud.getNodeGroups();
-            if (nodeGroups == null) {
-                return null;
-            }
-            
+
             // Find the group with the matching name
             for (NodeGroup nodeGroup : nodeGroups) {
                 if (groupName.equals(nodeGroup.getName())) {
@@ -493,6 +488,8 @@ public class AbstractSlaveTemplate {
         }
     }
 
+    @SuppressFBWarnings(value = "NM_CONFUSING",
+            justification = "getTemplateId is the established template accessor; it intentionally differs from SaveImageParameters.getTemplateID.")
     public String getTemplateId() {
         if (saveImageParameters != null) {
             String templateId = saveImageParameters.getTemplateID();
@@ -508,6 +505,8 @@ public class AbstractSlaveTemplate {
     }
 
     @DataBoundSetter
+    @SuppressFBWarnings(value = "NM_CONFUSING",
+            justification = "setTemplateId is the established template mutator; it intentionally differs from SaveImageParameters.setTemplateID.")
     public void setTemplateId(String templateId) {
         if (saveImageParameters != null) {
             saveImageParameters.setTemplateID(templateId);

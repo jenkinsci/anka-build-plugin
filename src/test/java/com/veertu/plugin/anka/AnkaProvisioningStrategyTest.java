@@ -6,9 +6,10 @@ import hudson.model.queue.QueueListener;
 import hudson.slaves.Cloud;
 import hudson.slaves.NodeProvisioner;
 import jenkins.model.Jenkins;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 
 import java.lang.reflect.Field;
 import java.util.Collections;
@@ -17,12 +18,17 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 
+@WithJenkins
 public class AnkaProvisioningStrategyTest {
 
     private static final String LABEL_NAME = "anka-fast-provision";
 
-    @Rule
-    public JenkinsRule jenkinsRule = new JenkinsRule();
+    private JenkinsRule jenkinsRule;
+
+    @BeforeEach
+    void setUp(JenkinsRule jenkinsRule) {
+        this.jenkinsRule = jenkinsRule;
+    }
 
     @Test
     public void shouldRegisterFastProvisioningQueueListener() {

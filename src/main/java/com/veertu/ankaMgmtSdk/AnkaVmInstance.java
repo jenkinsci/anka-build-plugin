@@ -1,5 +1,6 @@
 package com.veertu.ankaMgmtSdk;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.json.JSONObject;
 
 /**
@@ -36,6 +37,8 @@ public class AnkaVmInstance extends AnkaVMRepresentation {
         return sessionState;
     }
 
+    @SuppressFBWarnings(value = "NM_CONFUSING",
+            justification = "getVmId is the established public SDK accessor; distinct from AnkaCloudComputer.getVMId.")
     public String getVmId() {
         return vmId;
     }

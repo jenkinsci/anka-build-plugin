@@ -16,11 +16,13 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import net.sf.json.JSONObject;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 import hudson.util.Secret;
 
+@WithJenkins
 public class AnkaLabelsApiTest {
 
     private static final String CLOUD = "test-anka-cloud";
@@ -30,8 +32,12 @@ public class AnkaLabelsApiTest {
     private static final String TOKEN_CREDENTIAL_ID = "test-labels-api-token-cred";
     private static final String TOKEN_B_CREDENTIAL_ID = "test-labels-api-token-b-cred";
 
-    @Rule
-    public JenkinsRule j = new JenkinsRule();
+    private JenkinsRule j;
+
+    @BeforeEach
+    void setUp(JenkinsRule j) {
+        this.j = j;
+    }
 
     @Test
     public void labelsApiEndpointUrl_encodesCloudNameWithSpaces() {

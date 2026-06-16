@@ -1,5 +1,6 @@
 package com.veertu.plugin.anka;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 public class DynamicSlaveTemplate extends AnkaCloudSlaveTemplate {
@@ -15,6 +16,8 @@ public class DynamicSlaveTemplate extends AnkaCloudSlaveTemplate {
     }
 
     @DataBoundConstructor
+    @SuppressFBWarnings(value = "MC_OVERRIDABLE_METHOD_CALL_IN_CONSTRUCTOR",
+            justification = "Inherited template setters/getters are intentionally used to apply dynamic defaults during construction.")
     public DynamicSlaveTemplate(String masterVmId) {
         this.setSaveImageParameters(this.saveImageParameters);
         if (this.getRemoteFS() == null) {

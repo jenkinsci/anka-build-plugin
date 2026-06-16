@@ -6,6 +6,7 @@ import com.cloudbees.plugins.credentials.common.IdCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.veertu.ankaMgmtSdk.*;
 import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Extension;
 import hudson.Util;
 import hudson.model.*;
@@ -146,6 +147,8 @@ public class AnkaMgmtCloud extends Cloud {
         ImageSaver.markFuture(cloud, abstractAnkaSlave);
     }
 
+    @SuppressFBWarnings(value = "NM_METHOD_NAMING_CONVENTION",
+            justification = "InternalLog/Log form the plugin's established logging facade used throughout the codebase; renaming is an API change for no functional gain.")
     private static void InternalLog(Slave slave, SlaveComputer slaveComputer, TaskListener listener, String format, Object... args) {
         String s = "";
         if (slave != null) s = String.format("[%s] ", slave.getNodeName());
@@ -157,18 +160,26 @@ public class AnkaMgmtCloud extends Cloud {
         MgmtLogger.log(Level.INFO, s);
     }
 
+    @SuppressFBWarnings(value = "NM_METHOD_NAMING_CONVENTION",
+            justification = "Log is the plugin's established logging facade used throughout the codebase.")
     public static void Log(String msg) {
         InternalLog(null, null, null, msg);
     }
 
+    @SuppressFBWarnings(value = "NM_METHOD_NAMING_CONVENTION",
+            justification = "Log is the plugin's established logging facade used throughout the codebase.")
     public static void Log(String format, Object... args) {
         InternalLog(null, null, null, format, args);
     }
 
+    @SuppressFBWarnings(value = "NM_METHOD_NAMING_CONVENTION",
+            justification = "Log is the plugin's established logging facade used throughout the codebase.")
     public static void Log(Slave slave, TaskListener listener, String msg) {
         InternalLog(slave, null, listener, msg);
     }
 
+    @SuppressFBWarnings(value = "NM_METHOD_NAMING_CONVENTION",
+            justification = "Log is the plugin's established logging facade used throughout the codebase.")
     public static void Log(SlaveComputer slave, TaskListener listener, String format, Object... args) {
         InternalLog(null, slave, listener, format, args);
     }
@@ -361,17 +372,19 @@ public class AnkaMgmtCloud extends Cloud {
 
         } else if (credentials instanceof CertCredentials) {
             CertCredentials certCredentials = (CertCredentials) credentials;
-            if (certCredentials.getClientCertificate() == null
-                    || certCredentials.getClientCertificate().isEmpty()
-                    || certCredentials.getClientKey() == null
-                    || certCredentials.getClientKey().isEmpty()) {
+            String clientCertificate = certCredentials.getClientCertificate();
+            String clientKey = certCredentials.getClientKey();
+            if (clientCertificate == null
+                    || clientCertificate.isEmpty()
+                    || clientKey == null
+                    || clientKey.isEmpty()) {
                 throw new IllegalArgumentException("Both client certificate and key must be provided for certificate authentication");
             }
 
             ankaAPI = new AnkaAPI(List.of(mgmtURLS),
                     skipTLSVerification,
-                    certCredentials.getClientCertificate(),
-                    certCredentials.getClientKey(),
+                    clientCertificate,
+                    clientKey,
                     AuthType.CERTIFICATE,
                     resolvedRootCaPem);
 
@@ -483,7 +496,7 @@ public class AnkaMgmtCloud extends Cloud {
         return rootCaCredentialsId;
     }
 
-    public String getCloudName() {
+    public final String getCloudName() {
         return name;
     }
 
@@ -765,6 +778,8 @@ public class AnkaMgmtCloud extends Cloud {
     }
 
     @Override
+    @SuppressFBWarnings(value = "REC_CATCH_EXCEPTION",
+            justification = "provision must never propagate exceptions to the Jenkins provisioning loop; any failure returns an empty list.")
     public Collection<NodeProvisioner.PlannedNode> provision(CloudState state, int excessWorkload) {
         Label label = state.getLabel();
         List<NodeProvisioner.PlannedNode> plannedNodes = new ArrayList<>();
@@ -813,7 +828,7 @@ public class AnkaMgmtCloud extends Cloud {
                 }
                 final List<AbstractAnkaSlave> slaves = createNewSlaves(t, number);
 
-                if (slaves == null || slaves.isEmpty()) {
+                if (slaves.isEmpty()) {
                     Log("Can't raise nodes for " + t);
                     return Collections.emptyList();
                 }
@@ -843,6 +858,8 @@ public class AnkaMgmtCloud extends Cloud {
         }
     }
 
+    @SuppressFBWarnings(value = "REC_CATCH_EXCEPTION",
+            justification = "Broad catch ensures the finally block cleans up the started VM/node on any failure during slave creation.")
     private List<AbstractAnkaSlave> createNewDurableSlaves(AnkaCloudSlaveTemplate template, int number) throws AnkaMgmtException, IOException, Descriptor.FormException {
         List<AbstractAnkaSlave> newSlaves = new ArrayList<>();
         for (int i = 0; i < number; i++) {
@@ -965,7 +982,7 @@ public class AnkaMgmtCloud extends Cloud {
     public boolean isOnline() {
         try {
             AnkaCloudStatus status = ankaAPI.getStatus();
-            return status.getStatus().toLowerCase().equals("running");
+            return status.getStatus().equalsIgnoreCase("running");
         } catch (AnkaMgmtException e) {
             return false;
         }
@@ -1204,7 +1221,7 @@ public class AnkaMgmtCloud extends Cloud {
                     null,
                     null
             ).forEach(c -> {
-                String labelSuffix = (c.getDescription() != null && !c.getDescription().isEmpty())
+                String labelSuffix = !c.getDescription().isEmpty()
                         ? " (" + c.getDescription() + ")" : "";
                 listBox.add("Secret text: " + c.getId() + labelSuffix, c.getId());
             });
@@ -1227,7 +1244,7 @@ public class AnkaMgmtCloud extends Cloud {
                     null,
                     null
             ).forEach(c -> {
-                String labelSuffix = (c.getDescription() != null && !c.getDescription().isEmpty())
+                String labelSuffix = !c.getDescription().isEmpty()
                         ? " (" + c.getDescription() + ")" : "";
                 listBox.add("Labels API token: " + c.getId() + labelSuffix, c.getId());
             });

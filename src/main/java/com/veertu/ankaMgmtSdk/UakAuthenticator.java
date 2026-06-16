@@ -3,6 +3,7 @@ package com.veertu.ankaMgmtSdk;
 import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
 import com.veertu.ankaMgmtSdk.exceptions.ClientException;
 import com.veertu.plugin.anka.AnkaMgmtCloud;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import jenkins.model.Jenkins;
 import org.apache.http.HttpHost;
 import org.apache.http.NameValuePair;
@@ -31,10 +32,12 @@ import javax.crypto.Cipher;
 import javax.crypto.spec.OAEPParameterSpec;
 import javax.crypto.spec.PSource;
 import javax.net.ssl.SSLContext;
+import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.cert.Certificate;
+import java.nio.charset.StandardCharsets;
 import java.security.spec.MGF1ParameterSpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Base64;
@@ -42,7 +45,7 @@ import java.util.List;
 
 public class UakAuthenticator {
 
-    private final int maxRetries = 3;
+    private static final int maxRetries = 3;
     private final List<String> mgmtURLs;
     private final boolean skipTLSVerification;
     private final String rootCA;
@@ -71,6 +74,8 @@ public class UakAuthenticator {
      * @return the RSA private key object
      * @throws IllegalArgumentException if the key is null, empty, or not a valid RSA private key
      */
+    @SuppressFBWarnings(value = "REC_CATCH_EXCEPTION",
+            justification = "Intentional catch-all: any parsing/decoding failure is reported as an invalid key.")
     public static RSAPrivateKey getRSAPrivateKey(String key) {
         if (key == null || key.trim().isEmpty()) {
             throw new IllegalArgumentException("Key cannot be null or empty");
@@ -105,6 +110,8 @@ public class UakAuthenticator {
      * @param id                  the UAK ID
      * @param pemKey              the RSA private key in PEM format
      */
+    @SuppressFBWarnings(value = "REC_CATCH_EXCEPTION",
+            justification = "Intentional catch-all: key init failures are logged and leave key null for later handling.")
     public UakAuthenticator(List<String> mgmtURLs, boolean skipTLSVerification, String rootCA, String id, String pemKey) {
         this.mgmtURLs = mgmtURLs;
         this.skipTLSVerification = skipTLSVerification;
@@ -141,8 +148,8 @@ public class UakAuthenticator {
             throw new AnkaMgmtException("Failed to initialize RSA private key for " + id);
         }
 
-        String secret = TapHandRequest();
-        String token = TapShakeRequest(secret);
+        String secret = tapHandRequest();
+        String token = tapShakeRequest(secret);
         return new BasicNameValuePair("Authorization", String.format("Bearer %s", token));
     }
 
@@ -153,7 +160,7 @@ public class UakAuthenticator {
      * @throws AnkaMgmtException if the request fails
      * @throws ClientException   if the request fails
      */
-    private String TapHandRequest() throws AnkaMgmtException, ClientException {
+    private String tapHandRequest() throws AnkaMgmtException, ClientException {
         JSONObject handObj = new JSONObject();
         handObj.put("id", id);
 
@@ -170,11 +177,11 @@ public class UakAuthenticator {
 
             cipher.init(Cipher.DECRYPT_MODE, key, oaepParams);
             decryptedBytes = cipher.doFinal(encryptedBytes);
-        } catch (Exception e) {
+        } catch (GeneralSecurityException e) {
             throw new AnkaMgmtException("Failed to decrypt response: " + e.getMessage());
         }
 
-        String secret = new String(decryptedBytes);
+        String secret = new String(decryptedBytes, StandardCharsets.UTF_8);
 
         return secret;
     }
@@ -187,7 +194,7 @@ public class UakAuthenticator {
      * @throws AnkaMgmtException if the request fails
      * @throws ClientException   if the request fails
      */
-    private String TapShakeRequest(String secret) throws AnkaMgmtException, ClientException {
+    private String tapShakeRequest(String secret) throws AnkaMgmtException, ClientException {
         JSONObject shakeObj = new JSONObject();
         shakeObj.put("id", id);
         shakeObj.put("secret", secret);
@@ -198,7 +205,7 @@ public class UakAuthenticator {
         JSONObject authObj = jsonResponse.getJSONObject("data");
 
         String jsonString = authObj.toString();
-        String token = Base64.getEncoder().encodeToString(jsonString.getBytes());
+        String token = Base64.getEncoder().encodeToString(jsonString.getBytes(StandardCharsets.UTF_8));
 
         return token;
     }
@@ -211,6 +218,8 @@ public class UakAuthenticator {
      * @return the response text
      * @throws ClientException if the request fails
      */
+    @SuppressFBWarnings(value = "REC_CATCH_EXCEPTION",
+            justification = "createHttpClient declares throws Exception; catching it drives endpoint retry/failover.")
     private String postRequest(String endpoint, String jsonData) throws ClientException {
         int retries = 1;
         Exception lastFailure = null;

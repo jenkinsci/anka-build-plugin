@@ -13,6 +13,8 @@ import org.kohsuke.stapler.DataBoundConstructor;
 
 public class AnkaLabelsApiTokenCredentials extends BaseStandardCredentials {
 
+    private static final long serialVersionUID = 1L;
+
     private static final String DEFAULT_LABEL = "Labels API Token";
 
     @NonNull

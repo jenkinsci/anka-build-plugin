@@ -10,7 +10,7 @@
     </parent>
     <groupId>io.jenkins.plugins</groupId>
     <artifactId>anka-build</artifactId>
-    <version>2.16.2-SNAPSHOT</version>
+    <version>3.0.1-SNAPSHOT</version>
     <packaging>hpi</packaging>
 
     <properties>
@@ -21,7 +21,7 @@
         <hpi.compatibleSinceVersion>2.0.0</hpi.compatibleSinceVersion>
         <spotbugs.effort>Max</spotbugs.effort>
         <spotbugs.threshold>Low</spotbugs.threshold>
-        <spotbugs.skip>true</spotbugs.skip>
+        <spotbugs.skip>false</spotbugs.skip>
         <release.skipTests>true</release.skipTests>
         <no-test-jar>true</no-test-jar>
         <hpi.strictBundledArtifacts>true</hpi.strictBundledArtifacts>
@@ -37,6 +37,7 @@
              here lacks a matching entry. See README.md "Dependency floors" for background. -->
         <required.plain-credentials.version>199.v9f8e1f741799</required.plain-credentials.version>
         <required.bouncycastle-api.version>2.30.1.80-261.v00c0e2618ec3</required.bouncycastle-api.version>
+        <required.json-api.version>20251224-185.v0cc18490c62c</required.json-api.version>
         <required.workflow-basic-steps.version>1079.vce64b_a_929c5a_</required.workflow-basic-steps.version>
         <required.workflow-durable-task-step.version>1434.v1b_595c29ddd7</required.workflow-durable-task-step.version>
         <required.ssh-slaves.version>3.1031.v72c6b_883b_869</required.ssh-slaves.version>

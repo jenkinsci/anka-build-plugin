@@ -14,7 +14,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class DependencyVerifierTest {
 
@@ -121,6 +121,7 @@ public class DependencyVerifierTest {
         assertThat("filtered properties file should expose all Jenkins plugin deps",
                 versions.keySet(), contains(
                         "bouncycastle-api",
+                        "json-api",
                         "node-iterator-api",
                         "plain-credentials",
                         "ssh-slaves",

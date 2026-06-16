@@ -390,14 +390,6 @@
       margin: 10px 0px 0px 0px;
     }
 
-    .anka-cloud-slave-template-hidden {
-      display: none;
-    }
-
-    .anka-save-image-section {
-      font-size: 10px;
-    }
-
     .anka-build-plugin-cloud-offline {
       color: red;
     }

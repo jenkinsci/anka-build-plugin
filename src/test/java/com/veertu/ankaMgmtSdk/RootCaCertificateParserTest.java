@@ -1,13 +1,13 @@
 package com.veertu.ankaMgmtSdk;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.security.cert.CertificateException;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class RootCaCertificateParserTest {
     private static final String VALID_CERTIFICATE = """

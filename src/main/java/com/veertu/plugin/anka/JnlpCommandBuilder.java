@@ -1,5 +1,6 @@
 package com.veertu.plugin.anka;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import jenkins.model.Jenkins;
 import jenkins.slaves.JnlpSlaveAgentProtocol;
 
@@ -53,6 +54,8 @@ public class JnlpCommandBuilder {
         return makeStartUpScript(nodeName, extraArgs, javaArgs, overrideJenkinsUrl, null);
     }
 
+    @SuppressFBWarnings(value = "VA_FORMAT_STRING_USES_NEWLINE",
+            justification = "scriptTemplate is a POSIX shell script that must use literal \\n line endings on the target agent regardless of the controller platform.")
     public static String makeStartUpScript(String nodeName, String extraArgs, String javaArgs, String overrideJenkinsUrl, String jnlpTunnel) {
 
         String jarCommand = makeCommand(nodeName, extraArgs, javaArgs, overrideJenkinsUrl, jnlpTunnel);

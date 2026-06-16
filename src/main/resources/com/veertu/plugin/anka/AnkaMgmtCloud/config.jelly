@@ -1,6 +1,6 @@
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:f="/lib/form" xmlns:c="/lib/credentials" xmlns:l="/lib/layout">
-  <st:adjunct includes="com.veertu.plugin.anka.AnkaMgmtCloud.config"/>
+  <st:adjunct includes="com.veertu.plugin.anka.AnkaMgmtCloud.anka-mgmt-cloud-config"/>
   <div class="anka-build-plugin-group">
     <div class="anka-build-plugin-head-group">
       <div class="welcome">

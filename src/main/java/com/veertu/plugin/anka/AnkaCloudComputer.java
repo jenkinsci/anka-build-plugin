@@ -126,15 +126,15 @@ public class AnkaCloudComputer extends SlaveComputer {
             }
         } else {
             String jobAndNumber;
-            try {
-                jobAndNumber = executor.getCurrentWorkUnit().getExecutable().toString();
-                this.slave.setDescription(jobAndNumber);
-                this.slave.setJobNameAndNumber(jobAndNumber);
-            } catch (NullPointerException e) {
+            hudson.model.queue.WorkUnit workUnit = executor.getCurrentWorkUnit();
+            hudson.model.Queue.Executable executable = workUnit == null ? null : workUnit.getExecutable();
+            if (executable != null) {
+                jobAndNumber = executable.toString();
+            } else {
                 jobAndNumber = executor.getDisplayName();
-                this.slave.setDescription(jobAndNumber);
-                this.slave.setJobNameAndNumber(jobAndNumber);
             }
+            this.slave.setDescription(jobAndNumber);
+            this.slave.setJobNameAndNumber(jobAndNumber);
             if (task instanceof Job) {
                 this.acceptedRunIdentity = parseRunIdentity((Job<?, ?>) task, jobAndNumber);
             } else {

@@ -4,14 +4,18 @@ import com.veertu.ankaMgmtSdk.AnkaNotFoundException;
 import hudson.model.Label;
 import hudson.model.Node;
 import hudson.model.Run;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jenkinsci.plugins.workflow.steps.SynchronousNonBlockingStepExecution;
 
 import java.util.UUID;
 
 
+@SuppressFBWarnings(value = "SE_TRANSIENT_FIELD_NOT_RESTORED",
+        justification = "template and nodeStep hold non-serializable runtime state used only during synchronous execution; they are intentionally transient and not needed after deserialization.")
 public class DynamicSlaveStepExecution extends SynchronousNonBlockingStepExecution<String> {
 
+    private static final long serialVersionUID = 1L;
 
     //    private final transient DynamicSlaveProperties properties;
     private final transient DynamicSlaveTemplate template;

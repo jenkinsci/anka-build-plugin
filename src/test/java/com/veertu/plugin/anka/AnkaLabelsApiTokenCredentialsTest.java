@@ -1,7 +1,7 @@
 package com.veertu.plugin.anka;
 
 import com.cloudbees.plugins.credentials.CredentialsScope;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
