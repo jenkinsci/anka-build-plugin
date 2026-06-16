@@ -77,8 +77,6 @@ def runPluginMavenRelease = { String mvnGoals ->
                 https://repo.jenkins-ci.org/setup/settings.xml \\
                 -o "\${HOME}/.m2/settings.xml"
 
-            cat "\${HOME}/.m2/settings.xml"
-
             mkdir -p "\${HOME}/.ssh"
             chmod 700 "\${HOME}/.ssh"
             cp "\${GITHUB_SSH_KEY}" "\${HOME}/.ssh/id_rsa"
