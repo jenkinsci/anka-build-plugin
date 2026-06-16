@@ -2,6 +2,7 @@ package com.veertu.ankaMgmtSdk;
 
 import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
 import com.veertu.plugin.anka.RunOnceCloudRetentionStrategy;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.json.JSONObject;
 
 import java.util.HashMap;
@@ -12,11 +13,11 @@ import java.util.logging.Logger;
 
 public class AnkaAPI {
     private static final Logger LOGGER = Logger.getLogger(RunOnceCloudRetentionStrategy.class.getName());
-    private final transient long instancesCacheTime = 7;
-    private final transient long capacityCacheTime = 20;
+    private static final long instancesCacheTime = 7;
+    private static final long capacityCacheTime = 20;
     private final transient Object capacityLock = new Object();
     private AnkaMgmtCommunicator communicator;
-    private transient Map<String, AnkaVmInstance> instances;
+    private transient Map<String, AnkaVmInstance> instances = new HashMap<>();
     private transient long instancesLastCached;
     private transient int cloudCapacity;
     private transient long cloudCapacityLastCached;
@@ -85,6 +86,8 @@ public class AnkaAPI {
         return communicator.status();
     }
 
+    @SuppressFBWarnings(value = "NM_CONFUSING",
+            justification = "startVM is the long-standing public SDK method name; renaming would break the plugin API.")
     public String startVM(String templateId, String tag, String nameTemplate, String startUpScript, String groupId, int priority, String name, String externalId, int vcpu, int vram) throws AnkaMgmtException {
         String id = communicator.startVm(templateId, tag, nameTemplate, startUpScript, groupId, priority, name, externalId, vcpu, vram);
         invalidateCache();
@@ -106,7 +109,9 @@ public class AnkaAPI {
 
     public AnkaVmInstance showInstance(String vmId) throws AnkaMgmtException {
         getNewData();
-        return instances.get(vmId);
+        synchronized (this) {
+            return instances.get(vmId);
+        }
     }
 
     public List<AnkaVmInstance> listVms() throws AnkaMgmtException {
@@ -118,8 +123,10 @@ public class AnkaAPI {
         for (AnkaVmInstance instance : instances) {
             cacheMap.put(instance.id, instance);
         }
-        instancesLastCached = System.currentTimeMillis();
-        this.instances = cacheMap;
+        synchronized (this) {
+            instancesLastCached = System.currentTimeMillis();
+            this.instances = cacheMap;
+        }
     }
 
     private void getNewData() throws AnkaMgmtException {
@@ -162,6 +169,7 @@ public class AnkaAPI {
                     }
                 }
                 cloudCapacity = countCapacity;
+                cloudCapacityLastCached = currentTimeMillis;
             }
         }
         return cloudCapacity;

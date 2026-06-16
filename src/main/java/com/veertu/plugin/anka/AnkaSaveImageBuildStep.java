@@ -16,7 +16,7 @@ import java.util.Set;
 
 public class AnkaSaveImageBuildStep extends Step {
 
-    public final int DEFAULT_TIMEOUT_MINS = 120;
+    public static final int DEFAULT_TIMEOUT_MINS = 120;
 
     private final boolean shouldFail;
     private final int timeoutMinutes;
@@ -44,6 +44,7 @@ public class AnkaSaveImageBuildStep extends Step {
     }
 
     public static class Execution extends SynchronousNonBlockingStepExecution<Boolean> {
+        private static final long serialVersionUID = 1L;
         private final boolean shouldFail;
         private final int timeoutMinutes;
         private final StepContext context;

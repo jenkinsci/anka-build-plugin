@@ -3,14 +3,14 @@ package com.veertu.plugin.anka;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class AbstractSlaveTemplateTest {
 
     private AbstractSlaveTemplate template;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         template = new AbstractSlaveTemplate();
         template.setCloudName("test-cloud");

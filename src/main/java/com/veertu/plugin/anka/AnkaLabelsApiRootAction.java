@@ -109,6 +109,11 @@ public class AnkaLabelsApiRootAction implements hudson.model.UnprotectedRootActi
         try {
             body = readBoundedRequestBody(req.getContentLengthLong(), req.getInputStream(), MAX_REQUEST_BODY_BYTES);
         } catch (RequestBodyTooLargeException e) {
+            // Consume the remaining request body (bounded) before responding. Otherwise the server
+            // closes the connection while the client is still writing the oversized body, and some
+            // clients (e.g. HttpURLConnection on Windows) fail the write with "Error writing to
+            // server" before they can read this 413 response.
+            drainRequestBody(req);
             rsp.sendError(HttpServletResponse.SC_REQUEST_ENTITY_TOO_LARGE, e.getMessage());
             return;
         }
@@ -148,6 +153,24 @@ public class AnkaLabelsApiRootAction implements hudson.model.UnprotectedRootActi
             return auth.substring(7).trim();
         }
         return null;
+    }
+
+    /**
+     * Best-effort consumption of the remaining request body so the client can finish sending it and
+     * read the error response. Bounded to avoid reading an unbounded body from an abusive caller.
+     */
+    private static void drainRequestBody(StaplerRequest2 req) {
+        long cap = (long) MAX_REQUEST_BODY_BYTES * 16;
+        try (InputStream in = req.getInputStream()) {
+            byte[] buf = new byte[8192];
+            long drained = 0;
+            int read;
+            while (drained < cap && (read = in.read(buf)) != -1) {
+                drained += read;
+            }
+        } catch (IOException ignored) {
+            // best effort only
+        }
     }
 
     static String readBoundedRequestBody(long contentLength, InputStream in, int maxBytes) throws IOException {

@@ -3,6 +3,7 @@ package com.veertu.plugin.anka;
 import com.veertu.ankaMgmtSdk.AnkaVmInfo;
 import com.veertu.ankaMgmtSdk.AnkaVmInstance;
 import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Extension;
 import hudson.model.*;
 import hudson.slaves.ComputerLauncher;
@@ -32,7 +33,7 @@ public abstract class AbstractAnkaSlave extends Slave {
 
     protected AnkaCloudSlaveTemplate template;
 
-    public final int launchTimeout = 300;
+    public static final int launchTimeout = 300;
 
     protected String displayName;
     protected boolean taskExecuted;
@@ -60,6 +61,8 @@ public abstract class AbstractAnkaSlave extends Slave {
 
 
 
+    @SuppressFBWarnings(value = "MC_OVERRIDABLE_METHOD_CALL_IN_CONSTRUCTOR",
+            justification = "readResolve() is intentionally invoked to initialize transient defaults on freshly constructed slaves.")
     protected AbstractAnkaSlave(AnkaMgmtCloud cloud, String name, String nodeDescription, String remoteFS,
                                 int numExecutors, Mode mode, String labelString,
                                 ComputerLauncher launcher, RetentionStrategy retentionStrategy,
@@ -203,19 +206,19 @@ public abstract class AbstractAnkaSlave extends Slave {
 
     public void setDescription(String jobAndNumber) {
         StringBuilder description = new StringBuilder();
-        description.append(String.format("master image: %s,\n job name and build number: %s,\n",
-                template.getMasterVmId(), jobAndNumber));
+        description.append("master image: ").append(template.getMasterVmId())
+                .append(",\n job name and build number: ").append(jobAndNumber).append(",\n");
         try {
             AnkaVmInstance instance = getAndLogInstance();
-            description.append(String.format("Instance ID: %s \n", this.instanceId));
-            description.append(String.format("Template ID: %s \n", instance.getVmId()));
-            description.append(String.format("Name: %s \n", instance.getName()));
+            description.append("Instance ID: ").append(this.instanceId).append(" \n");
+            description.append("Template ID: ").append(instance.getVmId()).append(" \n");
+            description.append("Name: ").append(instance.getName()).append(" \n");
             AnkaVmInfo vmInfo = instance.getVmInfo();
             if (vmInfo != null) {
-                description.append(String.format("Host: %s \n", vmInfo.getHostIp()));
-                description.append(String.format("Status: %s \n", vmInfo.getStatus()));
-                description.append(String.format("VM UUID: %s \n", vmInfo.getUuid()));
-                description.append(String.format("VM IP: %s \n", vmInfo.getVmIp()));
+                description.append("Host: ").append(vmInfo.getHostIp()).append(" \n");
+                description.append("Status: ").append(vmInfo.getStatus()).append(" \n");
+                description.append("VM UUID: ").append(vmInfo.getUuid()).append(" \n");
+                description.append("VM IP: ").append(vmInfo.getVmIp()).append(" \n");
 
             }
         } catch (AnkaMgmtException e) {

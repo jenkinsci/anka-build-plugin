@@ -12,12 +12,12 @@ public class ConcAnkaMgmtVm implements AnkaMgmtVm {
 
     private final AnkaMgmtCommunicator communicator;
     private final String sessionId;
-    private final long waitUnit = 1000;
-    private final long maxRunningTimeout = waitUnit * 60 * 60; // 1 hour
-    private final long maxIpTimeout = waitUnit * 240;
+    private static final long waitUnit = 1000;
+    private static final long maxRunningTimeout = waitUnit * 60 * 60; // 1 hour
+    private static final long maxIpTimeout = waitUnit * 240;
     private final int sshConnectionPort;
     private AnkaVmInstance cachedVmSession;
-    private final int cacheTime = 5; // 5 seconds
+    private static final int cacheTime = 5; // 5 seconds
     private int lastCached = 0;
     private static transient java.util.logging.Logger logger = java.util.logging.Logger.getLogger("anka-sdk");
     private boolean terminated;

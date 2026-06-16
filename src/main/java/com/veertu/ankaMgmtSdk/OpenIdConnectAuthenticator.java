@@ -26,6 +26,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -50,7 +51,6 @@ public class OpenIdConnectAuthenticator {
     private String userNameField;
     private String groupsField;
     private String providerUrl;
-    private String displayName;
 
     private final transient RuntimeOidcSession runtimeSession = new RuntimeOidcSession();
 
@@ -76,7 +76,6 @@ public class OpenIdConnectAuthenticator {
                     userNameField = oidcConfig.getString("user_name_field");
                     groupsField = oidcConfig.getString("groups_field");
                     providerUrl = oidcConfig.getString("provider_url");
-                    displayName = oidcConfig.getString("display_name");
                 } catch (JSONException e) {
                     throw new AnkaMgmtException(e);
                 }
@@ -149,13 +148,16 @@ public class OpenIdConnectAuthenticator {
                         && !runtimeSession.cachedRefreshCredential.getPlainText().isEmpty()) {
                     try {
                         refreshWithRefreshCredential();
-                    } catch (Exception e) {
+                    } catch (AnkaMgmtException | ClientException | RuntimeException e) {
                         authorizeWithProvider();
                     }
                 } else {
                     authorizeWithProvider();
                 }
             }
+        }
+        if (runtimeSession.cachedAccessCredential == null) {
+            throw new AnkaMgmtException("OIDC provider did not return an access token");
         }
         return credentialToAuthorizationHeader(runtimeSession.cachedAccessCredential);
     }
@@ -191,7 +193,7 @@ public class OpenIdConnectAuthenticator {
 
     private NameValuePair makeAuthorization() {
         String authorizationPair = String.format("%s:%s", clientId, clientSecret.getPlainText());
-        String encoded = Base64.getEncoder().encodeToString(authorizationPair.getBytes());
+        String encoded = Base64.getEncoder().encodeToString(authorizationPair.getBytes(StandardCharsets.UTF_8));
         return new BasicNameValuePair("Authorization", String.format("Basic %s", encoded));
     }
 
@@ -258,7 +260,7 @@ public class OpenIdConnectAuthenticator {
         HttpClientBuilder builder = HttpClientBuilder.create();
 
         SSLContext sslContext = new SSLContextBuilder()
-                .loadTrustMaterial(null, utils.strategyLambda()).build();
+                .loadTrustMaterial(null, Utils.strategyLambda()).build();
         builder.setSSLContext(sslContext);
         return builder.setDefaultRequestConfig(requestBuilder.build()).build();
     }
@@ -274,14 +276,14 @@ public class OpenIdConnectAuthenticator {
     private String readResponse(HttpResponse response) throws IOException {
         HttpEntity entity = response.getEntity();
         if (entity != null) {
-            BufferedReader rd = new BufferedReader(
-                    new InputStreamReader(entity.getContent()));
             StringBuffer result = new StringBuffer();
-            String line = "";
-            while ((line = rd.readLine()) != null) {
-                result.append(line);
+            try (BufferedReader rd = new BufferedReader(
+                    new InputStreamReader(entity.getContent(), StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = rd.readLine()) != null) {
+                    result.append(line);
+                }
             }
-
             return result.toString();
         }
         return null;
@@ -313,7 +315,9 @@ public class OpenIdConnectAuthenticator {
         if (jsonResponse.has("expires_in")) {
             runtimeSession.expireIn = jsonResponse.getLong("expires_in");
         }
-        return runtimeSession.cachedAccessCredential.getPlainText();
+        return runtimeSession.cachedAccessCredential == null
+                ? null
+                : runtimeSession.cachedAccessCredential.getPlainText();
     }
 
     private static final class RuntimeOidcSession {

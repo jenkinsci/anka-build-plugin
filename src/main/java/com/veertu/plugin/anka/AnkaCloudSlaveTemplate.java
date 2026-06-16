@@ -6,13 +6,15 @@ import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 import javax.annotation.Nullable;
 
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.StaplerRequest2;
 import org.kohsuke.stapler.interceptor.RequirePOST;
 
 import static com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials;
@@ -44,13 +46,15 @@ import net.sf.json.JSONObject;
 public class AnkaCloudSlaveTemplate extends AbstractSlaveTemplate implements Describable<AnkaCloudSlaveTemplate> {
 
     public static final String BridgedNetwork = "bridge";
-    public static String SharedNetwork = "shared";
-    public static String HostNetwork = "host";
+    public static final String SharedNetwork = "shared";
+    public static final String HostNetwork = "host";
     private static final transient Logger LOGGER = Logger.getLogger(AnkaCloudSlaveTemplate.class.getName());
     private int schedulingTimeout = DEFAULT_SCHEDULING_TIMEOUT;
     private Set<LabelAtom> labelSet;
 
     @DataBoundConstructor
+    @SuppressFBWarnings(value = "MC_OVERRIDABLE_METHOD_CALL_IN_CONSTRUCTOR",
+            justification = "readResolve() is intentionally invoked to initialize derived/transient state after data binding.")
     public AnkaCloudSlaveTemplate(
             final String cloudName, final String remoteFS, final String masterVmId,
             final String tag, final String label, final String templateDescription,
@@ -97,6 +101,8 @@ public class AnkaCloudSlaveTemplate extends AbstractSlaveTemplate implements Des
         readResolve();
     }
 
+    @SuppressFBWarnings(value = "MC_OVERRIDABLE_METHOD_CALL_IN_CONSTRUCTOR",
+            justification = "readResolve() is intentionally invoked to initialize derived/transient state.")
     public AnkaCloudSlaveTemplate() {
         saveImageParameters = new SaveImageParameters();
         readResolve();
@@ -212,7 +218,7 @@ public class AnkaCloudSlaveTemplate extends AbstractSlaveTemplate implements Des
     public static final class DescriptorImpl extends Descriptor<AnkaCloudSlaveTemplate> {
 
         @Override
-        public boolean configure(StaplerRequest req, JSONObject formData) throws FormException {
+        public boolean configure(StaplerRequest2 req, JSONObject formData) throws FormException {
             System.out.println("configure");
             req.bindJSON(this, formData);
             save();
@@ -222,7 +228,7 @@ public class AnkaCloudSlaveTemplate extends AbstractSlaveTemplate implements Des
 
         @Override
         public String getDisplayName() {
-            return null;
+            return "";
         }
 
 
@@ -295,23 +301,19 @@ public class AnkaCloudSlaveTemplate extends AbstractSlaveTemplate implements Des
                 return new ListBoxModel();
             }
             AnkaMgmtCloud cloud = (AnkaMgmtCloud) Jenkins.get().getCloud(cloudName);
-            // java.util.logging.Logger logger = java.util.logging.Logger.getLogger("jenkins.system.log");
-            // logger.info("cloudName: " + cloudName);
-            // logger.info("cloud: " + cloud);
             ListBoxModel models = new ListBoxModel();
             models.add("Choose Vm template", "");
+            if (cloud == null) {
+                return models;
+            }
             if (! cloud.isOnline()) {
-                if (! cloud.isOnline()) {
-                    for (String id: cloud.getExistingTemplateIds()) {
-                        models.add(id);
-                    }
+                for (String id: cloud.getExistingTemplateIds()) {
+                    models.add(id);
                 }
             }
             else {
-                if (cloud != null) {
-                    for (AnkaVmTemplate temp: cloud.listVmTemplates()){
-                        models.add(String.format("%s(%s)", temp.getName(), temp.getId()), temp.getId());
-                    }
+                for (AnkaVmTemplate temp: cloud.listVmTemplates()){
+                    models.add(String.format("%s(%s)", temp.getName(), temp.getId()), temp.getId());
                 }
             }
             return models;
@@ -330,13 +332,16 @@ public class AnkaCloudSlaveTemplate extends AbstractSlaveTemplate implements Des
             AnkaMgmtCloud cloud = (AnkaMgmtCloud) Jenkins.get().getCloud(cloudName);
             ListBoxModel models = new ListBoxModel();
             models.add("Choose a Tag or leave empty for latest", "");
+            if (cloud == null) {
+                return models;
+            }
             if (! cloud.isOnline()) {
                 for (String tagName: cloud.getExistingTags()){
                     models.add(tagName);
                 }
             }
             else {
-                if (cloud != null && masterVmId != null && masterVmId.length() != 0) {
+                if (masterVmId != null && masterVmId.length() != 0) {
                     for (String tagName: cloud.getTemplateTags(masterVmId)){
                         models.add(tagName, tagName);
                     }

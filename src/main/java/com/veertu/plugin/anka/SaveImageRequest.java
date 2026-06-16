@@ -62,13 +62,13 @@ public class SaveImageRequest {
                 return;
             }
             String status = cloud.getAnkaApi().getSaveImageStatus(requestId);
-            if (status.toLowerCase().equals("pending")) {
+            if (status.equalsIgnoreCase("pending")) {
                 state = SaveImageState.Pending;
             }
-            if (status.toLowerCase().equals("done")) {
+            if (status.equalsIgnoreCase("done")) {
                 state = SaveImageState.Done;
             }
-            if (status.toLowerCase().equals("error")) {
+            if (status.equalsIgnoreCase("error")) {
                 state = SaveImageState.Error;
             }
         } catch (AnkaMgmtException e) {

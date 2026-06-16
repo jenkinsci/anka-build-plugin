@@ -1,6 +1,61 @@
 def jenkins_ci_credentials_id = "accounts.jenkins.com"
 def github_ssh_credentials_id = "github-service-user-veertu"
 
+def getPluginReleaseTagName = {
+    def pomWithoutParent = readFile('pom.xml').replaceFirst(/(?s)<parent>.*?<\/parent>/, '')
+    def versionMatcher = pomWithoutParent =~ /(?s)<version>([^<]+)<\/version>/
+
+    if (!versionMatcher.find()) {
+        error('Unable to determine project version from pom.xml')
+    }
+
+    def snapshotVersion = versionMatcher.group(1).trim()
+    if (!snapshotVersion.endsWith('-SNAPSHOT')) {
+        error("Expected a snapshot project version before release, found ${snapshotVersion}")
+    }
+
+    return "anka-build-${snapshotVersion.replaceFirst(/-SNAPSHOT$/, '')}"
+}
+
+def removePluginReleaseTag = { String releaseTagName ->
+    withCredentials([
+        sshUserPrivateKey(
+            credentialsId: github_ssh_credentials_id,
+            keyFileVariable: 'GITHUB_SSH_KEY',
+            usernameVariable: 'GITHUB_SSH_USER'
+        ),
+    ]) {
+        withEnv(["RELEASE_TAG_NAME=${releaseTagName}"]) {
+            sh '''
+                set -euo pipefail
+
+                mkdir -p "${HOME}/.ssh"
+                chmod 700 "${HOME}/.ssh"
+                cp "${GITHUB_SSH_KEY}" "${HOME}/.ssh/id_rsa"
+                chmod 600 "${HOME}/.ssh/id_rsa"
+                ssh-keyscan -t rsa,ed25519 github.com >> "${HOME}/.ssh/known_hosts" 2>/dev/null
+                export GIT_SSH_COMMAND="ssh -i ${GITHUB_SSH_KEY} -o StrictHostKeyChecking=yes"
+
+                git push --delete origin "${RELEASE_TAG_NAME}" || true
+                git tag -d "${RELEASE_TAG_NAME}" || true
+            '''
+        }
+    }
+}
+
+def abortUnlessManuallyTriggered = {
+    def manuallyTriggered = currentBuild.rawBuild.getCauses().any { cause ->
+        cause instanceof hudson.model.Cause.UserIdCause ||
+        cause instanceof hudson.model.Cause.UpstreamCause ||
+        cause.class.name.endsWith('RebuildCause')
+    }
+
+    if (!manuallyTriggered) {
+        currentBuild.result = 'ABORTED'
+        error('Release pipeline is manual-only. Start it from Jenkins via "Build with Parameters".')
+    }
+}
+
 def runPluginMavenRelease = { String mvnGoals ->
     withCredentials([
         usernamePassword(
@@ -21,6 +76,8 @@ def runPluginMavenRelease = { String mvnGoals ->
             curl -fsSL -u "\${JENKINS_CI_USER}:\${JENKINS_CI_PASSWORD}" \\
                 https://repo.jenkins-ci.org/setup/settings.xml \\
                 -o "\${HOME}/.m2/settings.xml"
+
+            cat "\${HOME}/.m2/settings.xml"
 
             mkdir -p "\${HOME}/.ssh"
             chmod 700 "\${HOME}/.ssh"
@@ -50,6 +107,7 @@ properties(
         disableResume(),
         copyArtifactPermission('*'),
         durabilityHint('PERFORMANCE_OPTIMIZED'),
+        pipelineTriggers([]),
         parameters([
             booleanParam(defaultValue: false, description: 'Run mvn release:rollback instead of release:prepare release:perform', name: 'rollback_release'),
         ]),
@@ -65,11 +123,29 @@ pipeline {
         args "--name ${env.JOB_NAME.replace('%2F', '_').replace('/', '_')}-${env.BUILD_NUMBER}"
     } }
     stages {
+        stage('Verify manual trigger') {
+            steps {
+                script {
+                    abortUnlessManuallyTriggered()
+                }
+            }
+        }
         stage('Perform release') {
             when { expression { !params.rollback_release } }
             steps {
                 script {
-                    runPluginMavenRelease('release:prepare release:perform')
+                    def releaseTagName = getPluginReleaseTagName()
+                    try {
+                        runPluginMavenRelease('-Dresume=false release:clean release:prepare release:perform')
+                    } catch (err) {
+                        echo "Release failed; removing ${releaseTagName} if Maven created it."
+                        try {
+                            removePluginReleaseTag(releaseTagName)
+                        } catch (cleanupErr) {
+                            echo "Failed to remove ${releaseTagName}: ${cleanupErr}"
+                        }
+                        throw err
+                    }
                 }
             }
         }

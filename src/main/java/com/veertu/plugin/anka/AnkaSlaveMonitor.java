@@ -102,8 +102,8 @@ public class AnkaSlaveMonitor extends AsyncPeriodicWork {
         for (AbstractAnkaSlave ankaNode : NodeIterator.nodes(AbstractAnkaSlave.class)) {
             LOGGER.log(Level.FINE, AnkaLog.prefix("Checking Anka Node {0}, instance {1}"),
                     new Object[]{ankaNode.getNodeName(), ankaNode.getInstanceId()});
-            AnkaCloudComputer computer = (AnkaCloudComputer) ankaNode.getComputer();
-            if (computer != null && computer.isConnecting()) {
+            hudson.model.Computer rawComputer = ankaNode.getComputer();
+            if (rawComputer instanceof AnkaCloudComputer && ((AnkaCloudComputer) rawComputer).isConnecting()) {
                 continue;
             }
             try {

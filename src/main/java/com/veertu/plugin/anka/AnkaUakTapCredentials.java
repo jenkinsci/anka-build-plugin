@@ -13,6 +13,8 @@ import org.kohsuke.stapler.DataBoundConstructor;
 
 public class AnkaUakTapCredentials extends BaseStandardCredentials implements StandardUsernamePasswordCredentials {
 
+    private static final long serialVersionUID = 1L;
+
     private static final String DEFAULT_LABEL = "UAK/TAP Authentication";
 
     @NonNull

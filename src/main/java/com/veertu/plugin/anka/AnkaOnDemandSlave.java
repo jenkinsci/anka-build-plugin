@@ -14,6 +14,8 @@ import java.util.List;
  */
 public class AnkaOnDemandSlave extends AbstractAnkaSlave {
 
+    private static final long serialVersionUID = 1L;
+
     protected AnkaOnDemandSlave(AnkaMgmtCloud cloud, String name, String nodeDescription, String remoteFS, int numExecutors,
                                 Mode mode, String labelString, ComputerLauncher launcher,
                                 List<? extends NodeProperty<?>> nodeProperties,

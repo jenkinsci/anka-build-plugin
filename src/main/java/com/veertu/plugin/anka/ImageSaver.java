@@ -18,7 +18,6 @@ public class ImageSaver {
     }
 
     public static void saveImage(AnkaMgmtCloud cloud, AbstractAnkaSlave slave) throws AnkaMgmtException {
-        try {
 
             String buildId = slave.getJobNameAndNumber();
             SaveImageRequestsHolder requestsHolder = SaveImageRequestsHolder.getInstance();
@@ -66,9 +65,6 @@ public class ImageSaver {
                 throw new AnkaMgmtException("missing save image request ID");
             }
             saveImageRequest.setRequestId(reqId);
-        } catch (Exception e) {
-            throw e;
-        }
     }
 
     public static boolean isSuccessful(String buildId, int timeoutMinutes) throws AnkaMgmtException, SaveImageStatusTimeout {
@@ -91,14 +87,14 @@ public class ImageSaver {
                     SaveImageState state = request.checkState();
                     if (state == SaveImageState.Future) {
                         AnkaMgmtCloud.Log("Save Image request haven't started yet");
-                        Thread.sleep(1000 * retryWaitTimeSeconds);
+                        Thread.sleep(1000L * retryWaitTimeSeconds);
                         break;
                     }
                     if (state == SaveImageState.Pending || state == SaveImageState.Requesting) {
-                        if ((System.currentTimeMillis() - startTime) > (timeoutMinutes * 60 * 1000)) {
+                        if ((System.currentTimeMillis() - startTime) > (timeoutMinutes * 60L * 1000)) {
                             throw new SaveImageStatusTimeout();
                         }
-                        Thread.sleep(1000 * retryWaitTimeSeconds);
+                        Thread.sleep(1000L * retryWaitTimeSeconds);
                         break;
                     }
                     if (state == SaveImageState.Error || state == SaveImageState.Timeout) {

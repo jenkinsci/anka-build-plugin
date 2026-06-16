@@ -6,14 +6,14 @@ import java.util.List;
 public class RoundRobin {
 
     public static final int startWeight = 50;
-    private final int penalty = startWeight/4;
+    private static final int penalty = startWeight / 4;
+    private static final int roundsForOptimization = 10;
     private final Object valuesLock = new Object();
     private final Object lock = new Object();
     private int total;
     private String[] urlMap;
     private WeighedURL[] values;
     private int index;
-    private final int roundsForOptimization = 10;
 
     public RoundRobin(List<String> stringValues) {
         this.values = new WeighedURL[stringValues.size()];
@@ -23,7 +23,7 @@ public class RoundRobin {
         this.calculate();
     }
 
-    public void calculate() {
+    public final void calculate() {
         synchronized (this.valuesLock) {
             synchronized (this.lock) {
                 this.total = 0;

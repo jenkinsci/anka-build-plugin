@@ -15,6 +15,8 @@ import javax.annotation.CheckForNull;
 
 public class CertCredentials implements Credentials, IdCredentials {
 
+    private static final long serialVersionUID = 1L;
+
     private static final String DEFAULT_LABEL = "Certificate Authentication";
 
     @CheckForNull

@@ -3,6 +3,7 @@ package com.veertu.plugin.anka;
 import com.cloudbees.plugins.credentials.common.IdCredentials;
 import hudson.Util;
 
+import java.util.Locale;
 import java.util.regex.Pattern;
 
 final class AnkaCredentialNaming {
@@ -42,7 +43,7 @@ final class AnkaCredentialNaming {
             return null;
         }
 
-        String slug = trimmed.toLowerCase()
+        String slug = trimmed.toLowerCase(Locale.ROOT)
                 .replaceAll("[^a-z0-9_.-]+", "-")
                 .replaceAll("-+", "-")
                 .replaceAll("^[-_.]+|[-_.]+$", "");

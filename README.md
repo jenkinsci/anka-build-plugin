@@ -26,6 +26,7 @@ through the Jenkins Update Center, you MUST upgrade these dependencies first.
 | ---------------------------- | ---------------------------------------- |
 | `plain-credentials`          | `199.v9f8e1f741799`                      |
 | `bouncycastle-api`           | `2.30.1.80-261.v00c0e2618ec3`            |
+| `json-api`                   | `20251224-185.v0cc18490c62c`             |
 | `workflow-basic-steps`       | `1079.vce64b_a_929c5a_`                  |
 | `workflow-durable-task-step` | `1434.v1b_595c29ddd7`                    |
 | `ssh-slaves`                 | `3.1031.v72c6b_883b_869`                 |

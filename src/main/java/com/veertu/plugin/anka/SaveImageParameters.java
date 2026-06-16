@@ -6,14 +6,14 @@ import org.kohsuke.stapler.DataBoundSetter;
 
 public class SaveImageParameters {
 
-    public static String saveImageKey = "saveImage";
-    public static String templateIDKey = "templateId";
-    public static String tagKey = "tag";
-    public static String dontAppendTimestampKey = "dontAppendTimestamp";
-    public static String deleteLatestKey = "deleteLatest";
-    public static String descriptionKey = "description";
-    public static String suspendKey = "suspend";
-    public static String waitForBuildToFinishKey = "wait_for_build_to_finish";
+    public static final String saveImageKey = "saveImage";
+    public static final String templateIDKey = "templateId";
+    public static final String tagKey = "tag";
+    public static final String dontAppendTimestampKey = "dontAppendTimestamp";
+    public static final String deleteLatestKey = "deleteLatest";
+    public static final String descriptionKey = "description";
+    public static final String suspendKey = "suspend";
+    public static final String waitForBuildToFinishKey = "wait_for_build_to_finish";
 
     protected Boolean waitForBuildToFinish;
     protected Boolean suspend;

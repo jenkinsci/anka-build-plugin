@@ -6,7 +6,9 @@ import static org.hamcrest.Matchers.nullValue;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class AnkaLabelsApiRootActionTest {
 
@@ -19,16 +21,20 @@ public class AnkaLabelsApiRootActionTest {
         assertThat(text, is("{\"mode\":\"replace\",\"templates\":[]}"));
     }
 
-    @Test(expected = AnkaLabelsApiRootAction.RequestBodyTooLargeException.class)
-    public void readBoundedRequestBody_rejectsBodyOverLimit() throws Exception {
+    @Test
+    public void readBoundedRequestBody_rejectsBodyOverLimit() {
         byte[] body = "0123456789".getBytes(StandardCharsets.UTF_8);
 
-        AnkaLabelsApiRootAction.readBoundedRequestBody(body.length, new ByteArrayInputStream(body), body.length - 1);
+        assertThrows(
+                AnkaLabelsApiRootAction.RequestBodyTooLargeException.class,
+                () -> AnkaLabelsApiRootAction.readBoundedRequestBody(body.length, new ByteArrayInputStream(body), body.length - 1));
     }
 
-    @Test(expected = AnkaLabelsApiRootAction.RequestBodyTooLargeException.class)
-    public void readBoundedRequestBody_rejectsContentLengthOverLimitWithoutReading() throws Exception {
-        AnkaLabelsApiRootAction.readBoundedRequestBody(100L, new ByteArrayInputStream(new byte[0]), 10);
+    @Test
+    public void readBoundedRequestBody_rejectsContentLengthOverLimitWithoutReading() {
+        assertThrows(
+                AnkaLabelsApiRootAction.RequestBodyTooLargeException.class,
+                () -> AnkaLabelsApiRootAction.readBoundedRequestBody(100L, new ByteArrayInputStream(new byte[0]), 10));
     }
 
     @Test

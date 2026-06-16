@@ -4,6 +4,7 @@ import com.veertu.RoundRobin;
 import com.veertu.ankaMgmtSdk.exceptions.*;
 import com.veertu.plugin.anka.AnkaMgmtCloud;
 import com.veertu.plugin.anka.MetadataKeys;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.ProxyConfiguration;
 import hudson.util.Secret;
 import jenkins.model.Jenkins;
@@ -41,6 +42,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import java.io.*;
 import java.net.*;
+import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
@@ -55,8 +57,8 @@ import static org.apache.http.conn.ssl.SSLConnectionSocketFactory.getDefaultHost
 public class AnkaMgmtCommunicator {
 
     private static final int MinMaxConnections = 5;
-    protected final int timeout = 30000;
-    protected final int maxRetries = 10;
+    protected static final int timeout = 30000;
+    protected static final int maxRetries = 10;
     protected URL mgmtUrl;
     protected boolean skipTLSVerification;
     protected String rootCA;
@@ -240,7 +242,7 @@ public class AnkaMgmtCommunicator {
         if (nameTemplate != null)
             jsonObject.put("name_template", nameTemplate);
         if (startUpScript != null) {
-            String b64Script = Base64.getEncoder().encodeToString(startUpScript.getBytes());
+            String b64Script = Base64.getEncoder().encodeToString(startUpScript.getBytes(StandardCharsets.UTF_8));
             jsonObject.put("startup_script", b64Script);
         }
         if (groupId != null) {
@@ -372,7 +374,7 @@ public class AnkaMgmtCommunicator {
         jsonObject.put("description", description);
         jsonObject.put("suspend", suspend);
         if (shutdownScript != null && !shutdownScript.isEmpty()) {
-            String b64Script = Base64.getEncoder().encodeToString(shutdownScript.getBytes());
+            String b64Script = Base64.getEncoder().encodeToString(shutdownScript.getBytes(StandardCharsets.UTF_8));
             jsonObject.put("script", b64Script);
         }
         if (revertBeforePush) {
@@ -459,6 +461,7 @@ public class AnkaMgmtCommunicator {
             if (cause instanceof ClientException) {
                 throw new AnkaNotFoundException("not found");
             }
+            throw e;
         } catch (IOException e) {
             throw new AnkaMgmtException(e);
         }
@@ -485,7 +488,7 @@ public class AnkaMgmtCommunicator {
         }
         if (jobIdentifier != null && !jobIdentifier.equals("")) {
             HashMap<String, String> metaData = new HashMap<>();
-            metaData.put(MetadataKeys.JobIdentifier, jobIdentifier);
+            metaData.put(MetadataKeys.JOB_IDENTIFIER, jobIdentifier);
             jsonObject.put("metadata", metaData);
         }
         try {
@@ -536,6 +539,8 @@ public class AnkaMgmtCommunicator {
         return doRequest(method, url, null, reqTimeout);
     }
 
+    @SuppressFBWarnings(value = "REC_CATCH_EXCEPTION",
+            justification = "Broad Exception catch is intentional to drive the bounded retry loop.")
     protected JSONObject doRequest(RequestMethod method, String path, JSONObject requestBody, int reqTimeout) throws IOException, AnkaMgmtException {
         int retry = 0;
         CloseableHttpResponse response = null;
@@ -573,8 +578,6 @@ public class AnkaMgmtCommunicator {
                             }
                             break;
                         case GET:
-                            request = new HttpGet(url);
-                            break;
                         default:
                             request = new HttpGet(url);
                             break;
@@ -674,13 +677,14 @@ public class AnkaMgmtCommunicator {
     }
 
     protected StringBuffer readHttpEntity(HttpEntity entity) throws IOException {
-        BufferedReader rd = new BufferedReader(new InputStreamReader(entity.getContent()));
         StringBuffer result = new StringBuffer();
-        String line = "";
-        while ((line = rd.readLine()) != null) {
-            result.append(line);
+        try (BufferedReader rd = new BufferedReader(
+                new InputStreamReader(entity.getContent(), StandardCharsets.UTF_8))) {
+            String line;
+            while ((line = rd.readLine()) != null) {
+                result.append(line);
+            }
         }
-        rd.close();
         return result;
     }
 
@@ -706,7 +710,7 @@ public class AnkaMgmtCommunicator {
         if (host == null)
             return requestBuilder;
 
-        Jenkins jenkins = Jenkins.get();
+        Jenkins jenkins = Jenkins.getInstanceOrNull();
         if (jenkins == null)
             return requestBuilder;
 
@@ -723,7 +727,7 @@ public class AnkaMgmtCommunicator {
         requestBuilder = requestBuilder.setProxy(new HttpHost(proxyHost, proxyPort));
 
         String proxyUserName = proxyConfig.getUserName();
-        if (proxyUserName != null && proxyUserName != "") {
+        if (proxyUserName != null && !proxyUserName.isEmpty()) {
             Secret proxySecret = proxyConfig.getSecretPassword();
             credentialsProvider.setCredentials(new AuthScope(proxyHost, proxyPort), new UsernamePasswordCredentials(proxyUserName, Secret.toString(proxySecret)));
         }
@@ -829,7 +833,7 @@ public class AnkaMgmtCommunicator {
         GET, POST, DELETE, PUT
     }
 
-    class HttpDeleteWithBody extends HttpEntityEnclosingRequestBase {
+    static class HttpDeleteWithBody extends HttpEntityEnclosingRequestBase {
         public static final String METHOD_NAME = "DELETE";
 
         public HttpDeleteWithBody(final String uri) {

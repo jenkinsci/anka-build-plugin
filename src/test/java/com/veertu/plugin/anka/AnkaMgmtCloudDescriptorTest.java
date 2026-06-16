@@ -7,9 +7,10 @@ import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import hudson.model.ItemGroup;
 import hudson.util.ListBoxModel;
 import org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 import org.kohsuke.stapler.interceptor.RequirePOST;
 
 import java.lang.reflect.Method;
@@ -21,10 +22,15 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.core.Is.is;
 
+@WithJenkins
 public class AnkaMgmtCloudDescriptorTest {
 
-    @Rule
-    public JenkinsRule jenkinsRule = new JenkinsRule();
+    private JenkinsRule jenkinsRule;
+
+    @BeforeEach
+    void setUp(JenkinsRule jenkinsRule) {
+        this.jenkinsRule = jenkinsRule;
+    }
 
     @Test
     public void credentialsDropdownListsOnlyPluginAuthCredentialTypes() throws Exception {
