@@ -239,12 +239,12 @@
             <plugin>
                 <groupId>org.codehaus.gmavenplus</groupId>
                 <artifactId>gmavenplus-plugin</artifactId>
-                <version>4.1.1</version>
+                <version>5.1.0</version>
                 <dependencies>
                     <dependency>
                         <groupId>org.apache.groovy</groupId>
                         <artifactId>groovy</artifactId>
-                        <version>4.0.21</version>
+                        <version>5.0.6</version>
                         <scope>runtime</scope>
                     </dependency>
                 </dependencies>
