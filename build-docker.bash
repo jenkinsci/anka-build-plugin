@@ -2,7 +2,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-cd "${SCRIPT_DIR}/_ci"
+cd "${SCRIPT_DIR}/automation"
 docker build --no-cache -t anka-build-plugin --load .
 cd "${SCRIPT_DIR}"
 

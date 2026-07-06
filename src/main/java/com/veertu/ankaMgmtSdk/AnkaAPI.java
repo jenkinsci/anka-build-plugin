@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
 
 public class AnkaAPI {
@@ -19,6 +20,7 @@ public class AnkaAPI {
     private AnkaMgmtCommunicator communicator;
     private transient Map<String, AnkaVmInstance> instances = new HashMap<>();
     private transient long instancesLastCached;
+    private final transient AtomicLong instancesCacheVersion = new AtomicLong();
     private transient int cloudCapacity;
     private transient long cloudCapacityLastCached;
 
@@ -39,6 +41,12 @@ public class AnkaAPI {
 
     public AnkaAPI(List<String> mgmtURLS, boolean skipTLSVerification, String rootCA, String id, String uakKeyPEM) {
         this.communicator = new AnkaMgmtUakCommunicator(mgmtURLS, skipTLSVerification, rootCA, id, uakKeyPEM);
+    }
+
+    // Test seam: inject a communicator directly so the cache-refresh behaviour can be exercised
+    // without a live controller.
+    AnkaAPI(AnkaMgmtCommunicator communicator) {
+        this.communicator = communicator;
     }
 
     public void setMaxConnections(int maxConnections) {
@@ -110,6 +118,20 @@ public class AnkaAPI {
     public AnkaVmInstance showInstance(String vmId) throws AnkaMgmtException {
         getNewData();
         synchronized (this) {
+            AnkaVmInstance instance = instances.get(vmId);
+            if (instance != null) {
+                return instance;
+            }
+        }
+        // The TTL cache can be up to instancesCacheTime old, so a VM that startVM()
+        // just created may be missing from a snapshot taken before it existed.
+        // Remember which cache generation produced this miss so concurrent callers coalesce
+        // onto one forced refresh instead of each issuing their own list().
+        long cacheVersionAtMiss = instancesCacheVersion.get();
+        synchronized (this) {
+            if (instancesCacheVersion.get() == cacheVersionAtMiss) {
+                cacheInstances(this.listVms());
+            }
             return instances.get(vmId);
         }
     }
@@ -125,6 +147,7 @@ public class AnkaAPI {
         }
         synchronized (this) {
             instancesLastCached = System.currentTimeMillis();
+            instancesCacheVersion.incrementAndGet();
             this.instances = cacheMap;
         }
     }
@@ -141,6 +164,7 @@ public class AnkaAPI {
     private void invalidateCache() {
         synchronized (this) {
             this.instancesLastCached = 0;
+            instancesCacheVersion.incrementAndGet();
         }
     }
 

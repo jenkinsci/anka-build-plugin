@@ -6,7 +6,10 @@ properties(
         disableConcurrentBuilds(), 
         disableResume(), 
         copyArtifactPermission('*'), 
-        durabilityHint('PERFORMANCE_OPTIMIZED')
+        durabilityHint('PERFORMANCE_OPTIMIZED'), 
+        parameters([
+            booleanParam(name: 'SKIP_TESTS', defaultValue: false, description: 'Skip running the plugin unit tests during the build (mvn -DskipTests).')
+        ])
     ]
 )
 pipeline {
@@ -28,7 +31,12 @@ pipeline {
                 PLUGIN_GIT_SHORT_SHA=$(git rev-parse --short=8 HEAD 2>/dev/null || echo unknown)
                 PLUGIN_VERSION_DESCRIPTION="built-${PLUGIN_BUILD_TIMESTAMP_UTC}-${PLUGIN_GIT_SHORT_SHA}"
                 echo "[Jenkinsfile] plugin.version.description: ${PLUGIN_VERSION_DESCRIPTION}"
-                mvn -Dplugin.version.description="${PLUGIN_VERSION_DESCRIPTION}" package
+                MAVEN_SKIP_TESTS_FLAG=""
+                if [ "${SKIP_TESTS}" = "true" ]; then
+                    MAVEN_SKIP_TESTS_FLAG="-DskipTests=true"
+                    echo "[Jenkinsfile] SKIP_TESTS=true: skipping unit tests"
+                fi
+                mvn -Dplugin.version.description="${PLUGIN_VERSION_DESCRIPTION}" ${MAVEN_SKIP_TESTS_FLAG} package
             '''
         } }
         stage('Archive') { steps {

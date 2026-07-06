@@ -32,59 +32,93 @@ import hudson.model.LoadStatistics;
 import hudson.model.Queue;
 import hudson.model.queue.QueueListener;
 import hudson.slaves.Cloud;
+import hudson.slaves.CloudProvisioningListener;
 import hudson.slaves.NodeProvisioner;
 import jenkins.model.Jenkins;
 
 import javax.annotation.Nonnull;
 import java.util.Collection;
 
+/**
+ * Fast provisioning strategy for one-shot Anka VM agents.
+ *
+ * <p>The strategy itself is intentionally trivial: it compares queued demand against the executors
+ * that already exist or are on their way (available + connecting + Jenkins' native planned-capacity
+ * snapshot) and asks the cloud to provision the difference. It does not try to second-guess the
+ * LoadStatistics snapshot. The defense against over-provisioning during the boot/connect window lives
+ * in {@link AnkaMgmtCloud#provision}, which tracks nodes it has started but not yet handed to Jenkins
+ * and refuses to start more than are actually needed.
+ */
 @Extension
 public class AnkaProvisioningStrategy extends NodeProvisioner.Strategy {
 
-    // this function gets called when jenkins need more of a specific label
+    // this function gets called when jenkins needs more of a specific label
     @Nonnull
     @Override
     public NodeProvisioner.StrategyDecision apply(@Nonnull NodeProvisioner.StrategyState strategyState) {
-        final Label label = strategyState.getLabel();
-        int availableCapacity;
-        int currentDemand;
-        synchronized (this) {
-            LoadStatistics.LoadStatisticsSnapshot snap = strategyState.getSnapshot();
-            availableCapacity = snap.getAvailableExecutors()
-                    + snap.getConnectingExecutors()
-                    + strategyState.getPlannedCapacitySnapshot()
-                    + strategyState.getAdditionalPlannedCapacity();
-            currentDemand = snap.getQueueLength();
-
-            AnkaMgmtCloud.Log("Available capacity=%s, currentDemand=%s", availableCapacity, currentDemand);
-            if (currentDemand > availableCapacity) {
-                Jenkins jenkinsInstance = Jenkins.get();
-                Cloud.CloudState cloudState = new Cloud.CloudState(label, strategyState.getAdditionalPlannedCapacity());
-                boolean cloudProvisioningTriggered = false;
-                for (Cloud cloud : jenkinsInstance.clouds) {
-                    if (cloud instanceof AnkaMgmtCloud && cloud.canProvision(cloudState)) {
-                        Collection<NodeProvisioner.PlannedNode> plannedNodes = cloud.provision(cloudState, currentDemand - availableCapacity);
-                        AnkaMgmtCloud.Log(String.format("Planned %d new nodes", plannedNodes.size()));
-                        strategyState.recordPendingLaunches(plannedNodes);
-                        availableCapacity += plannedNodes.size();
-                        AnkaMgmtCloud.Log("After provisioning, available capacity=%d, currentDemand=%d", availableCapacity, currentDemand);
-                        cloudProvisioningTriggered = true;
-                        break;
-                    }
-
-                }
-                if (!cloudProvisioningTriggered) {
-                    AnkaMgmtCloud.Log("No eligible Anka cloud could provision label '%s' (available=%d, demand=%d)",
-                            label, availableCapacity, currentDemand);
+        if (Jenkins.get().isQuietingDown()) {
+            return NodeProvisioner.StrategyDecision.CONSULT_REMAINING_STRATEGIES;
+        }
+        for (Cloud cloud : Jenkins.get().clouds) {
+            if (cloud instanceof AnkaMgmtCloud ankaCloud) {
+                NodeProvisioner.StrategyDecision decision = applyToCloud(strategyState, ankaCloud);
+                if (decision == NodeProvisioner.StrategyDecision.PROVISIONING_COMPLETED) {
+                    return decision;
                 }
             }
         }
+        return NodeProvisioner.StrategyDecision.CONSULT_REMAINING_STRATEGIES;
+    }
+
+    private NodeProvisioner.StrategyDecision applyToCloud(@Nonnull NodeProvisioner.StrategyState strategyState,
+                                                          AnkaMgmtCloud cloud) {
+        final Label label = strategyState.getLabel();
+        final Cloud.CloudState cloudState = new Cloud.CloudState(label, strategyState.getAdditionalPlannedCapacity());
+        if (!cloud.canProvision(cloudState)) {
+            return NodeProvisioner.StrategyDecision.CONSULT_REMAINING_STRATEGIES;
+        }
+
+        LoadStatistics.LoadStatisticsSnapshot snap = strategyState.getSnapshot();
+        int availableCapacity = snap.getAvailableExecutors()
+                + snap.getConnectingExecutors()
+                + strategyState.getPlannedCapacitySnapshot();
+        int currentDemand = snap.getQueueLength();
+        AnkaMgmtCloud.Log("Available capacity=%d, currentDemand=%d", availableCapacity, currentDemand);
+
+        if (availableCapacity < currentDemand) {
+            Collection<NodeProvisioner.PlannedNode> plannedNodes = cloud.provision(cloudState, currentDemand - availableCapacity);
+            AnkaMgmtCloud.Log("Planned %d new nodes", plannedNodes.size());
+            fireOnStarted(cloud, label, plannedNodes);
+            strategyState.recordPendingLaunches(plannedNodes);
+            availableCapacity += plannedNodes.size();
+            AnkaMgmtCloud.Log("After provisioning, available capacity=%d, currentDemand=%d", availableCapacity, currentDemand);
+        }
+
         if (availableCapacity >= currentDemand) {
             AnkaMgmtCloud.Log("Provisioning completed");
             return NodeProvisioner.StrategyDecision.PROVISIONING_COMPLETED;
-        } else {
-            AnkaMgmtCloud.Log("Provisioning not complete, consulting remaining strategies");
-            return NodeProvisioner.StrategyDecision.CONSULT_REMAINING_STRATEGIES;
+        }
+        AnkaMgmtCloud.Log("Provisioning not complete, consulting remaining strategies");
+        return NodeProvisioner.StrategyDecision.CONSULT_REMAINING_STRATEGIES;
+    }
+
+    /**
+     * Fire {@code onStarted} on all {@link CloudProvisioningListener}s for the given planned nodes.
+     * Mirrors {@code hudson.slaves.NodeProvisioner#fireOnStarted}: because this custom strategy calls
+     * {@link Cloud#provision} directly, it must fire the listener itself, otherwise plugins such as
+     * cloud-stats never see a {@code ProvisioningActivity} for these nodes and throw
+     * "No activity tracked for ...".
+     */
+    private static void fireOnStarted(Cloud cloud, Label label, Collection<NodeProvisioner.PlannedNode> plannedNodes) {
+        for (CloudProvisioningListener cl : CloudProvisioningListener.all()) {
+            try {
+                cl.onStarted(cloud, label, plannedNodes);
+            } catch (Error e) {
+                throw e;
+            } catch (Throwable e) {
+                AnkaMgmtCloud.Log("Unexpected uncaught exception in onStarted() of %s for label %s: %s",
+                        cl, label, e);
+            }
         }
     }
 

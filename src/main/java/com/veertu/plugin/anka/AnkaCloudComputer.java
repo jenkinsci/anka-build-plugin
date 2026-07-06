@@ -95,6 +95,9 @@ public class AnkaCloudComputer extends SlaveComputer {
 
     public void onRemoved() {
         AnkaMgmtCloud.Log("Computer %s removed", this.getName());
+        // The node is gone; clear any in-progress reservation so it does not suppress future
+        // provisioning. Covers nodes that never accepted a task (idle-timeout, launch failure).
+        releaseInProgressReservation();
         if (vmId != null) {
             String cloudName = template.getCloudName();
             AnkaMgmtCloud cloud = (AnkaMgmtCloud) Jenkins.get().getCloud(cloudName);
@@ -107,7 +110,19 @@ public class AnkaCloudComputer extends SlaveComputer {
             }
         }
     }
-    
+
+    /**
+     * Release this node's in-progress reservation in its cloud (idempotent). Called when the node
+     * consumes demand (accepts a task) or is removed, so the provisioning strategy stops counting it
+     * as pending capacity at the right moment.
+     */
+    private void releaseInProgressReservation() {
+        AnkaMgmtCloud cloud = (AnkaMgmtCloud) Jenkins.get().getCloud(cloudName);
+        if (cloud != null) {
+            cloud.releaseInstanceInProgress(this.getName());
+        }
+    }
+
     public AnkaCloudSlaveTemplate getTemplate() {
         return template;
     }
@@ -115,6 +130,8 @@ public class AnkaCloudComputer extends SlaveComputer {
     @Override
     public void taskAccepted(Executor executor, Queue.Task task) {
         super.taskAccepted(executor, task);
+        // Demand consumed: this node has taken its queued job, so it is no longer pending capacity.
+        releaseInProgressReservation();
         this.run = null;
         this.acceptedRunIdentity = null;
         if (task instanceof ExecutorStepExecution.PlaceholderTask) {
