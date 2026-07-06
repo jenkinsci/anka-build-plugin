@@ -33,6 +33,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 
@@ -211,6 +212,75 @@ public class AnkaMgmtCloud extends Cloud {
 
     public static AnkaMgmtCloud get(String cloudName) {
         return (AnkaMgmtCloud) Jenkins.get().getCloud(cloudName);
+    }
+
+    /**
+     * Per-cloud, per-template set of node names this cloud has provisioned but that have not yet
+     * consumed a unit of queued demand (i.e. have not yet accepted a task) nor terminated.
+     * {@link #provision} subtracts the size of these sets from the requested workload so a burst of
+     * demand does not start more VMs than are actually needed.
+     *
+     * <p>Nodes are tracked by identity (unique node name) and stay reserved across the whole
+     * provision -> boot -> connect -> dispatch window. Releasing only when a node accepts its first
+     * task ({@link AnkaCloudComputer#taskAccepted}) or is removed ({@link AnkaCloudComputer#onRemoved})
+     * -- rather than the moment it connects -- is what closes the dispatch gap: a connected-but-idle
+     * node whose queued job has not been dispatched yet still counts, so it is not re-provisioned as a
+     * duplicate. Process-wide and guarded by its own monitor.
+     */
+    static final Map<String, Map<String, Set<String>>> INSTANCES_IN_PROGRESS = new HashMap<>();
+
+    private static String getTemplateId(AnkaCloudSlaveTemplate template) {
+        return template.getMasterVmId() + ":" + template.getTag() + ":" + template.getLabelString();
+    }
+
+    /** Reserve a just-provisioned node as in-progress capacity for its template. */
+    void reserveInstanceInProgress(AnkaCloudSlaveTemplate template, String nodeName) {
+        if (nodeName == null) {
+            return;
+        }
+        synchronized (INSTANCES_IN_PROGRESS) {
+            INSTANCES_IN_PROGRESS
+                    .computeIfAbsent(getCloudName(), unused -> new HashMap<>())
+                    .computeIfAbsent(getTemplateId(template), unused -> new HashSet<>())
+                    .add(nodeName);
+        }
+    }
+
+    /**
+     * Release a node once it has consumed demand (accepted a task) or terminated. Idempotent and
+     * keyed only by node name (names are unique) so it is safe to call from multiple lifecycle hooks.
+     */
+    void releaseInstanceInProgress(String nodeName) {
+        if (nodeName == null) {
+            return;
+        }
+        synchronized (INSTANCES_IN_PROGRESS) {
+            Map<String, Set<String>> forCloud = INSTANCES_IN_PROGRESS.get(getCloudName());
+            if (forCloud == null) {
+                return;
+            }
+            Iterator<Map.Entry<String, Set<String>>> it = forCloud.entrySet().iterator();
+            while (it.hasNext()) {
+                Set<String> nodeNames = it.next().getValue();
+                if (nodeNames.remove(nodeName) && nodeNames.isEmpty()) {
+                    it.remove();
+                }
+            }
+            if (forCloud.isEmpty()) {
+                INSTANCES_IN_PROGRESS.remove(getCloudName());
+            }
+        }
+    }
+
+    int countInstancesInProgress(AnkaCloudSlaveTemplate template) {
+        synchronized (INSTANCES_IN_PROGRESS) {
+            Map<String, Set<String>> forCloud = INSTANCES_IN_PROGRESS.get(getCloudName());
+            if (forCloud == null) {
+                return 0;
+            }
+            Set<String> nodeNames = forCloud.get(getTemplateId(template));
+            return nodeNames == null ? 0 : nodeNames.size();
+        }
     }
 
     public int getLaunchTimeout() {
@@ -824,6 +894,22 @@ public class AnkaMgmtCloud extends Cloud {
                         if (number > allowedTemplateCapacity) {
                             number = allowedTemplateCapacity;
                         }
+                    }
+                }
+                // Account for nodes we have already started but not yet handed to Jenkins as live
+                // executors (still booting/connecting). Without this a demand spike re-enters
+                // provision() every cycle -- via FastProvisioning's suggestReviewNow -- and starts
+                // duplicate VMs that never run a job.
+                int inProgress = countInstancesInProgress(t);
+                if (inProgress > 0) {
+                    if (number > inProgress) {
+                        Log("Reducing provision request for label '%s' from %d to %d; %d node(s) already in progress",
+                                label, number, number - inProgress, inProgress);
+                        number -= inProgress;
+                    } else {
+                        Log("Not provisioning additional nodes for label '%s'; %d node(s) already in progress cover demand",
+                                label, inProgress);
+                        return plannedNodes;
                     }
                 }
                 final List<AbstractAnkaSlave> slaves = createNewSlaves(t, number);

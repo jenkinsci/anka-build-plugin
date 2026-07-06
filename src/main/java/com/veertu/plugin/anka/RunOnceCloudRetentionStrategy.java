@@ -180,6 +180,13 @@ public class RunOnceCloudRetentionStrategy extends RetentionStrategy<AnkaCloudCo
 
         LOGGER.info(AnkaLog.prefix("Start requested for " + computer.getName()));
         computer.connect(false);
+        // Mark that the first connection has been attempted. Without this, check() short-circuits
+        // forever at its `!afterFirstConnection()` guard, so a VM that connects but never runs a
+        // task is never reaped by the idle timeout and lingers as an orphan. This must run here (not
+        // only in AnkaPlannedNodeCreator.waitAndConnect) because the node's computer is often not yet
+        // registered when waitAndConnect runs, so slave.toComputer() is null there and the flag would
+        // otherwise never be set on the normal (non-restart) path.
+        computer.firstConnectionAttempted();
     }
 
     public RunOnceCloudRetentionStrategy clone() throws CloneNotSupportedException {

@@ -7,6 +7,7 @@ import hudson.model.Computer;
 import hudson.model.Node;
 import hudson.slaves.NodeProvisioner;
 
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -22,17 +23,47 @@ public class AnkaPlannedNodeCreator {
 
 
     public static NodeProvisioner.PlannedNode createPlannedNode(final AnkaMgmtCloud cloud, final AnkaCloudSlaveTemplate template, final AbstractAnkaSlave slave) {
-        return new NodeProvisioner.PlannedNode(template.getDisplayName(),
-                Computer.threadPoolForRemoting.submit(() -> {
-                    try {
-                        return waitAndConnect(cloud, template, slave);
-                    } catch (InterruptedException interruptedException) {
-                        terminateProvisioningInstance(cloud, slave, interruptedException);
-                        Thread.currentThread().interrupt();
-                        return null;
+        // Reserve this node as in-progress capacity the moment it is provisioned. It stays reserved
+        // across the whole boot -> connect -> dispatch window and is released only when it accepts a
+        // task (AnkaCloudComputer.taskAccepted) or is removed (AnkaCloudComputer.onRemoved). Holding
+        // it that long -- rather than releasing when it merely connects -- is what stops a
+        // connected-but-not-yet-dispatched node from being re-provisioned as a duplicate.
+        final String nodeName = slave.getNodeName();
+        cloud.reserveInstanceInProgress(template, nodeName);
+        boolean submitted = false;
+        try {
+            Future<Node> future = Computer.threadPoolForRemoting.submit(() -> {
+                Node node = null;
+                try {
+                    node = waitAndConnect(cloud, template, slave);
+                    return node;
+                } catch (InterruptedException interruptedException) {
+                    terminateProvisioningInstance(cloud, slave, interruptedException);
+                    Thread.currentThread().interrupt();
+                    return null;
+                } finally {
+                    // Only release here when the launch failed/aborted (node == null): that node will
+                    // never accept a task, so free its reservation now instead of waiting for removal.
+                    // On success we intentionally keep the reservation until taskAccepted/onRemoved.
+                    if (node == null) {
+                        cloud.releaseInstanceInProgress(nodeName);
                     }
-                })
-                , template.getNumberOfExecutors());
+                }
+            });
+            submitted = true;
+            return new NodeProvisioner.PlannedNode(template.getDisplayName(), future, template.getNumberOfExecutors());
+        } finally {
+            if (!submitted) {
+                cloud.releaseInstanceInProgress(nodeName);
+            }
+        }
+    }
+
+    private static void markFirstConnectionAttempted(AbstractAnkaSlave slave) {
+        AnkaCloudComputer ankaComputer = (AnkaCloudComputer) slave.toComputer();
+        if (ankaComputer != null) {
+            ankaComputer.firstConnectionAttempted();
+        }
     }
 
     private static void terminateProvisioningInstance(AnkaMgmtCloud cloud, AbstractAnkaSlave slave, InterruptedException interruptedException) {
@@ -49,15 +80,32 @@ public class AnkaPlannedNodeCreator {
 
     public static Node waitAndConnect(final AnkaMgmtCloud cloud, final AnkaCloudSlaveTemplate template, final AbstractAnkaSlave slave) throws AnkaMgmtException, InterruptedException {
         final long timeStarted = System.currentTimeMillis();
+        int consecutiveLookupMisses = 0;
         while (true) {
             String instanceId = slave.getInstanceId();
             int vmCheckTime = cloud.getVmPollTime();
             AnkaVmInstance instance = cloud.showInstance(instanceId);
             if (instance == null) {
-                LOGGER.log(Level.WARNING, AnkaLog.prefix("instance `{0}` not found in cloud {1}. Terminate provisioning "),
-                        new Object[]{instanceId, cloud.getCloudName()});
-                return null;
+                // Even with a cache-aware showInstance(), the controller can still be
+                // briefly inconsistent under burst load. Abandoning on the first miss
+                // leaves the VM to boot and connect on its own, producing an orphaned
+                // node that never ran a job and that RunOnceCloudRetentionStrategy
+                // refuses to reap (afterFirstConnection stays false). Retry a bounded
+                // number of times before giving up.
+                consecutiveLookupMisses++;
+                if (consecutiveLookupMisses >= connectionAttemps) {
+                    LOGGER.log(Level.WARNING, AnkaLog.prefix("instance `{0}` not found in cloud {1} after {2} attempts, terminating provisioning"),
+                            new Object[]{instanceId, cloud.getCloudName(), consecutiveLookupMisses});
+                    markFirstConnectionAttempted(slave);
+                    cloud.terminateVMInstance(instanceId);
+                    return null;
+                }
+                LOGGER.log(Level.WARNING, AnkaLog.prefix("instance `{0}` not found in cloud {1} (attempt {2}/{3}), retrying"),
+                        new Object[]{instanceId, cloud.getCloudName(), consecutiveLookupMisses, connectionAttemps});
+                Thread.sleep(vmCheckTime);
+                continue;
             }
+            consecutiveLookupMisses = 0;
 
             if (instance.isStarted()) {
                 AnkaVmInfo vmInfo = instance.getVmInfo();
@@ -77,10 +125,7 @@ public class AnkaPlannedNodeCreator {
                         ankaComputer.connect(false);
                     }
                 } finally {
-                    AnkaCloudComputer ankaComputer = (AnkaCloudComputer)slave.toComputer();
-                    if (ankaComputer != null) {
-                        ankaComputer.firstConnectionAttempted();
-                    }
+                    markFirstConnectionAttempted(slave);
                 }
 
                 return slave;

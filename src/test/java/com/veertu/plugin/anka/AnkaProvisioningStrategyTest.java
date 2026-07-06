@@ -1,124 +1,131 @@
 package com.veertu.plugin.anka;
 
-import hudson.ExtensionList;
 import hudson.model.Label;
-import hudson.model.queue.QueueListener;
+import hudson.model.LoadStatistics;
+import hudson.model.Node;
 import hudson.slaves.Cloud;
+import hudson.slaves.CloudProvisioningListener;
 import hudson.slaves.NodeProvisioner;
-import jenkins.model.Jenkins;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.TestExtension;
 import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 
-import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+/**
+ * Tests for {@link AnkaProvisioningStrategy}, the fast one-shot provisioning strategy.
+ */
 @WithJenkins
 public class AnkaProvisioningStrategyTest {
 
-    private static final String LABEL_NAME = "anka-fast-provision";
+    private static final String LABEL_NAME = "ephemeral-arm-mobile-client-bba-cache";
 
-    private JenkinsRule jenkinsRule;
-
-    @BeforeEach
-    void setUp(JenkinsRule jenkinsRule) {
-        this.jenkinsRule = jenkinsRule;
-    }
-
+    /**
+     * Because the custom strategy calls {@link Cloud#provision} directly (bypassing
+     * {@code NodeProvisioner}'s built-in {@code fireOnStarted}), it must fire
+     * {@link CloudProvisioningListener#onStarted} itself so cloud-stats and friends can track the
+     * nodes.
+     */
     @Test
-    public void shouldRegisterFastProvisioningQueueListener() {
-        AnkaProvisioningStrategy.FastProvisioning listener =
-                ExtensionList.lookup(QueueListener.class).get(AnkaProvisioningStrategy.FastProvisioning.class);
-
-        assertThat(listener, notNullValue());
-    }
-
-    @Test
-    public void shouldSuggestProvisionerReviewWhenAnkaCloudCanProvision() throws Exception {
+    void firesOnStartedForProvisionedNodes(JenkinsRule j) {
         Label label = Label.get(LABEL_NAME);
-        NodeProvisioner provisioner = label.nodeProvisioner;
-        jenkinsRule.jenkins.clouds.add(stubAnkaCloud(true));
-        long lastReviewBefore = getLastSuggestedReview(provisioner);
+        List<NodeProvisioner.PlannedNode> planned = List.of(plannedNode("a"), plannedNode("b"));
+        j.jenkins.clouds.add(new FakeAnkaCloud(planned));
+        RecordingProvisioningListener.started.clear();
 
-        AnkaProvisioningStrategy.suggestReviewForBuildableLabel(jenkinsRule.jenkins, label);
+        NodeProvisioner.StrategyState state = strategyState(label, 0, 0, 0, planned.size());
+        NodeProvisioner.StrategyDecision decision = new AnkaProvisioningStrategy().apply(state);
 
-        assertThat(getLastSuggestedReview(provisioner) > lastReviewBefore
-                || isProvisionerReviewQueued(provisioner), is(true));
+        assertEquals(planned, new ArrayList<>(RecordingProvisioningListener.started),
+                "strategy must fire CloudProvisioningListener.onStarted for provisioned nodes");
+        verify(state).recordPendingLaunches(planned);
+        assertEquals(NodeProvisioner.StrategyDecision.PROVISIONING_COMPLETED, decision);
     }
 
+    /**
+     * When existing/planned capacity already meets demand the strategy must not provision anything.
+     */
     @Test
-    public void shouldNotSuggestProvisionerReviewWhenAnkaCloudCannotProvision() throws Exception {
+    void doesNotProvisionWhenCapacityMeetsDemand(JenkinsRule j) {
         Label label = Label.get(LABEL_NAME);
-        NodeProvisioner provisioner = label.nodeProvisioner;
-        jenkinsRule.jenkins.clouds.add(stubAnkaCloud(false));
-        long lastReviewBefore = getLastSuggestedReview(provisioner);
-        boolean queuedReviewBefore = isProvisionerReviewQueued(provisioner);
+        FakeAnkaCloud cloud = new FakeAnkaCloud(List.of(plannedNode("a")));
+        j.jenkins.clouds.add(cloud);
 
-        AnkaProvisioningStrategy.suggestReviewForBuildableLabel(jenkinsRule.jenkins, label);
+        // demand 3, and available+connecting+planned = 1+1+1 = 3 -> nothing to do
+        NodeProvisioner.StrategyState state = strategyState(label, 1, 1, 1, 3);
+        NodeProvisioner.StrategyDecision decision = new AnkaProvisioningStrategy().apply(state);
 
-        assertThat(getLastSuggestedReview(provisioner), is(lastReviewBefore));
-        assertThat(isProvisionerReviewQueued(provisioner), is(queuedReviewBefore));
+        assertEquals(0, cloud.provisionCalls, "must not call provision when capacity already meets demand");
+        assertEquals(NodeProvisioner.StrategyDecision.PROVISIONING_COMPLETED, decision);
     }
 
-    @Test
-    public void shouldNotSuggestProvisionerReviewForNonAnkaCloud() throws Exception {
-        Label label = Label.get(LABEL_NAME);
-        NodeProvisioner provisioner = label.nodeProvisioner;
-        jenkinsRule.jenkins.clouds.add(new OtherCloud());
-        long lastReviewBefore = getLastSuggestedReview(provisioner);
-        boolean queuedReviewBefore = isProvisionerReviewQueued(provisioner);
-
-        AnkaProvisioningStrategy.suggestReviewForBuildableLabel(jenkinsRule.jenkins, label);
-
-        assertThat(getLastSuggestedReview(provisioner), is(lastReviewBefore));
-        assertThat(isProvisionerReviewQueued(provisioner), is(queuedReviewBefore));
+    private static NodeProvisioner.PlannedNode plannedNode(String name) {
+        return new NodeProvisioner.PlannedNode(name, new CompletableFuture<Node>(), 1);
     }
 
-    private static AnkaMgmtCloud stubAnkaCloud(final boolean canProvision) {
-        AnkaCloudSlaveTemplate template = new AnkaCloudSlaveTemplate();
-        template.setLabelString(LABEL_NAME);
-        template.setMasterVmId("00000000-0000-0000-0000-000000000001");
+    private NodeProvisioner.StrategyState strategyState(Label label, int available, int connecting,
+                                                        int planned, int queueLength) {
+        LoadStatistics.LoadStatisticsSnapshot snap = mock(LoadStatistics.LoadStatisticsSnapshot.class);
+        when(snap.getAvailableExecutors()).thenReturn(available);
+        when(snap.getConnectingExecutors()).thenReturn(connecting);
+        when(snap.getQueueLength()).thenReturn(queueLength);
 
-        return new AnkaMgmtCloud(
-                "https://stub-anka",
-                "stub-cloud",
-                "",
-                "",
-                true,
-                Collections.singletonList(template),
-                0) {
-            @Override
-            public boolean canProvision(CloudState state) {
-                return canProvision;
-            }
-        };
+        NodeProvisioner.StrategyState state = mock(NodeProvisioner.StrategyState.class);
+        when(state.getLabel()).thenReturn(label);
+        when(state.getSnapshot()).thenReturn(snap);
+        when(state.getPlannedCapacitySnapshot()).thenReturn(planned);
+        when(state.getAdditionalPlannedCapacity()).thenReturn(0);
+        return state;
     }
 
-    private static boolean isProvisionerReviewQueued(NodeProvisioner provisioner) throws Exception {
-        Field queuedReviewField = NodeProvisioner.class.getDeclaredField("queuedReview");
-        queuedReviewField.setAccessible(true);
-        return queuedReviewField.getBoolean(provisioner);
-    }
+    /** Minimal Anka cloud that returns a fixed set of planned nodes and counts provision() calls. */
+    private static final class FakeAnkaCloud extends AnkaMgmtCloud {
+        private final transient Collection<NodeProvisioner.PlannedNode> planned;
+        private transient int provisionCalls;
 
-    private static long getLastSuggestedReview(NodeProvisioner provisioner) throws Exception {
-        Field lastSuggestedReviewField = NodeProvisioner.class.getDeclaredField("lastSuggestedReview");
-        lastSuggestedReviewField.setAccessible(true);
-        return lastSuggestedReviewField.getLong(provisioner);
-    }
+        FakeAnkaCloud(Collection<NodeProvisioner.PlannedNode> planned) {
+            super("https://stub-anka", "stub-strategy", "", "", true,
+                    Collections.singletonList(template()), 0);
+            this.planned = planned;
+        }
 
-    private static class OtherCloud extends Cloud {
-        OtherCloud() {
-            super("other-cloud");
+        private static AnkaCloudSlaveTemplate template() {
+            AnkaCloudSlaveTemplate t = new AnkaCloudSlaveTemplate();
+            t.setLabelString(LABEL_NAME);
+            t.setMasterVmId("00000000-0000-0000-0000-000000000001");
+            return t;
         }
 
         @Override
         public boolean canProvision(CloudState state) {
             return true;
+        }
+
+        @Override
+        public Collection<NodeProvisioner.PlannedNode> provision(CloudState state, int excessWorkload) {
+            provisionCalls++;
+            return planned;
+        }
+    }
+
+    @TestExtension
+    public static class RecordingProvisioningListener extends CloudProvisioningListener {
+        static final List<NodeProvisioner.PlannedNode> started = new CopyOnWriteArrayList<>();
+
+        @Override
+        public void onStarted(Cloud cloud, Label label, Collection<NodeProvisioner.PlannedNode> plannedNodes) {
+            started.addAll(plannedNodes);
         }
     }
 }
