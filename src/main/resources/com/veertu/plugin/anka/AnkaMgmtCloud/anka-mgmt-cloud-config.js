@@ -71,11 +71,48 @@ function validateAnkaMgmtUrl() {
     var summary = chunk.querySelector('.anka-label-summary');
     if (!summary) return;
 
-    // Prefer our mockup drag handle; remove Jenkins header chrome so one row matches the mockup.
-    var jenkinsHeader = chunk.querySelector(':scope > .repeated-chunk__header');
+    var dragSlot = summary.querySelector('.anka-label-summary__drag-slot');
+    var jenkinsHeader = chunk.querySelector('.repeated-chunk__header');
+    // One real Jenkins handle only — do not also paint ⋮⋮ (that doubled the grip icons).
+    // Only the top-level label-chunk handle — never steal nested env-var handles
+    var jenkinsHandle =
+      (jenkinsHeader && jenkinsHeader.querySelector('.dd-handle')) ||
+      chunk.querySelector(':scope > .dd-handle');
+
+    if (dragSlot) {
+      if (jenkinsHandle && !dragSlot.contains(jenkinsHandle)) {
+        dragSlot.textContent = '';
+        dragSlot.appendChild(jenkinsHandle);
+      }
+      var handle = dragSlot.querySelector('.dd-handle');
+      if (!handle) {
+        handle = document.createElement('div');
+        handle.className = 'dd-handle';
+        handle.setAttribute('title', 'Drag to reorder');
+        dragSlot.appendChild(handle);
+      }
+      handle.classList.add('anka-label-summary__drag');
+      handle.setAttribute('title', 'Drag to reorder');
+      handle.removeAttribute('hidden');
+      handle.style.display = '';
+    }
+
     if (jenkinsHeader) {
       jenkinsHeader.setAttribute('data-anka-header-hidden', '1');
+      jenkinsHeader.setAttribute('hidden', 'hidden');
+      jenkinsHeader.style.display = 'none';
     }
+
+    // Hide stray top-level handles still outside the summary (not nested repeatables)
+    [jenkinsHeader, chunk].forEach(function (root) {
+      if (!root) return;
+      Array.prototype.forEach.call(root.children || [], function (child) {
+        if (child.classList && child.classList.contains('dd-handle') && !summary.contains(child)) {
+          child.setAttribute('hidden', 'hidden');
+          child.style.display = 'none';
+        }
+      });
+    });
 
     var deleteSlot = summary.querySelector('.anka-label-summary__delete-slot');
     var deleteWrap = chunk.querySelector(':scope > .show-if-only');
@@ -86,7 +123,6 @@ function validateAnkaMgmtUrl() {
       deleteSlot.appendChild(deleteWrap);
       deleteWrap.classList.add('anka-label-summary__delete');
     }
-    // Prefer a text "Delete" control when Jenkins only renders an icon/X
     var deleteBtn = deleteSlot && deleteSlot.querySelector('button, .repeatable-delete');
     if (deleteBtn && !deleteBtn.getAttribute('data-anka-delete-labeled')) {
       deleteBtn.setAttribute('data-anka-delete-labeled', '1');
@@ -178,7 +214,7 @@ function validateAnkaMgmtUrl() {
     }
     summary.addEventListener('click', function (e) {
       // Drag handle and delete must not toggle expand
-      if (e.target.closest('.dd-handle, .anka-label-summary__drag, .anka-label-summary__delete, .anka-label-summary__delete-slot, a, button, input, select, textarea')) {
+      if (e.target.closest('.dd-handle, .anka-label-summary__drag-slot, .anka-label-summary__drag, .anka-label-summary__delete, .anka-label-summary__delete-slot, a, button, input, select, textarea')) {
         return;
       }
       toggle();

@@ -330,21 +330,24 @@
     .anka-build-plugin-templates-list .repeated-chunk {
       border: 1px solid #60259F;
       background-color: #FFF;
+      /* Jenkins leaves padding-left for an absolute .dd-handle — kill it */
       padding: 0 !important;
-      margin: 0;
+      padding-left: 0 !important;
+      margin: 0 !important;
       color: #5e2e9b;
       flex: unset;
       flex-basis: unset;
       min-width: 0;
       border-radius: 8px;
       overflow: hidden;
+      position: relative;
+      box-sizing: border-box;
     }
 
     .anka-build-plugin-templates-list .repeated-chunk[data-anka-expanded="true"] {
       grid-column: 1 / -1;
     }
 
-    /* White cards; purple is reserved for the summary header (matches mockup) */
     .anka-build-plugin-templates-list .repeated-chunk:nth-child(odd) {
       background-color: #FFF;
     }
@@ -354,17 +357,31 @@
       color: #5e2e9b !important;
     }
 
-    /* Hide Jenkins drag chrome (nested env-var repeatables + label list — we use in-summary ⋮⋮) */
+    .anka-build-plugin-templates-list .anka-label-template {
+      display: block;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    /* Hide Jenkins header chrome entirely (handle is relocated into summary) */
     .anka-build-plugin-group .repeated-chunk__header,
     .anka-build-plugin-templates-list .repeated-chunk__header,
-    .anka-build-plugin-templates-list .repeated-chunk__header[data-anka-header-hidden="1"] {
+    .anka-build-plugin-templates-list .repeated-chunk__header[data-anka-header-hidden="1"],
+    .anka-build-plugin-templates-list .repeated-chunk__header[hidden] {
       display: none !important;
+      height: 0 !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      border: 0 !important;
+      overflow: hidden !important;
     }
 
     /*
-     * Stable two-row header (matches mockup intent, survives long labels):
-     *   ⋮⋮  ▸  name…………………  [Delete]
-     *           template chip · launch · cap
+     * Stable two-row header:
+     *   [grip]  ▸  name…………………  [Delete]
+     *               template · launch · cap
      */
     .anka-build-plugin-templates-list .anka-label-summary {
       display: grid;
@@ -377,25 +394,50 @@
       cursor: pointer;
       user-select: none;
       border-bottom: 1px solid #e0d4f0;
-      min-height: 3.5rem;
-    }
-
-    .anka-build-plugin-templates-list .anka-label-summary__drag.dd-handle {
-      grid-column: 1;
-      grid-row: 1;
-      align-self: center;
-      cursor: grab;
-      color: #5e2e9b;
-      font-size: 1.05rem;
-      font-weight: 700;
-      line-height: 1;
-      letter-spacing: -0.12em;
-      padding: 0;
+      width: 100%;
+      box-sizing: border-box;
       margin: 0;
     }
 
-    .anka-build-plugin-templates-list .anka-label-summary__drag.dd-handle:active {
-      cursor: grabbing;
+    .anka-build-plugin-templates-list .anka-label-summary__drag-slot {
+      grid-column: 1;
+      grid-row: 1;
+      align-self: center;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.1rem;
+      min-height: 1.25rem;
+    }
+
+    /*
+     * Jenkins core styles .dd-handle as position:absolute (causes the white left gutter
+     * + a second floating grip). Force it back into normal summary flow.
+     */
+    .anka-build-plugin-templates-list .anka-label-summary .dd-handle,
+    .anka-build-plugin-templates-list .anka-label-summary__drag.dd-handle {
+      position: static !important;
+      left: auto !important;
+      top: auto !important;
+      right: auto !important;
+      bottom: auto !important;
+      float: none !important;
+      display: inline-block !important;
+      width: 1rem !important;
+      height: 1.15rem !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      cursor: grab !important;
+      background-position: center !important;
+      background-repeat: no-repeat !important;
+      background-size: contain !important;
+      font-size: 0 !important; /* hide any leftover ⋮⋮ text if present */
+      line-height: 0 !important;
+      color: transparent !important;
+    }
+
+    .anka-build-plugin-templates-list .anka-label-summary .dd-handle:active {
+      cursor: grabbing !important;
     }
 
     .anka-build-plugin-templates-list .anka-label-summary__chevron {
