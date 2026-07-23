@@ -120,10 +120,11 @@
                   <div class="${isCloudOnline ? '' : 'hide-me'}">
                     <f:optionalBlock inline="true" title="Show Node Labels" checked="${isCloudOnline}" disabled="${!isCloudOnline}">
                       <f:entry description="${%}">
-                        <f:repeatable field="templates">
+                        <!-- header enables Jenkins with-drag-drop / Sortable (header chrome is hidden in CSS) -->
+                        <f:repeatable field="templates" header="${%Node Label}">
                           <st:include page="config.jelly" class="${descriptor.clazz}"/>
-                          <div class="show-if-only ">
-                            <f:repeatableDeleteButton />
+                          <div class="show-if-only anka-label-delete-source">
+                            <f:repeatableDeleteButton value="${%Delete}" />
                           </div>
                         </f:repeatable>
                       </f:entry>

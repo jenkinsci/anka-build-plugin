@@ -7,11 +7,11 @@
       <span class="anka-label-summary__chevron" aria-hidden="true">▸</span>
       <div class="anka-label-summary__main">
         <div class="anka-label-summary__title-row">
-          <span class="anka-label-summary__name"></span>
-          <span class="anka-label-summary__delete-slot"></span>
+          <span class="anka-label-summary__name">${instance.label}</span>
         </div>
         <div class="anka-label-summary__meta">
           <span class="anka-label-summary__template chip"></span>
+          <span class="anka-label-summary__tag chip">${instance.tag}</span>
           <span class="anka-label-summary__launch chip"></span>
           <span class="anka-label-summary__cap chip"></span>
         </div>
@@ -31,17 +31,23 @@
       </button>
 
       <div class="anka-label-essentials">
-        <f:entry title="${%Target Label}" field="label" description="The label that jobs will target in order to start and utilize the started Jenkins Node/Agent">
-            <f:textbox clazz="required" />
-        </f:entry>
+        <div class="anka-summary-source" data-anka-summary="label">
+          <f:entry title="${%Target Label}" field="label" description="The label that jobs will target in order to start and utilize the started Jenkins Node/Agent">
+              <f:textbox clazz="required" />
+          </f:entry>
+        </div>
 
-        <f:entry title="${%Anka VM Template}" field="masterVmId" description="The Anka VM Template to use when starting the Jenkins Node/Agent (Java is assumed to be pre-installed)">
-            <f:select />
-        </f:entry>
+        <div class="anka-summary-source" data-anka-summary="masterVmId">
+          <f:entry title="${%Anka VM Template}" field="masterVmId" description="The Anka VM Template to use when starting the Jenkins Node/Agent (Java is assumed to be pre-installed)">
+              <f:select />
+          </f:entry>
+        </div>
 
-        <f:entry title="${%Anka VM Template's Tag}" field="tag" description="The Anka VM Template's Tag to use">
-            <f:select />
-        </f:entry>
+        <div class="anka-summary-source" data-anka-summary="tag">
+          <f:entry title="${%Anka VM Template's Tag}" field="tag" description="The Anka VM Template's Tag to use">
+              <f:select />
+          </f:entry>
+        </div>
 
         <f:entry title="${%Launch Method}" field="launchMethod" description="Launch Method Jenkins will use when jobs want to perform actions inside of the Node/Agent">
               <div class="anka-launch-method">
@@ -87,9 +93,11 @@
             <f:textbox clazz="required number" default="0" />
         </f:entry>
 
-        <f:entry title="${%Maximum Allowed Nodes/Agents}" description="The number of Jenkins Nodes/Agents this template and label is allowed to start (0 is unlimited)" field="instanceCapacity">
-            <f:textbox clazz="required number" default="0" />
-        </f:entry>
+        <div class="anka-summary-source" data-anka-summary="instanceCapacity">
+          <f:entry title="${%Maximum Allowed Nodes/Agents}" description="The number of Jenkins Nodes/Agents this template and label is allowed to start (0 is unlimited)" field="instanceCapacity">
+              <f:textbox clazz="required number" default="0" />
+          </f:entry>
+        </div>
 
         <f:entry title="${%Allowed Executors}" field="numberOfExecutors" description="This is the number of jobs/builds which can run on the started Jenkins Node/Agent that uses this Template">
             <f:textbox clazz="required number" default="1" />
@@ -177,6 +185,8 @@
               </f:entry>
           </f:advanced>
       </div>
+
+      <div class="anka-label-delete-footer"></div>
     </div>
   </div>
 </j:jelly>

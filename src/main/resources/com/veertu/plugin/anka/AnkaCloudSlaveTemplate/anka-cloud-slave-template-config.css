@@ -21,6 +21,11 @@
   align-items: start;
 }
 
+/* Wrappers only mark summary sources — keep the 2-col essentials grid intact */
+.anka-label-essentials > .anka-summary-source {
+  display: contents;
+}
+
 @media (max-width: 700px) {
   .anka-label-essentials {
     grid-template-columns: 1fr;
@@ -45,8 +50,19 @@
 /* Advanced fields render below essentials */
 .anka-label-show-more__panel {
   margin-top: 0.75rem;
-  padding-top: 0.75rem;
+  padding-top: 1rem;
   border-top: 1px solid #e0d4f0;
+}
+
+.anka-label-show-more__panel > .jenkins-form-item,
+.anka-label-show-more__panel > .form-group,
+.anka-label-show-more__panel > .form-container {
+  margin-top: 1.1rem;
+}
+
+.anka-label-show-more__panel > .jenkins-form-item:first-child,
+.anka-label-show-more__panel > .form-group:first-child {
+  margin-top: 0.25rem;
 }
 
 .anka-label-show-more__panel[hidden] {
