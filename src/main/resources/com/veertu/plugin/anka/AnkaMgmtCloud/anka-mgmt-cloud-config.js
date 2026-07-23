@@ -79,9 +79,22 @@ function validateAnkaMgmtUrl() {
 
     var deleteSlot = summary.querySelector('.anka-label-summary__delete-slot');
     var deleteWrap = chunk.querySelector(':scope > .show-if-only');
+    if (!deleteWrap) {
+      deleteWrap = chunk.querySelector('.anka-label-summary__delete');
+    }
     if (deleteSlot && deleteWrap && !deleteSlot.contains(deleteWrap)) {
       deleteSlot.appendChild(deleteWrap);
       deleteWrap.classList.add('anka-label-summary__delete');
+    }
+    // Prefer a text "Delete" control when Jenkins only renders an icon/X
+    var deleteBtn = deleteSlot && deleteSlot.querySelector('button, .repeatable-delete');
+    if (deleteBtn && !deleteBtn.getAttribute('data-anka-delete-labeled')) {
+      deleteBtn.setAttribute('data-anka-delete-labeled', '1');
+      deleteBtn.setAttribute('title', 'Delete');
+      deleteBtn.setAttribute('aria-label', 'Delete');
+      if (!String(deleteBtn.textContent || '').trim() || String(deleteBtn.textContent).trim() === '×' || String(deleteBtn.textContent).trim() === 'x') {
+        deleteBtn.textContent = 'Delete';
+      }
     }
   }
 

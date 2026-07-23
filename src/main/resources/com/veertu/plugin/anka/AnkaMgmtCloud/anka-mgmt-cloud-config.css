@@ -361,27 +361,36 @@
       display: none !important;
     }
 
-    /* Mockup-style single header row: ⋮⋮ | ▸ | name | chips | Delete */
+    /*
+     * Stable two-row header (matches mockup intent, survives long labels):
+     *   ⋮⋮  ▸  name…………………  [Delete]
+     *           template chip · launch · cap
+     */
     .anka-build-plugin-templates-list .anka-label-summary {
-      display: flex;
-      flex-wrap: wrap;
+      display: grid;
+      grid-template-columns: auto auto minmax(0, 1fr);
+      column-gap: 0.55rem;
+      row-gap: 0;
       align-items: center;
-      gap: 0.5rem 0.65rem;
-      padding: 0.7rem 0.85rem;
+      padding: 0.65rem 0.75rem;
       background: #f2e8fd;
       cursor: pointer;
       user-select: none;
       border-bottom: 1px solid #e0d4f0;
+      min-height: 3.5rem;
     }
 
     .anka-build-plugin-templates-list .anka-label-summary__drag.dd-handle {
+      grid-column: 1;
+      grid-row: 1;
+      align-self: center;
       cursor: grab;
       color: #5e2e9b;
       font-size: 1.05rem;
       font-weight: 700;
       line-height: 1;
       letter-spacing: -0.12em;
-      padding: 0 0.15rem 0 0;
+      padding: 0;
       margin: 0;
     }
 
@@ -390,37 +399,75 @@
     }
 
     .anka-build-plugin-templates-list .anka-label-summary__chevron {
+      grid-column: 2;
+      grid-row: 1;
+      align-self: center;
       color: #5e2e9b;
       font-weight: 700;
       width: 0.9rem;
       text-align: center;
-      flex: 0 0 auto;
+    }
+
+    .anka-build-plugin-templates-list .anka-label-summary__main {
+      grid-column: 3;
+      grid-row: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .anka-build-plugin-templates-list .anka-label-summary__title-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      min-width: 0;
     }
 
     .anka-build-plugin-templates-list .anka-label-summary__name {
+      flex: 1 1 auto;
+      min-width: 0;
       font-weight: 700;
       font-size: 0.95rem;
       color: #5e2e9b;
-      min-width: 4rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
-    .anka-build-plugin-templates-list .anka-label-summary__spacer {
-      flex: 1 1 auto;
-      min-width: 0.5rem;
+    .anka-build-plugin-templates-list .anka-label-summary__meta {
+      display: flex;
+      flex-wrap: nowrap;
+      align-items: center;
+      gap: 0.35rem;
+      min-width: 0;
+      overflow: hidden;
     }
 
     .anka-build-plugin-templates-list .anka-label-summary .chip {
       display: inline-block;
+      flex: 0 0 auto;
       background: #fff;
       border: 1px solid #d4c5e8;
       border-radius: 3px;
       padding: 0.15rem 0.45rem;
       font-size: 0.75rem;
       color: #555;
-      max-width: 100%;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+    }
+
+    /* Template/tag takes remaining width and truncates; launch/cap stay visible */
+    .anka-build-plugin-templates-list .anka-label-summary__template.chip {
+      flex: 1 1 auto;
+      min-width: 0;
+      max-width: 100%;
+    }
+
+    .anka-build-plugin-templates-list .anka-label-summary__launch.chip,
+    .anka-build-plugin-templates-list .anka-label-summary__cap.chip {
+      flex: 0 0 auto;
     }
 
     .anka-build-plugin-templates-list .anka-label-summary .chip.chip--ssh {
@@ -439,6 +486,7 @@
     .anka-build-plugin-templates-list .anka-label-summary__delete {
       display: inline-flex;
       align-items: center;
+      flex: 0 0 auto;
       margin: 0;
       padding: 0;
     }
@@ -453,6 +501,7 @@
       font-size: 0.75rem !important;
       min-width: auto !important;
       width: auto !important;
+      height: auto !important;
       line-height: 1.3 !important;
     }
 
