@@ -48,6 +48,14 @@ function validateAnkaMgmtUrl() {
     return 'cap ' + raw;
   }
 
+  function isExpanded(chunk) {
+    return chunk.getAttribute('data-anka-expanded') === 'true';
+  }
+
+  function isInitialized(chunk) {
+    return chunk.getAttribute('data-anka-initialized') === '1';
+  }
+
   function syncSummary(chunk) {
     var summary = chunk.querySelector('.anka-label-summary');
     if (!summary) return;
@@ -74,14 +82,19 @@ function validateAnkaMgmtUrl() {
     if (launchEl) launchEl.textContent = launch;
     if (capEl) capEl.textContent = cap;
 
-    var expanded = chunk.classList.contains('is-expanded');
+    var expanded = isExpanded(chunk);
     summary.setAttribute('aria-expanded', expanded ? 'true' : 'false');
     if (chevron) chevron.textContent = expanded ? '▾' : '▸';
   }
 
   function setExpanded(chunk, expanded) {
-    chunk.classList.toggle('is-expanded', expanded);
+    // data-* survives Jenkins repeatableSupport.update() className replacement
+    chunk.setAttribute('data-anka-expanded', expanded ? 'true' : 'false');
     syncSummary(chunk);
+  }
+
+  function setShowMore(chunk, open) {
+    chunk.setAttribute('data-anka-show-more', open ? 'true' : 'false');
   }
 
   function bindShowMore(chunk) {
@@ -89,6 +102,9 @@ function validateAnkaMgmtUrl() {
     var panel = chunk.querySelector('.anka-label-show-more__panel');
     if (!toggle || !panel || toggle.dataset.ankaBound === '1') return;
     toggle.dataset.ankaBound = '1';
+    if (!chunk.hasAttribute('data-anka-show-more')) {
+      setShowMore(chunk, !panel.hasAttribute('hidden'));
+    }
     toggle.addEventListener('click', function (e) {
       e.preventDefault();
       e.stopPropagation();
@@ -102,7 +118,7 @@ function validateAnkaMgmtUrl() {
         toggle.setAttribute('aria-expanded', 'false');
         toggle.textContent = 'Show more';
       }
-      chunk.classList.toggle('anka-show-more-open', open);
+      setShowMore(chunk, open);
     });
   }
 
@@ -111,7 +127,7 @@ function validateAnkaMgmtUrl() {
     if (!summary || summary.dataset.ankaBound === '1') return;
     summary.dataset.ankaBound = '1';
     function toggle() {
-      setExpanded(chunk, !chunk.classList.contains('is-expanded'));
+      setExpanded(chunk, !isExpanded(chunk));
     }
     summary.addEventListener('click', function (e) {
       if (e.target.closest('a, button, input, select, textarea, label')) return;
@@ -139,12 +155,15 @@ function validateAnkaMgmtUrl() {
     bindFieldSync(chunk);
     if (typeof opts.expanded === 'boolean') {
       setExpanded(chunk, opts.expanded);
-    } else if (!chunk.classList.contains('is-expanded') && !chunk.classList.contains('anka-label-initialized')) {
+    } else if (!isExpanded(chunk) && !isInitialized(chunk)) {
       setExpanded(chunk, false);
     } else {
       syncSummary(chunk);
     }
-    chunk.classList.add('anka-label-initialized');
+    if (!chunk.hasAttribute('data-anka-show-more')) {
+      setShowMore(chunk, false);
+    }
+    chunk.setAttribute('data-anka-initialized', '1');
   }
 
   function enhanceAll(defaultExpanded) {
@@ -167,7 +186,7 @@ function validateAnkaMgmtUrl() {
             chunks.push(c);
           });
           chunks.forEach(function (chunk) {
-            if (!chunk.classList.contains('anka-label-initialized')) {
+            if (!isInitialized(chunk)) {
               enhanceChunk(chunk, { expanded: true });
             }
           });

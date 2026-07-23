@@ -334,7 +334,7 @@
       overflow: hidden;
     }
 
-    .anka-build-plugin-templates-list .repeated-chunk.is-expanded {
+    .anka-build-plugin-templates-list .repeated-chunk[data-anka-expanded="true"] {
       grid-column: 1 / -1;
     }
 
@@ -347,7 +347,12 @@
       color: #5e2e9b !important;
     }
 
-    /* Jenkins drag header — was hidden; restyle as grab affordance */
+    /* Hide Jenkins drag chrome for nested repeatables (env vars, etc.) */
+    .anka-build-plugin-group .repeated-chunk__header {
+      display: none !important;
+    }
+
+    /* Jenkins drag header — restyle as grab affordance in Node Labels list */
     .anka-build-plugin-templates-list .repeated-chunk__header {
       display: flex !important;
       align-items: center;
@@ -390,12 +395,8 @@
       color: #555;
     }
 
-    .anka-build-plugin-templates-list .repeated-chunk:not(.is-expanded) .anka-label-body {
+    .anka-build-plugin-templates-list .repeated-chunk:not([data-anka-expanded="true"]) .anka-label-body {
       display: none;
-    }
-
-    .anka-build-plugin-templates-list .repeated-chunk.is-expanded .anka-label-summary__chevron::before {
-      /* chevron text swapped in JS; keep layout stable */
     }
 
     .anka-build-plugin-templates-list .anka-label-body {
@@ -403,8 +404,8 @@
     }
 
     /* Launch nested details stay in essentials markup; hide until Show more is open */
-    .anka-build-plugin-templates-list .repeated-chunk:not(.anka-show-more-open) .anka-launch-method .form-container,
-    .anka-build-plugin-templates-list .repeated-chunk:not(.anka-show-more-open) .anka-launch-method-shared {
+    .anka-build-plugin-templates-list .repeated-chunk:not([data-anka-show-more="true"]) .anka-launch-method .form-container,
+    .anka-build-plugin-templates-list .repeated-chunk:not([data-anka-show-more="true"]) .anka-launch-method-shared {
       display: none;
     }
 
@@ -414,7 +415,7 @@
       text-align: right;
     }
 
-    .anka-build-plugin-templates-list .repeated-chunk:not(.is-expanded) .show-if-only {
+    .anka-build-plugin-templates-list .repeated-chunk:not([data-anka-expanded="true"]) .show-if-only {
       display: block;
       padding: 0.5rem 0.75rem 0.75rem;
     }
