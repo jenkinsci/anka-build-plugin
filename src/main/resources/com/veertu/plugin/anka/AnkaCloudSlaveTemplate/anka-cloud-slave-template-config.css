@@ -27,10 +27,7 @@
   }
 }
 
-.anka-label-show-more {
-  margin: 0.75rem 0 0;
-}
-
+/* Button at top of expanded body */
 .anka-label-show-more__toggle {
   display: block;
   width: 100%;
@@ -42,10 +39,14 @@
   padding: 0.5rem 0.75rem !important;
   cursor: pointer;
   font-weight: 600;
+  margin: 0 0 0.75rem;
 }
 
+/* Advanced fields render below essentials */
 .anka-label-show-more__panel {
   margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #e0d4f0;
 }
 
 .anka-label-show-more__panel[hidden] {

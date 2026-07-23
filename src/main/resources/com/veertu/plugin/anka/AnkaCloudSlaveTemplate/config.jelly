@@ -25,6 +25,11 @@
         </f:entry>
       </div>
 
+      <!-- Button stays at top; panel content is rendered below essentials -->
+      <button type="button" class="anka-label-show-more__toggle" aria-expanded="false">
+        Show Advanced Options
+      </button>
+
       <div class="anka-label-essentials">
         <f:entry title="${%Target Label}" field="label" description="The label that jobs will target in order to start and utilize the started Jenkins Node/Agent">
             <f:textbox clazz="required" />
@@ -91,11 +96,7 @@
         </f:entry>
       </div>
 
-      <div class="anka-label-show-more">
-        <button type="button" class="anka-label-show-more__toggle" aria-expanded="false">
-          Show Advanced Options
-        </button>
-        <div class="anka-label-show-more__panel" hidden="hidden">
+      <div class="anka-label-show-more__panel" hidden="hidden">
           <f:entry title="${%Jenkins Node Name Template}" field="nameTemplate" description="A string to include in the name of the started Jenkins Node/Agent">
               <f:textbox default="" />
           </f:entry>
@@ -175,7 +176,6 @@
                   <f:textbox clazz="number" default="1"/>
               </f:entry>
           </f:advanced>
-        </div>
       </div>
     </div>
   </div>
