@@ -35,11 +35,22 @@ function validateAnkaMgmtUrl() {
   }
 
   function launchMethod(chunk) {
-    var checked = chunk.querySelector('input[type="radio"][name$="launchMethod"]:checked');
-    if (!checked) {
-      checked = chunk.querySelector('.anka-launch-method input[type="radio"]:checked');
+    var root = chunk.querySelector('.anka-launch-method') || chunk;
+    var jnlp = root.querySelector('input[type="radio"][value="jnlp"]');
+    var ssh = root.querySelector('input[type="radio"][value="ssh"]');
+    if (jnlp && (jnlp.checked || jnlp.getAttribute('checked') != null)) {
+      return 'JNLP';
     }
-    if (!checked) return '';
+    if (ssh && (ssh.checked || ssh.getAttribute('checked') != null)) {
+      return 'SSH';
+    }
+    var checked = root.querySelector('input[type="radio"][name*="launchMethod"]:checked');
+    if (!checked) {
+      checked = root.querySelector('input[type="radio"]:checked');
+    }
+    if (!checked) {
+      return '';
+    }
     return String(checked.value || '').toLowerCase() === 'jnlp' ? 'JNLP' : 'SSH';
   }
 
@@ -54,6 +65,24 @@ function validateAnkaMgmtUrl() {
 
   function isInitialized(chunk) {
     return chunk.getAttribute('data-anka-initialized') === '1';
+  }
+
+  function composeHeader(chunk) {
+    var summary = chunk.querySelector('.anka-label-summary');
+    if (!summary) return;
+
+    // Prefer our mockup drag handle; remove Jenkins header chrome so one row matches the mockup.
+    var jenkinsHeader = chunk.querySelector(':scope > .repeated-chunk__header');
+    if (jenkinsHeader) {
+      jenkinsHeader.setAttribute('data-anka-header-hidden', '1');
+    }
+
+    var deleteSlot = summary.querySelector('.anka-label-summary__delete-slot');
+    var deleteWrap = chunk.querySelector(':scope > .show-if-only');
+    if (deleteSlot && deleteWrap && !deleteSlot.contains(deleteWrap)) {
+      deleteSlot.appendChild(deleteWrap);
+      deleteWrap.classList.add('anka-label-summary__delete');
+    }
   }
 
   function syncSummary(chunk) {
@@ -79,7 +108,12 @@ function validateAnkaMgmtUrl() {
 
     if (nameEl) nameEl.textContent = name;
     if (templateEl) templateEl.textContent = template + ' / ' + tag;
-    if (launchEl) launchEl.textContent = launch;
+    if (launchEl) {
+      launchEl.textContent = launch;
+      launchEl.classList.remove('chip--ssh', 'chip--jnlp');
+      if (launch === 'SSH') launchEl.classList.add('chip--ssh');
+      if (launch === 'JNLP') launchEl.classList.add('chip--jnlp');
+    }
     if (capEl) capEl.textContent = cap;
 
     var expanded = isExpanded(chunk);
@@ -130,7 +164,10 @@ function validateAnkaMgmtUrl() {
       setExpanded(chunk, !isExpanded(chunk));
     }
     summary.addEventListener('click', function (e) {
-      if (e.target.closest('a, button, input, select, textarea, label')) return;
+      // Drag handle and delete must not toggle expand
+      if (e.target.closest('.dd-handle, .anka-label-summary__drag, .anka-label-summary__delete, .anka-label-summary__delete-slot, a, button, input, select, textarea')) {
+        return;
+      }
       toggle();
     });
     summary.addEventListener('keydown', function (e) {
@@ -150,6 +187,7 @@ function validateAnkaMgmtUrl() {
 
   function enhanceChunk(chunk, opts) {
     opts = opts || {};
+    composeHeader(chunk);
     bindSummaryToggle(chunk);
     bindShowMore(chunk);
     bindFieldSync(chunk);
@@ -188,6 +226,10 @@ function validateAnkaMgmtUrl() {
           chunks.forEach(function (chunk) {
             if (!isInitialized(chunk)) {
               enhanceChunk(chunk, { expanded: true });
+            } else {
+              // Jenkins may re-inject header/delete after update(); recompose.
+              composeHeader(chunk);
+              syncSummary(chunk);
             }
           });
         });

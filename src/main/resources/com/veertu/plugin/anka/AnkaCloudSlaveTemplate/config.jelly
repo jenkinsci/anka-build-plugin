@@ -3,11 +3,14 @@
 
   <div class="anka-label-template">
     <div class="anka-label-summary" role="button" tabindex="0" aria-expanded="false">
+      <span class="anka-label-summary__drag dd-handle" title="Drag to reorder" aria-hidden="true">⋮⋮</span>
       <span class="anka-label-summary__chevron" aria-hidden="true">▸</span>
       <span class="anka-label-summary__name"></span>
       <span class="anka-label-summary__template chip"></span>
       <span class="anka-label-summary__launch chip"></span>
       <span class="anka-label-summary__cap chip"></span>
+      <span class="anka-label-summary__spacer" aria-hidden="true"></span>
+      <span class="anka-label-summary__delete-slot"></span>
     </div>
 
     <div class="anka-label-body">

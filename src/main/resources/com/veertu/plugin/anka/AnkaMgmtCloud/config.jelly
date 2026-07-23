@@ -105,6 +105,7 @@
         <f:section>
             <div class="anka-build-plugin-templates-list-description">Node Labels are used by your Jenkins jobs to trigger the request of a VM with a specific Anka VM Template and Tag.</div>
             <div class="anka-build-plugin-templates-list-description">Jenkins Node/Agent Templates and Labels will appear here if the cloud is reachable (ensure the Anka Build Cloud hostname or IP is reachable from Jenkins).</div>
+            <div class="anka-build-plugin-templates-list-description anka-build-plugin-templates-list-hint">Drag ⋮⋮ to reorder. Click a card header to expand and edit. Collapsed cards sit two-up; expanded cards span the row.</div>
             <hr />
             <!-- templates section-->
             <f:block>
