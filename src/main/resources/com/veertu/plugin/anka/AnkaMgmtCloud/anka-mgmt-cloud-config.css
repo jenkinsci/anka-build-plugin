@@ -309,33 +309,107 @@
     }
 
     .anka-build-plugin-templates-list .repeated-container {
-      display: flex;
-      flex-wrap: wrap-reverse;
-      justify-content: center;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.75rem;
+      align-items: start;
+    }
+
+    @media (max-width: 900px) {
+      .anka-build-plugin-templates-list .repeated-container {
+        grid-template-columns: 1fr;
+      }
     }
 
     .anka-build-plugin-templates-list .repeated-chunk {
       border: 1px solid #60259F;
       background-color: #FFF;
-      padding: 7px 15px !important;
-      flex: 1;
-      margin: 10px 5px;
+      padding: 0 !important;
+      margin: 0;
       color: #5e2e9b;
-      flex-basis: 25%;
+      flex: unset;
+      flex-basis: unset;
+      min-width: 0;
+      border-radius: 8px;
+      overflow: hidden;
     }
+
+    .anka-build-plugin-templates-list .repeated-chunk.is-expanded {
+      grid-column: 1 / -1;
+    }
+
+    .anka-build-plugin-templates-list .repeated-chunk:nth-child(odd) {
+      background-color: #f2e8fd;
+    }
+
     .anka-build-plugin-templates-list .repeated-chunk button:not(.repeatable-delete) {
       background-color: #FFF;
       color: #5e2e9b !important;
     }
-    .anka-build-plugin-templates-list .repeated-chunk:nth-child(odd) {
-      background-color:#f2e8fd;
+
+    /* Jenkins drag header — was hidden; restyle as grab affordance */
+    .anka-build-plugin-templates-list .repeated-chunk__header {
+      display: flex !important;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 0.75rem;
+      background: #efe6fa;
+      border-bottom: 1px solid #d4c5e8;
+      cursor: grab;
     }
-    .anka-build-plugin-templates-list .repeated-chunk .label {
-      background-color: #e21e79;
-      padding: 6px;
-      display: block;
-      text-align: center;
-      color: #fff;
+
+    .anka-build-plugin-templates-list .repeated-chunk__header .dd-handle {
+      font-size: 1.1rem;
+      margin: 0;
+      cursor: grab;
+    }
+
+    .anka-build-plugin-templates-list .anka-label-summary {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.4rem 0.6rem;
+      padding: 0.65rem 0.75rem;
+      background: #f2e8fd;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .anka-build-plugin-templates-list .anka-label-summary__name {
+      font-weight: 700;
+      min-width: 6rem;
+    }
+
+    .anka-build-plugin-templates-list .anka-label-summary .chip {
+      display: inline-block;
+      background: #fff;
+      border: 1px solid #d4c5e8;
+      border-radius: 3px;
+      padding: 0.1rem 0.4rem;
+      font-size: 0.75rem;
+      color: #555;
+    }
+
+    .anka-build-plugin-templates-list .repeated-chunk:not(.is-expanded) .anka-label-body {
+      display: none;
+    }
+
+    .anka-build-plugin-templates-list .repeated-chunk.is-expanded .anka-label-summary__chevron::before {
+      /* chevron text swapped in JS; keep layout stable */
+    }
+
+    .anka-build-plugin-templates-list .anka-label-body {
+      padding: 0.75rem 1rem 1rem;
+    }
+
+    .anka-build-plugin-templates-list .show-if-only {
+      padding: 0 0.75rem 0.75rem;
+      text-align: right;
+    }
+
+    /* Legacy pink bar removed from jelly; hide if any leftover */
+    .anka-build-plugin-templates-list .repeated-chunk > .label {
+      display: none;
     }
 
     .hide-me {
@@ -392,9 +466,5 @@
 
     .anka-build-plugin-cloud-offline {
       color: red;
-    }
-
-    .repeated-chunk__header {
-      display: none !important;
     }
 
