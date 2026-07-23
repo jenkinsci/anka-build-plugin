@@ -16,3 +16,4 @@ docker/squid/
 # maven-release-plugin
 release.properties
 pom.xml.releaseBackup
+.superpowers/
