@@ -71,48 +71,37 @@ function validateAnkaMgmtUrl() {
     var summary = chunk.querySelector('.anka-label-summary');
     if (!summary) return;
 
-    var dragSlot = summary.querySelector('.anka-label-summary__drag-slot');
+    // Keep our in-summary ⋮⋮ handle. Hide Jenkins header/handle chrome only.
     var jenkinsHeader = chunk.querySelector('.repeated-chunk__header');
-    // One real Jenkins handle only — do not also paint ⋮⋮ (that doubled the grip icons).
-    // Only the top-level label-chunk handle — never steal nested env-var handles
-    var jenkinsHandle =
-      (jenkinsHeader && jenkinsHeader.querySelector('.dd-handle')) ||
-      chunk.querySelector(':scope > .dd-handle');
-
-    if (dragSlot) {
-      if (jenkinsHandle && !dragSlot.contains(jenkinsHandle)) {
-        dragSlot.textContent = '';
-        dragSlot.appendChild(jenkinsHandle);
-      }
-      var handle = dragSlot.querySelector('.dd-handle');
-      if (!handle) {
-        handle = document.createElement('div');
-        handle.className = 'dd-handle';
-        handle.setAttribute('title', 'Drag to reorder');
-        dragSlot.appendChild(handle);
-      }
-      handle.classList.add('anka-label-summary__drag');
-      handle.setAttribute('title', 'Drag to reorder');
-      handle.removeAttribute('hidden');
-      handle.style.display = '';
-    }
-
     if (jenkinsHeader) {
       jenkinsHeader.setAttribute('data-anka-header-hidden', '1');
       jenkinsHeader.setAttribute('hidden', 'hidden');
-      jenkinsHeader.style.display = 'none';
+      jenkinsHeader.style.cssText = 'display:none!important;height:0!important;margin:0!important;padding:0!important;border:0!important;overflow:hidden!important;';
     }
 
-    // Hide stray top-level handles still outside the summary (not nested repeatables)
-    [jenkinsHeader, chunk].forEach(function (root) {
-      if (!root) return;
-      Array.prototype.forEach.call(root.children || [], function (child) {
-        if (child.classList && child.classList.contains('dd-handle') && !summary.contains(child)) {
-          child.setAttribute('hidden', 'hidden');
-          child.style.display = 'none';
-        }
-      });
+    Array.prototype.forEach.call(chunk.children || [], function (child) {
+      if (!child.classList) return;
+      if (child.classList.contains('dd-handle') && !summary.contains(child)) {
+        child.setAttribute('hidden', 'hidden');
+        child.style.display = 'none';
+      }
+      if (jenkinsHeader && child === jenkinsHeader) return;
+      if (child.classList.contains('repeated-chunk__header')) {
+        child.style.display = 'none';
+      }
     });
+
+    var ourHandle = summary.querySelector('.anka-label-summary__drag.dd-handle');
+    if (ourHandle) {
+      ourHandle.removeAttribute('hidden');
+      ourHandle.style.display = '';
+      ourHandle.textContent = '⋮⋮';
+      ourHandle.setAttribute('title', 'Drag to reorder');
+    }
+
+    // Collapse Jenkins left-gutter reserved for absolute handles
+    chunk.style.paddingLeft = '0';
+    chunk.style.padding = '0';
 
     var deleteSlot = summary.querySelector('.anka-label-summary__delete-slot');
     var deleteWrap = chunk.querySelector(':scope > .show-if-only');
@@ -214,7 +203,7 @@ function validateAnkaMgmtUrl() {
     }
     summary.addEventListener('click', function (e) {
       // Drag handle and delete must not toggle expand
-      if (e.target.closest('.dd-handle, .anka-label-summary__drag-slot, .anka-label-summary__drag, .anka-label-summary__delete, .anka-label-summary__delete-slot, a, button, input, select, textarea')) {
+      if (e.target.closest('.dd-handle, .anka-label-summary__drag, .anka-label-summary__delete, .anka-label-summary__delete-slot, a, button, input, select, textarea')) {
         return;
       }
       toggle();

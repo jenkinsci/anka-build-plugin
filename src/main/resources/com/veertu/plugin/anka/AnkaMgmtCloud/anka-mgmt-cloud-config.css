@@ -102,9 +102,14 @@
       min-width: 100%;
     }
 
+    /* Legacy — do not style Node Labels summary handles here (see templates-list rules). */
     div[descriptorid="com.veertu.plugin.anka.AnkaMgmtCloud"] .dd-handle {
       font-size: 1.5em;
       margin-bottom: 10px;
+    }
+    div[descriptorid="com.veertu.plugin.anka.AnkaMgmtCloud"] .anka-build-plugin-templates-list .dd-handle {
+      font-size: inherit;
+      margin-bottom: 0;
     }
 
     div[descriptorid="com.veertu.plugin.anka.AnkaMgmtCloud"] .yui-button {
@@ -327,12 +332,20 @@
       color: #5e2e9b !important;
     }
 
+    /*
+     * High-specificity padding kill: Jenkins reserves left space for absolute .dd-handle.
+     * Also paint the chunk purple so any residual gutter matches the header (no white strip).
+     */
+    div[descriptorid="com.veertu.plugin.anka.AnkaMgmtCloud"] .anka-build-plugin-templates-list .repeated-chunk,
+    .anka-build-plugin-templates-list .repeated-container > .repeated-chunk,
     .anka-build-plugin-templates-list .repeated-chunk {
-      border: 1px solid #60259F;
-      background-color: #FFF;
-      /* Jenkins leaves padding-left for an absolute .dd-handle — kill it */
+      border: 1px solid #60259F !important;
+      background-color: #f2e8fd !important;
       padding: 0 !important;
       padding-left: 0 !important;
+      padding-right: 0 !important;
+      padding-top: 0 !important;
+      padding-bottom: 0 !important;
       margin: 0 !important;
       color: #5e2e9b;
       flex: unset;
@@ -341,15 +354,11 @@
       border-radius: 8px;
       overflow: hidden;
       position: relative;
-      box-sizing: border-box;
+      box-sizing: border-box !important;
     }
 
     .anka-build-plugin-templates-list .repeated-chunk[data-anka-expanded="true"] {
       grid-column: 1 / -1;
-    }
-
-    .anka-build-plugin-templates-list .repeated-chunk:nth-child(odd) {
-      background-color: #FFF;
     }
 
     .anka-build-plugin-templates-list .repeated-chunk button:not(.repeatable-delete):not(.anka-label-show-more__toggle) {
@@ -365,23 +374,26 @@
       box-sizing: border-box;
     }
 
-    /* Hide Jenkins header chrome entirely (handle is relocated into summary) */
+    /* Hide Jenkins header chrome entirely */
     .anka-build-plugin-group .repeated-chunk__header,
     .anka-build-plugin-templates-list .repeated-chunk__header,
     .anka-build-plugin-templates-list .repeated-chunk__header[data-anka-header-hidden="1"],
     .anka-build-plugin-templates-list .repeated-chunk__header[hidden] {
       display: none !important;
       height: 0 !important;
+      width: 0 !important;
       margin: 0 !important;
       padding: 0 !important;
       border: 0 !important;
       overflow: hidden !important;
+      position: absolute !important;
+      left: -9999px !important;
     }
 
     /*
      * Stable two-row header:
-     *   [grip]  ▸  name…………………  [Delete]
-     *               template · launch · cap
+     *   ⋮⋮  ▸  name…………………  [Delete]
+     *           template · launch · cap
      */
     .anka-build-plugin-templates-list .anka-label-summary {
       display: grid;
@@ -395,27 +407,20 @@
       user-select: none;
       border-bottom: 1px solid #e0d4f0;
       width: 100%;
+      max-width: none;
       box-sizing: border-box;
       margin: 0;
     }
 
-    .anka-build-plugin-templates-list .anka-label-summary__drag-slot {
+    /* Visible text grip — do not rely on Jenkins sprite (we previously hid text with font-size:0). */
+    div[descriptorid="com.veertu.plugin.anka.AnkaMgmtCloud"]
+      .anka-build-plugin-templates-list
+      .anka-label-summary
+      .dd-handle.anka-label-summary__drag,
+    .anka-build-plugin-templates-list .anka-label-summary__drag.dd-handle {
       grid-column: 1;
       grid-row: 1;
       align-self: center;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 1.1rem;
-      min-height: 1.25rem;
-    }
-
-    /*
-     * Jenkins core styles .dd-handle as position:absolute (causes the white left gutter
-     * + a second floating grip). Force it back into normal summary flow.
-     */
-    .anka-build-plugin-templates-list .anka-label-summary .dd-handle,
-    .anka-build-plugin-templates-list .anka-label-summary__drag.dd-handle {
       position: static !important;
       left: auto !important;
       top: auto !important;
@@ -423,20 +428,26 @@
       bottom: auto !important;
       float: none !important;
       display: inline-block !important;
-      width: 1rem !important;
-      height: 1.15rem !important;
+      width: auto !important;
+      height: auto !important;
+      min-width: 1rem;
       margin: 0 !important;
-      padding: 0 !important;
+      padding: 0 0.1rem 0 0 !important;
       cursor: grab !important;
-      background-position: center !important;
-      background-repeat: no-repeat !important;
-      background-size: contain !important;
-      font-size: 0 !important; /* hide any leftover ⋮⋮ text if present */
-      line-height: 0 !important;
-      color: transparent !important;
+      background: none !important;
+      background-image: none !important;
+      -webkit-mask-image: none !important;
+      mask-image: none !important;
+      font-size: 1.05rem !important;
+      font-weight: 700 !important;
+      line-height: 1 !important;
+      letter-spacing: -0.12em;
+      color: #5e2e9b !important;
+      opacity: 1 !important;
+      visibility: visible !important;
     }
 
-    .anka-build-plugin-templates-list .anka-label-summary .dd-handle:active {
+    .anka-build-plugin-templates-list .anka-label-summary__drag.dd-handle:active {
       cursor: grabbing !important;
     }
 
@@ -554,6 +565,12 @@
     .anka-build-plugin-templates-list .anka-label-body {
       padding: 0.75rem 1rem 1rem;
       background: #fff;
+      margin: 0;
+    }
+
+    /* When collapsed, no extra footer gap under the summary */
+    .anka-build-plugin-templates-list .repeated-chunk:not([data-anka-expanded="true"]) .anka-label-summary {
+      border-bottom: none;
     }
 
     /* Launch nested details stay in essentials markup; hide until Show more is open */

@@ -3,7 +3,7 @@
 
   <div class="anka-label-template">
     <div class="anka-label-summary" role="button" tabindex="0" aria-expanded="false">
-      <span class="anka-label-summary__drag-slot" title="Drag to reorder"></span>
+      <span class="anka-label-summary__drag dd-handle" title="Drag to reorder" aria-label="Drag to reorder">⋮⋮</span>
       <span class="anka-label-summary__chevron" aria-hidden="true">▸</span>
       <div class="anka-label-summary__main">
         <div class="anka-label-summary__title-row">
