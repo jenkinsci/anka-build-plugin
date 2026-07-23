@@ -402,6 +402,12 @@
       padding: 0.75rem 1rem 1rem;
     }
 
+    /* Launch nested details stay in essentials markup; hide until Show more is open */
+    .anka-build-plugin-templates-list .repeated-chunk:not(.anka-show-more-open) .anka-launch-method .form-container,
+    .anka-build-plugin-templates-list .repeated-chunk:not(.anka-show-more-open) .anka-launch-method-shared {
+      display: none;
+    }
+
     .anka-build-plugin-templates-list .show-if-only {
       padding: 0 0.75rem 0.75rem;
       text-align: right;
