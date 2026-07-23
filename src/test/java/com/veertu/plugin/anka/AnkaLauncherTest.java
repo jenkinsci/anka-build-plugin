@@ -1,6 +1,7 @@
 package com.veertu.plugin.anka;
 
 import hudson.model.TaskListener;
+import hudson.plugins.sshslaves.SSHLauncher;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -8,8 +9,10 @@ import java.io.PrintStream;
 import java.net.ServerSocket;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.nullValue;
 
 public class AnkaLauncherTest {
 
@@ -40,6 +43,33 @@ public class AnkaLauncherTest {
 
             assertThat(System.currentTimeMillis() - startedAtMillis, is(lessThan(3000L)));
         }
+    }
+
+    @Test
+    public void sshLauncherReceivesConfiguredJavaPath() {
+        AnkaCloudSlaveTemplate template = new AnkaCloudSlaveTemplate();
+        template.setLaunchMethod(LaunchMethod.SSH);
+        template.setJavaPath("/Library/Java/JavaVirtualMachines/temurin-21.jdk/Contents/Home/bin/java");
+
+        AnkaLauncher ankaLauncher = new AnkaLauncher(null, template, "instance-1");
+
+        assertThat(ankaLauncher.getLauncher(), instanceOf(SSHLauncher.class));
+        SSHLauncher sshLauncher = (SSHLauncher) ankaLauncher.getLauncher();
+        assertThat(sshLauncher.getJavaPath(), is("/Library/Java/JavaVirtualMachines/temurin-21.jdk/Contents/Home/bin/java"));
+    }
+
+    @Test
+    public void sshLauncherReceivesBlankJavaPathWhenUnset() {
+        AnkaCloudSlaveTemplate template = new AnkaCloudSlaveTemplate();
+        template.setLaunchMethod(LaunchMethod.SSH);
+
+        AnkaLauncher ankaLauncher = new AnkaLauncher(null, template, "instance-1");
+
+        assertThat(ankaLauncher.getLauncher(), instanceOf(SSHLauncher.class));
+        SSHLauncher sshLauncher = (SSHLauncher) ankaLauncher.getLauncher();
+        // Template javaPath is null; SSHLauncher normalizes null to "".
+        assertThat(template.getJavaPath(), is(nullValue()));
+        assertThat(sshLauncher.getJavaPath(), is(""));
     }
 
     private static TaskListener taskListenerWithBuffer() {

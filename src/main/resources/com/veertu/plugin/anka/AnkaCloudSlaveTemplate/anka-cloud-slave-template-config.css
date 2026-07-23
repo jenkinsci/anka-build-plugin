@@ -1,3 +1,11 @@
 .anka-cloud-slave-template-hidden {
   display: none;
 }
+
+/* Shared Java fields under Launch Method — match radioBlock nested indent */
+.anka-launch-method-shared.form-container {
+  margin-top: 1rem;
+  margin-left: 0.5rem;
+  padding-left: 1rem;
+  border-left: solid 2px var(--input-border, var(--medium-grey, #ccc));
+}

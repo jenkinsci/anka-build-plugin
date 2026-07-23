@@ -24,11 +24,16 @@ public class JnlpCommandBuilder {
 
 
     public static String makeCommand(String nodeName, String extraArgs, String javaArgs, String overrideJenkinsUrl) {
-        return makeCommand(nodeName, extraArgs, javaArgs, overrideJenkinsUrl, null);
+        return makeCommand(nodeName, extraArgs, javaArgs, overrideJenkinsUrl, null, null);
     }
 
     public static String makeCommand(String nodeName, String extraArgs, String javaArgs, String overrideJenkinsUrl, String jnlpTunnel) {
-        String format = "java %s -jar agent.jar -url %s -secret %s -name %s ";
+        return makeCommand(nodeName, extraArgs, javaArgs, overrideJenkinsUrl, jnlpTunnel, null);
+    }
+
+    public static String makeCommand(String nodeName, String extraArgs, String javaArgs, String overrideJenkinsUrl, String jnlpTunnel, String javaPath) {
+        String javaExecutable = (javaPath == null || javaPath.isEmpty()) ? "java" : javaPath;
+        String format = "%s %s -jar agent.jar -url %s -secret %s -name %s ";
         String secret = JnlpSlaveAgentProtocol.SLAVE_SECRET.mac(nodeName);
         if (javaArgs == null) {
             javaArgs = "";
@@ -40,7 +45,7 @@ public class JnlpCommandBuilder {
             effectiveJenkinsUrl = overrideJenkinsUrl;
         }
 
-        String command = String.format(format, javaArgs, effectiveJenkinsUrl, secret, nodeName);
+        String command = String.format(format, javaExecutable, javaArgs, effectiveJenkinsUrl, secret, nodeName);
         if (jnlpTunnel != null) {
             command += "-tunnel " + jnlpTunnel + " ";
         }
@@ -51,14 +56,18 @@ public class JnlpCommandBuilder {
     }
 
     public static String makeStartUpScript(String nodeName, String extraArgs, String javaArgs, String overrideJenkinsUrl) {
-        return makeStartUpScript(nodeName, extraArgs, javaArgs, overrideJenkinsUrl, null);
+        return makeStartUpScript(nodeName, extraArgs, javaArgs, overrideJenkinsUrl, null, null);
+    }
+
+    public static String makeStartUpScript(String nodeName, String extraArgs, String javaArgs, String overrideJenkinsUrl, String jnlpTunnel) {
+        return makeStartUpScript(nodeName, extraArgs, javaArgs, overrideJenkinsUrl, jnlpTunnel, null);
     }
 
     @SuppressFBWarnings(value = "VA_FORMAT_STRING_USES_NEWLINE",
             justification = "scriptTemplate is a POSIX shell script that must use literal \\n line endings on the target agent regardless of the controller platform.")
-    public static String makeStartUpScript(String nodeName, String extraArgs, String javaArgs, String overrideJenkinsUrl, String jnlpTunnel) {
+    public static String makeStartUpScript(String nodeName, String extraArgs, String javaArgs, String overrideJenkinsUrl, String jnlpTunnel, String javaPath) {
 
-        String jarCommand = makeCommand(nodeName, extraArgs, javaArgs, overrideJenkinsUrl, jnlpTunnel);
+        String jarCommand = makeCommand(nodeName, extraArgs, javaArgs, overrideJenkinsUrl, jnlpTunnel, javaPath);
         String jenkinsUrl = Jenkins.get().getRootUrl();
         String script = String.format(scriptTemplate, jenkinsUrl, jenkinsUrl, jenkinsUrl, jarCommand, jarCommand);
         return script;

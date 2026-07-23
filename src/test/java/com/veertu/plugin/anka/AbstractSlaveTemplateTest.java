@@ -55,4 +55,29 @@ public class AbstractSlaveTemplateTest {
         // When cloud is not available, should return UUID as-is even if invalid
         assertThat(template.getGroup(), is(uuid));
     }
+
+    @Test
+    public void javaPathDefaultsToNull() {
+        assertThat(template.getJavaPath(), is(nullValue()));
+    }
+
+    @Test
+    public void javaPathBlankBecomesNull() {
+        template.setJavaPath("");
+        assertThat(template.getJavaPath(), is(nullValue()));
+    }
+
+    @Test
+    public void javaPathSetIsReturned() {
+        template.setJavaPath("/usr/libexec/java_home/bin/java");
+        assertThat(template.getJavaPath(), is("/usr/libexec/java_home/bin/java"));
+    }
+
+    @Test
+    public void setPropertiesCopiesJavaPath() {
+        DynamicSlaveProperties source = new DynamicSlaveProperties("vm-id");
+        source.setJavaPath("/opt/java/bin/java");
+        AnkaCloudSlaveTemplate dest = source.toSlaveTemplate();
+        assertThat(dest.getJavaPath(), is("/opt/java/bin/java"));
+    }
 } 

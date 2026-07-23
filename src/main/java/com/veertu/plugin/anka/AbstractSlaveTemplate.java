@@ -39,6 +39,7 @@ public class AbstractSlaveTemplate {
     protected RetentionStrategy retentionStrategy;
     protected String nameTemplate;
     protected String javaArgs;
+    protected String javaPath;
     protected String jnlpJenkinsOverrideUrl;
     protected String jnlpTunnel;
     protected int priority;
@@ -417,6 +418,15 @@ public class AbstractSlaveTemplate {
         this.javaArgs = javaArgs;
     }
 
+    public String getJavaPath() {
+        return valOrNull(javaPath);
+    }
+
+    @DataBoundSetter
+    public void setJavaPath(String javaPath) {
+        this.javaPath = javaPath;
+    }
+
     public String getJnlpJenkinsOverrideUrl() {
         return valOrNull(jnlpJenkinsOverrideUrl);
     }
@@ -637,6 +647,7 @@ public class AbstractSlaveTemplate {
         setRetentionStrategy(slave.getRetentionStrategy());
         setNameTemplate(slave.getNameTemplate());
         setJavaArgs(slave.getJavaArgs());
+        setJavaPath(slave.getJavaPath());
         setJnlpJenkinsOverrideUrl(slave.getJnlpJenkinsOverrideUrl());
         setJnlpTunnel(slave.getJnlpTunnel());
         setPriority(slave.getPriority());

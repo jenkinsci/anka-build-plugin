@@ -36,29 +36,39 @@
   </f:entry>
 
   <f:entry title="${%Launch Method}" field="launchMethod" description="Launch Method Jenkins will use when jobs want to perform actions inside of the Node/Agent">
-        <table width="100%">
-            <f:radioBlock inline="true" name="launchMethod" value="ssh" title="SSH" checked="${instance.launchMethodString != 'jnlp'}">
-                <f:entry title="${%Credential}" description="The user and password to connect to the Node/Agent" field="credentialsId" >
-                    <c:select/>
-                </f:entry>
-            </f:radioBlock>
-            <f:radioBlock inline="true" name="launchMethod" title="JNLP" value="jnlp" checked="${instance.launchMethodString == 'jnlp'}" >
-                <f:entry title="${%Extra JNLP arguments}" description="Arguments to append to JNLP command" field="extraArgs" >
-                    <f:textbox default="" />
-                </f:entry>
+        <div class="anka-launch-method">
+            <table width="100%">
+                <f:radioBlock inline="true" name="launchMethod" value="ssh" title="SSH" checked="${instance.launchMethodString != 'jnlp'}">
+                    <f:entry title="${%Credential}" description="The user and password to connect to the Node/Agent" field="credentialsId" >
+                        <c:select/>
+                    </f:entry>
+                </f:radioBlock>
+                <f:radioBlock inline="true" name="launchMethod" title="JNLP" value="jnlp" checked="${instance.launchMethodString == 'jnlp'}" >
+                    <f:entry title="${%Extra JNLP arguments}" description="Arguments to append to JNLP command" field="extraArgs" >
+                        <f:textbox default="" />
+                    </f:entry>
 
-                <f:entry title="${%JNLP Url}" description="Specify a different url than jenkins root url to use for JNLP communication (this is not used for the download of JNLP in the VM)" field="jnlpJenkinsOverrideUrl" >
-                    <f:textbox default="" />
-                </f:entry>
-                <f:entry title="${%Tunnel JNLP Connection}" description="Specify a tunnel if the agent needs it to connect to the master" field="jnlpTunnel" >
-                    <f:textbox default="" />
-                </f:entry>
+                    <f:entry title="${%JNLP Url}" description="Specify a different url than jenkins root url to use for JNLP communication (this is not used for the download of JNLP in the VM)" field="jnlpJenkinsOverrideUrl" >
+                        <f:textbox default="" />
+                    </f:entry>
+                    <f:entry title="${%Tunnel JNLP Connection}" description="Specify a tunnel if the agent needs it to connect to the master" field="jnlpTunnel" >
+                        <f:textbox default="" />
+                    </f:entry>
 
-            </f:radioBlock>
-            <f:entry title="${%Java options}" description="Additional java options" field="javaArgs" >
-                <f:textbox default="" />
-            </f:entry>
-        </table>
+                </f:radioBlock>
+            </table>
+            <!-- After radios (not a table row) so the nest line is not flush against JNLP/SSH -->
+            <div class="form-container anka-launch-method-shared">
+                <table width="100%">
+                    <f:entry title="${%Java options}" description="Additional java options" field="javaArgs" >
+                        <f:textbox default="" />
+                    </f:entry>
+                    <f:entry title="${%Java Path}" description="Path to the Java executable on the Anka VM used to launch the agent. Leave empty to use java from the VM default PATH." field="javaPath" >
+                        <f:textbox default="" />
+                    </f:entry>
+                </table>
+            </div>
+        </div>
     </f:entry>
 
   <f:entry title="${%Maximum Allowed Nodes/Agents}" description="The number of Jenkins Nodes/Agents this template and label is allowed to start (0 is unlimited)" field="instanceCapacity">

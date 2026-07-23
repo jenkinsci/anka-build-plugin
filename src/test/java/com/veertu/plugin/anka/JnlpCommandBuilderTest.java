@@ -8,6 +8,7 @@ import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.startsWith;
 
 @WithJenkins
 public class JnlpCommandBuilderTest {
@@ -43,5 +44,47 @@ public class JnlpCommandBuilderTest {
         String command = AnkaOnDemandSlave.createStartUpScript(template, "anka-agent-1");
 
         assertThat(command, containsString("-tunnel tunnel.example:50000"));
+    }
+
+    @Test
+    public void shouldUseBareJavaWhenJavaPathUnset() {
+        String command = JnlpCommandBuilder.makeCommand(
+                "anka-agent-1", null, "-Xmx256m", "http://jenkins.example/", null, null);
+
+        assertThat(command, startsWith("java -Xmx256m -jar agent.jar"));
+    }
+
+    @Test
+    public void shouldUseBareJavaWhenJavaPathBlank() {
+        String command = JnlpCommandBuilder.makeCommand(
+                "anka-agent-1", null, "", "http://jenkins.example/", null, "");
+
+        assertThat(command, startsWith("java  -jar agent.jar"));
+    }
+
+    @Test
+    public void shouldUseConfiguredJavaPath() {
+        String command = JnlpCommandBuilder.makeCommand(
+                "anka-agent-1",
+                null,
+                "-Xmx256m",
+                "http://jenkins.example/",
+                null,
+                "/Library/Java/JavaVirtualMachines/temurin-21.jdk/Contents/Home/bin/java");
+
+        assertThat(command, startsWith("/Library/Java/JavaVirtualMachines/temurin-21.jdk/Contents/Home/bin/java -Xmx256m -jar agent.jar"));
+    }
+
+    @Test
+    public void createStartUpScriptUsesTemplateJavaPath() {
+        AnkaCloudSlaveTemplate template = new AnkaCloudSlaveTemplate();
+        template.setLaunchMethod(LaunchMethod.JNLP);
+        template.setJnlpJenkinsOverrideUrl("http://jenkins.example/");
+        template.setJavaPath("/opt/homebrew/opt/openjdk@21/bin/java");
+
+        String script = AnkaOnDemandSlave.createStartUpScript(template, "anka-agent-1");
+
+        assertThat(script, containsString("/opt/homebrew/opt/openjdk@21/bin/java "));
+        assertThat(script, containsString("-jar agent.jar"));
     }
 }
