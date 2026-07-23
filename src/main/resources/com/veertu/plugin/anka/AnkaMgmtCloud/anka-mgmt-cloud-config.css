@@ -412,7 +412,7 @@
       margin: 0;
     }
 
-    /* Visible text grip — do not rely on Jenkins sprite (we previously hid text with font-size:0). */
+    /* Single visible ⋮⋮ grip — strip Jenkins sprite/svg completely */
     div[descriptorid="com.veertu.plugin.anka.AnkaMgmtCloud"]
       .anka-build-plugin-templates-list
       .anka-label-summary
@@ -432,23 +432,48 @@
       height: auto !important;
       min-width: 1rem;
       margin: 0 !important;
-      padding: 0 0.1rem 0 0 !important;
+      padding: 0 0.15rem 0 0 !important;
       cursor: grab !important;
       background: none !important;
       background-image: none !important;
+      background-color: transparent !important;
+      -webkit-mask: none !important;
+      mask: none !important;
       -webkit-mask-image: none !important;
       mask-image: none !important;
-      font-size: 1.05rem !important;
+      font-size: 1.15rem !important;
       font-weight: 700 !important;
       line-height: 1 !important;
-      letter-spacing: -0.12em;
+      letter-spacing: -0.14em;
       color: #5e2e9b !important;
       opacity: 1 !important;
       visibility: visible !important;
+      text-indent: 0 !important;
+      overflow: visible !important;
+    }
+
+    .anka-build-plugin-templates-list .anka-label-summary__drag.dd-handle::before,
+    .anka-build-plugin-templates-list .anka-label-summary__drag.dd-handle::after {
+      content: none !important;
+      display: none !important;
+      background: none !important;
+    }
+
+    .anka-build-plugin-templates-list .anka-label-summary__drag.dd-handle svg,
+    .anka-build-plugin-templates-list .anka-label-summary__drag.dd-handle img {
+      display: none !important;
     }
 
     .anka-build-plugin-templates-list .anka-label-summary__drag.dd-handle:active {
       cursor: grabbing !important;
+    }
+
+    /* Tighten collapsed card — no empty purple band under chips */
+    .anka-build-plugin-templates-list .anka-label-summary {
+      padding: 0.55rem 0.7rem;
+    }
+    .anka-build-plugin-templates-list .anka-label-summary__meta {
+      margin: 0;
     }
 
     .anka-build-plugin-templates-list .anka-label-summary__chevron {

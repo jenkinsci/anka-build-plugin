@@ -71,37 +71,39 @@ function validateAnkaMgmtUrl() {
     var summary = chunk.querySelector('.anka-label-summary');
     if (!summary) return;
 
-    // Keep our in-summary ⋮⋮ handle. Hide Jenkins header/handle chrome only.
-    var jenkinsHeader = chunk.querySelector('.repeated-chunk__header');
-    if (jenkinsHeader) {
-      jenkinsHeader.setAttribute('data-anka-header-hidden', '1');
-      jenkinsHeader.setAttribute('hidden', 'hidden');
-      jenkinsHeader.style.cssText = 'display:none!important;height:0!important;margin:0!important;padding:0!important;border:0!important;overflow:hidden!important;';
+    var ourHandle = summary.querySelector('.anka-label-summary__drag');
+    if (ourHandle) {
+      // Ensure Sortable can find exactly one handle in this chunk.
+      ourHandle.classList.add('dd-handle');
+      ourHandle.setAttribute('title', 'Drag to reorder');
+      ourHandle.setAttribute('aria-label', 'Drag to reorder');
+      // Jenkins may inject <svg>/img into .dd-handle — strip those so we only show ⋮⋮
+      while (ourHandle.firstChild) {
+        ourHandle.removeChild(ourHandle.firstChild);
+      }
+      ourHandle.appendChild(document.createTextNode('⋮⋮'));
+      ourHandle.removeAttribute('hidden');
+      ourHandle.style.cssText = '';
     }
 
-    Array.prototype.forEach.call(chunk.children || [], function (child) {
-      if (!child.classList) return;
-      if (child.classList.contains('dd-handle') && !summary.contains(child)) {
-        child.setAttribute('hidden', 'hidden');
-        child.style.display = 'none';
+    // Remove ALL other drag handles in this label chunk (header + absolute leftovers).
+    // Do not touch nested env-var repeatables inside .anka-label-body.
+    var body = chunk.querySelector('.anka-label-body');
+    chunk.querySelectorAll('.dd-handle, .repeated-chunk__header').forEach(function (el) {
+      if (ourHandle && (el === ourHandle || ourHandle.contains(el))) return;
+      if (body && body.contains(el)) return;
+      if (el.classList.contains('repeated-chunk__header')) {
+        el.setAttribute('hidden', 'hidden');
+        el.style.cssText = 'display:none!important;height:0!important;width:0!important;overflow:hidden!important;';
+        return;
       }
-      if (jenkinsHeader && child === jenkinsHeader) return;
-      if (child.classList.contains('repeated-chunk__header')) {
-        child.style.display = 'none';
+      if (el.parentNode) {
+        el.parentNode.removeChild(el);
       }
     });
 
-    var ourHandle = summary.querySelector('.anka-label-summary__drag.dd-handle');
-    if (ourHandle) {
-      ourHandle.removeAttribute('hidden');
-      ourHandle.style.display = '';
-      ourHandle.textContent = '⋮⋮';
-      ourHandle.setAttribute('title', 'Drag to reorder');
-    }
-
-    // Collapse Jenkins left-gutter reserved for absolute handles
-    chunk.style.paddingLeft = '0';
     chunk.style.padding = '0';
+    chunk.style.paddingLeft = '0';
 
     var deleteSlot = summary.querySelector('.anka-label-summary__delete-slot');
     var deleteWrap = chunk.querySelector(':scope > .show-if-only');
