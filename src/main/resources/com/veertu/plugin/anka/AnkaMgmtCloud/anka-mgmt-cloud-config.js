@@ -186,11 +186,11 @@ function validateAnkaMgmtUrl() {
       if (open) {
         panel.removeAttribute('hidden');
         toggle.setAttribute('aria-expanded', 'true');
-        toggle.textContent = 'Show less';
+        toggle.textContent = 'Hide Advanced Options';
       } else {
         panel.setAttribute('hidden', 'hidden');
         toggle.setAttribute('aria-expanded', 'false');
-        toggle.textContent = 'Show more';
+        toggle.textContent = 'Show Advanced Options';
       }
       setShowMore(chunk, open);
     });
