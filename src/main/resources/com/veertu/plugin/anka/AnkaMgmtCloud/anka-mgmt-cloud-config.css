@@ -357,8 +357,43 @@
       box-sizing: border-box !important;
     }
 
+    /* Expanded cards stay half-width (one grid cell), same as collapsed */
     .anka-build-plugin-templates-list .repeated-chunk[data-anka-expanded="true"] {
-      grid-column: 1 / -1;
+      grid-column: auto;
+    }
+
+    /*
+     * Half-width card: use a tight 2-column essentials grid so Launch Method
+     * sits beside Tag instead of wasting a full empty row.
+     */
+    .anka-build-plugin-templates-list .anka-label-essentials {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.65rem 0.85rem;
+    }
+
+    .anka-build-plugin-templates-list .anka-label-essentials > .jenkins-form-item:has(.anka-launch-method),
+    .anka-build-plugin-templates-list .anka-label-essentials > .form-group:has(.anka-launch-method) {
+      grid-column: auto;
+    }
+
+    .anka-build-plugin-templates-list .anka-launch-method > table {
+      width: auto !important;
+    }
+
+    .anka-build-plugin-templates-list .anka-label-body {
+      padding: 0.65rem 0.75rem 0.75rem;
+    }
+
+    .anka-build-plugin-templates-list .anka-label-body .jenkins-form-item,
+    .anka-build-plugin-templates-list .anka-label-body .form-group {
+      margin-top: 0 !important;
+      margin-bottom: 0 !important;
+      max-width: none !important;
+    }
+
+    .anka-build-plugin-templates-list .anka-label-body .jenkins-form-description {
+      margin: 0.15rem 0 0.35rem !important;
+      padding: 0 !important;
     }
 
     .anka-build-plugin-templates-list .repeated-chunk button:not(.repeatable-delete):not(.anka-label-show-more__toggle) {

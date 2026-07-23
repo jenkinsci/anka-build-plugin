@@ -16,27 +16,15 @@
 
 .anka-label-essentials {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.5rem 1rem;
   align-items: start;
-}
-
-@media (max-width: 1100px) {
-  .anka-label-essentials {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 
 @media (max-width: 700px) {
   .anka-label-essentials {
     grid-template-columns: 1fr;
   }
-}
-
-/* Launch method spans full essentials row so radios stay usable */
-.anka-label-essentials > .jenkins-form-item:has(.anka-launch-method),
-.anka-label-essentials > .form-group:has(.anka-launch-method) {
-  grid-column: 1 / -1;
 }
 
 .anka-label-show-more {
