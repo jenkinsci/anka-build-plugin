@@ -408,9 +408,15 @@
       display: none;
     }
 
+    /* Delete sits after summary (outside collapsed body); keep usable when card is collapsed */
     .anka-build-plugin-templates-list .show-if-only {
       padding: 0 0.75rem 0.75rem;
       text-align: right;
+    }
+
+    .anka-build-plugin-templates-list .repeated-chunk:not(.is-expanded) .show-if-only {
+      display: block;
+      padding: 0.5rem 0.75rem 0.75rem;
     }
 
     /* Legacy pink bar removed from jelly; hide if any leftover */
