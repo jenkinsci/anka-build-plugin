@@ -35,6 +35,33 @@ public class JnlpCommandBuilderTest {
     }
 
     @Test
+    public void fiveArgMakeCommandDefaultsJavaPathToBareJava() {
+        String command = JnlpCommandBuilder.makeCommand(
+                "anka-agent-1", null, "-Xmx256m", "http://jenkins.example/", "tunnel.example:50000");
+
+        assertThat(command, startsWith("java -Xmx256m -jar agent.jar"));
+        assertThat(command, containsString("-tunnel tunnel.example:50000"));
+    }
+
+    @Test
+    public void fourArgMakeStartUpScriptUsesBareJava() {
+        String script = JnlpCommandBuilder.makeStartUpScript(
+                "anka-agent-1", null, "-Xmx256m", "http://jenkins.example/");
+
+        assertThat(script, containsString("java -Xmx256m -jar agent.jar"));
+        assertThat(script, containsString("curl --fail -s "));
+    }
+
+    @Test
+    public void fiveArgMakeStartUpScriptIncludesTunnelAndBareJava() {
+        String script = JnlpCommandBuilder.makeStartUpScript(
+                "anka-agent-1", null, "-Xmx256m", "http://jenkins.example/", "tunnel.example:50000");
+
+        assertThat(script, containsString("java -Xmx256m -jar agent.jar"));
+        assertThat(script, containsString("-tunnel tunnel.example:50000"));
+    }
+
+    @Test
     public void shouldIncludeTunnelWhenConfigured() {
         AnkaCloudSlaveTemplate template = new AnkaCloudSlaveTemplate();
         template.setLaunchMethod(LaunchMethod.JNLP);
