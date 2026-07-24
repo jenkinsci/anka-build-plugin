@@ -10,7 +10,7 @@
     </parent>
     <groupId>io.jenkins.plugins</groupId>
     <artifactId>anka-build</artifactId>
-    <version>3.1.0-SNAPSHOT</version>
+    <version>3.2.1-SNAPSHOT</version>
     <packaging>hpi</packaging>
 
     <properties>
