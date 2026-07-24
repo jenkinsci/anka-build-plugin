@@ -227,7 +227,8 @@ public class AnkaMgmtCommunicator {
             e.printStackTrace();
             throw new AnkaMgmtException(e);
         } catch (JSONException e) {
-            return groups;
+            // Do not return an empty list — callers must distinguish API/parse failure from "no groups"
+            throw new AnkaMgmtException(e);
         }
         return groups;
     }
