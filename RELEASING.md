@@ -7,5 +7,5 @@
 5. Run https://VEERTUJENKINS/view/jenkins/job/cloud-integration-jenkins/ against the new build you just did
 6. Check the PR CI and be sure it's all green
 7. If it passes, you're ok to release https://VEERTUJENKINS/view/jenkins/job/plugin-jenkins-release
-8. After release, merge to main
+8. After release, download the artifact HPI (int he plugin-jenkins-release job), then merge to main
 9. Get the hpi file and create a release in Github manually (tag should already exist)
