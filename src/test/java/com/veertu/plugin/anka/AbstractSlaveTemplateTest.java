@@ -1,6 +1,7 @@
 package com.veertu.plugin.anka;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -72,6 +73,38 @@ public class AbstractSlaveTemplateTest {
 
         resolving.setGroup("");
         assertThat(resolving.resolveGroupIdForStart(), is(nullValue()));
+    }
+
+    @Test
+    public void resolveGroupIdForStart_whitespaceOnly_throwsAndDoesNotClear() {
+        ResolvingTemplate resolving = new ResolvingTemplate();
+        resolving.setCloudName("test-cloud");
+        resolving.setLabel("label-ssh");
+        resolving.setGroup("   ");
+
+        AnkaMgmtException thrown = assertThrows(AnkaMgmtException.class, resolving::resolveGroupIdForStart);
+        assertThat(thrown.getMessage(), containsString("blank/whitespace"));
+        assertThat(thrown.getMessage(), containsString("test-cloud"));
+        assertThat(thrown.getMessage(), containsString("label-ssh"));
+        assertThat(resolving.getGroup(), is("   "));
+    }
+
+    @Test
+    public void fetchNodeGroupsForResolve_blankCloudName_throws() {
+        template.setCloudName("  ");
+        template.setGroup("onprem");
+
+        AnkaMgmtException thrown = assertThrows(AnkaMgmtException.class, template::fetchNodeGroupsForResolve);
+        assertThat(thrown.getMessage(), containsString("cloud name is not set"));
+    }
+
+    @Test
+    public void fetchNodeGroupsForResolve_nullCloudName_throws() {
+        template.setCloudName(null);
+        template.setGroup("onprem");
+
+        AnkaMgmtException thrown = assertThrows(AnkaMgmtException.class, template::fetchNodeGroupsForResolve);
+        assertThat(thrown.getMessage(), containsString("cloud name is not set"));
     }
 
     @Test

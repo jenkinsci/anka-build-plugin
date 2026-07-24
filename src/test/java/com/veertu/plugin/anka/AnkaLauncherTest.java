@@ -1,5 +1,7 @@
 package com.veertu.plugin.anka;
 
+import com.veertu.ankaMgmtSdk.AnkaVmInfo;
+import com.veertu.ankaMgmtSdk.AnkaVmInstance;
 import hudson.model.TaskListener;
 import hudson.plugins.sshslaves.SSHLauncher;
 import org.junit.jupiter.api.Test;
@@ -13,6 +15,10 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.nullValue;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class AnkaLauncherTest {
 
@@ -70,6 +76,51 @@ public class AnkaLauncherTest {
         // Template javaPath is null; SSHLauncher normalizes null to "".
         assertThat(template.getJavaPath(), is(nullValue()));
         assertThat(sshLauncher.getJavaPath(), is(""));
+    }
+
+    @Test
+    public void launchRecreatesSshLauncherWithConfiguredJavaPath() throws Exception {
+        String javaPath = "/Library/Java/JavaVirtualMachines/temurin-21.jdk/Contents/Home/bin/java";
+        AnkaCloudSlaveTemplate template = new AnkaCloudSlaveTemplate();
+        template.setLaunchMethod(LaunchMethod.SSH);
+        template.setJavaPath(javaPath);
+        template.setSSHPort(22);
+
+        try (ServerSocket serverSocket = new ServerSocket(0)) {
+            int forwardedPort = serverSocket.getLocalPort();
+
+            AnkaVmInfo vmInfo = mock(AnkaVmInfo.class);
+            when(vmInfo.getForwardedPort(anyInt())).thenReturn(forwardedPort);
+            when(vmInfo.getHostIp()).thenReturn("127.0.0.1");
+
+            AnkaVmInstance instance = mock(AnkaVmInstance.class);
+            when(instance.isStarted()).thenReturn(true);
+            when(instance.getSessionState()).thenReturn("Started");
+            when(instance.getVmInfo()).thenReturn(vmInfo);
+
+            AnkaMgmtCloud cloud = mock(AnkaMgmtCloud.class);
+            when(cloud.showInstance("instance-1")).thenReturn(instance);
+
+            AnkaCloudComputer computer = mock(AnkaCloudComputer.class);
+            doNothing().when(computer).reportLaunching();
+            doNothing().when(computer).reportLaunchFinished();
+
+            AnkaLauncher ankaLauncher = new AnkaLauncher(
+                    cloud, template, "instance-1", 1, 1, 1, 2, 1, 1);
+            TaskListener listener = taskListenerWithBuffer();
+
+            try {
+                ankaLauncher.launch(computer, listener);
+            } catch (Exception ignored) {
+                // SSH auth/connect may fail; coverage target is launcher recreation with javaPath.
+            }
+
+            assertThat(ankaLauncher.getLauncher(), instanceOf(SSHLauncher.class));
+            SSHLauncher sshLauncher = (SSHLauncher) ankaLauncher.getLauncher();
+            assertThat(sshLauncher.getJavaPath(), is(javaPath));
+            assertThat(sshLauncher.getPort(), is(forwardedPort));
+            assertThat(sshLauncher.getHost(), is("127.0.0.1"));
+        }
     }
 
     private static TaskListener taskListenerWithBuffer() {
