@@ -1,4 +1,5 @@
-<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form" xmlns:c="/lib/credentials">
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:f="/lib/form" xmlns:c="/lib/credentials">
+  <st:adjunct includes="com.veertu.plugin.anka.AnkaCloudSlaveTemplate.anka-cloud-slave-template-config"/>
 
     <table wdith="100%">
         <f:entry title="${%Template}" field="masterVmId" description="The snapshot to install jenkins slave on it.
@@ -20,36 +21,45 @@
         </f:entry>
 
         <f:entry title="${%Launch Method}" field="launchMethod" description="slave launch method">
-            <table width="100%">
-                <f:radioBlock  inline="true" name="launchMethod" value="ssh" title="SSH"
-                               checked="${instance.launchMethodString != 'jnlp'}">
-                    <f:entry title="${%Clone's user (SSH)}"
-                             description="The user and password to connect to chosen template" field="credentialsId">
-                        <c:select/>
+            <div class="anka-launch-method">
+                <table width="100%">
+                    <f:radioBlock  inline="true" name="launchMethod" value="ssh" title="SSH"
+                                   checked="${instance.launchMethodString != 'jnlp'}">
+                        <f:entry title="${%Clone's user (SSH)}"
+                                 description="The user and password to connect to chosen template" field="credentialsId">
+                            <c:select/>
 
-                    </f:entry>
-                </f:radioBlock>
-                <f:radioBlock  inline="true" name="launchMethod" title="JNLP" value="jnlp"
-                               checked="${instance.launchMethodString == 'jnlp'}">
-                    <f:entry title="${%Extra JNLP arguments}" description="Arguments to append to JNLP command"
-                             field="extraArgs">
-                        <f:textbox />
-                    </f:entry>
-                    <f:entry title="${%Override JNLP Url}" description="Specify a different url than jenkins root url "
-                             field="jnlpJenkinsOverrideUrl">
-                        <f:textbox />
-                    </f:entry>
-                    <f:entry title="${%Tunnel connection through}"
-                             description="Specify a tunnel if the agent needs it to connect to the master"
-                             field="jnlpTunnel">
-                        <f:textbox />
-                    </f:entry>
+                        </f:entry>
+                    </f:radioBlock>
+                    <f:radioBlock  inline="true" name="launchMethod" title="JNLP" value="jnlp"
+                                   checked="${instance.launchMethodString == 'jnlp'}">
+                        <f:entry title="${%Extra JNLP arguments}" description="Arguments to append to JNLP command"
+                                 field="extraArgs">
+                            <f:textbox />
+                        </f:entry>
+                        <f:entry title="${%Override JNLP Url}" description="Specify a different url than jenkins root url "
+                                 field="jnlpJenkinsOverrideUrl">
+                            <f:textbox />
+                        </f:entry>
+                        <f:entry title="${%Tunnel connection through}"
+                                 description="Specify a tunnel if the agent needs it to connect to the master"
+                                 field="jnlpTunnel">
+                            <f:textbox />
+                        </f:entry>
 
-                </f:radioBlock>
-                <f:entry title="${%Java options}" description="Additional java options" field="javaArgs">
-                    <f:textbox />
-                </f:entry>
-            </table>
+                    </f:radioBlock>
+                </table>
+                <div class="form-container anka-launch-method-shared">
+                    <table width="100%">
+                        <f:entry title="${%Java options}" description="Additional java options" field="javaArgs">
+                            <f:textbox />
+                        </f:entry>
+                        <f:entry title="${%Java Path}" description="Path to the Java executable on the Anka VM used to launch the agent. Leave empty to use java from the VM default PATH." field="javaPath">
+                            <f:textbox />
+                        </f:entry>
+                    </table>
+                </div>
+            </div>
         </f:entry>
 
 

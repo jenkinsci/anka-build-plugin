@@ -72,7 +72,7 @@ public class AnkaOnDemandSlave extends AbstractAnkaSlave {
     public static String createStartUpScript(AnkaCloudSlaveTemplate template, String nodeName) {
         // String startUpScript = ""; // implement in the future
         if (template.getLaunchMethod().equalsIgnoreCase(LaunchMethod.JNLP)) {
-            return JnlpCommandBuilder.makeStartUpScript(nodeName, template.getExtraArgs(), template.getJavaArgs(), template.getJnlpJenkinsOverrideUrl(), template.getJnlpTunnel());
+            return JnlpCommandBuilder.makeStartUpScript(nodeName, template.getExtraArgs(), template.getJavaArgs(), template.getJnlpJenkinsOverrideUrl(), template.getJnlpTunnel(), template.getJavaPath());
         }
         return null;
     }

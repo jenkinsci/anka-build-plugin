@@ -552,6 +552,9 @@ public class AnkaMgmtCloud extends Cloud {
         checkAndWarnLegacyUakCredentials();
         
         createAnkaAPIObject();
+        if (this.templates == null) {
+            this.templates = Collections.emptyList();
+        }
         if (this.dynamicTemplates == null) {
             this.dynamicTemplates = Collections.synchronizedList(new ArrayList<>());
         }
@@ -647,6 +650,9 @@ public class AnkaMgmtCloud extends Cloud {
     }
 
     public List<AnkaCloudSlaveTemplate> getTemplates() {
+        if (templates == null) {
+            templates = Collections.emptyList();
+        }
         return templates;
     }
 
@@ -847,6 +853,17 @@ public class AnkaMgmtCloud extends Cloud {
         }
     }
 
+    /**
+     * Lists node groups for provisioning. Propagates failures so callers can fail closed
+     * instead of treating errors as an empty group list.
+     */
+    public List<NodeGroup> listNodeGroups() throws AnkaMgmtException {
+        if (ankaAPI == null) {
+            throw new AnkaMgmtException("Anka API is not initialized for cloud '" + name + "'");
+        }
+        return ankaAPI.getNodeGroups();
+    }
+
     @Override
     @SuppressFBWarnings(value = "REC_CATCH_EXCEPTION",
             justification = "provision must never propagate exceptions to the Jenkins provisioning loop; any failure returns an empty list.")
@@ -955,12 +972,14 @@ public class AnkaMgmtCloud extends Cloud {
             AnkaOnDemandSlave slave = null;
             String newInstanceId = null;
             try {
-                newInstanceId = ankaAPI.startVM(template.getMasterVmId(), template.getTag(), startUpScript, template.getGroup(), template.getPriority(), nodeName, AnkaOnDemandSlave.getJenkinsNodeLink(nodeName), template.getVcpu(), template.getVram());
+                String groupId = template.resolveGroupIdForStart();
+                newInstanceId = ankaAPI.startVM(template.getMasterVmId(), template.getTag(), startUpScript, groupId, template.getPriority(), nodeName, AnkaOnDemandSlave.getJenkinsNodeLink(nodeName), template.getVcpu(), template.getVram());
                 AnkaLauncher launcher = new AnkaLauncher(this, template, newInstanceId, this.launchTimeout, this.maxLaunchRetries, this.launchRetryWaitTime, this.sshLaunchDelaySeconds, this.vmIPAssignWaitSeconds, this.vmIPAssignRetries);
                 slave = new AnkaOnDemandSlave(this, nodeName, template.getDescription(), template.getRemoteFS(), template.getNumberOfExecutors(), template.getMode(), template.getLabelString(), launcher, template.getNodeProperties(), template, newInstanceId);
                 newSlaves.add(slave);
                 Jenkins.get().addNode(slave); // add our node as early as possible to avoid zombies
             } catch (Exception e) {
+                Log("Failed to create durable slave for label '%s': %s", template.getLabel(), e.toString());
                 e.printStackTrace();
             } finally {
                 // insurance that our node is in the jenkins loop
@@ -989,7 +1008,8 @@ public class AnkaMgmtCloud extends Cloud {
             AnkaOnDemandSlave slave = null;
             String newInstanceId = null;
             try {
-                newInstanceId = ankaAPI.startVM(template.getMasterVmId(), template.getTag(), startUpScript, template.getGroup(), template.getPriority(), nodeName, AnkaOnDemandSlave.getJenkinsNodeLink(nodeName), template.getVcpu(), template.getVram());
+                String groupId = template.resolveGroupIdForStart();
+                newInstanceId = ankaAPI.startVM(template.getMasterVmId(), template.getTag(), startUpScript, groupId, template.getPriority(), nodeName, AnkaOnDemandSlave.getJenkinsNodeLink(nodeName), template.getVcpu(), template.getVram());
                 AnkaLauncher launcher = new AnkaLauncher(this, template, newInstanceId, this.launchTimeout, this.maxLaunchRetries, this.launchRetryWaitTime, this.sshLaunchDelaySeconds, this.vmIPAssignWaitSeconds, this.vmIPAssignRetries);
                 slave = new AnkaOnDemandSlave(this, nodeName, template.getDescription(), template.getRemoteFS(), template.getNumberOfExecutors(), template.getMode(), template.getLabelString(), launcher, template.getNodeProperties(), template, newInstanceId);
                 newSlaves.add(slave);

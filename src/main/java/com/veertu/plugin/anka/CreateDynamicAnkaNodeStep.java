@@ -203,6 +203,15 @@ public class CreateDynamicAnkaNodeStep extends Step {
         dynamicSlaveTemplate.setJavaArgs(javaArgs);
     }
 
+    public String getJavaPath() {
+        return dynamicSlaveTemplate.getJavaPath();
+    }
+
+    @DataBoundSetter
+    public void setJavaPath(String javaPath) {
+        dynamicSlaveTemplate.setJavaPath(javaPath);
+    }
+
     public String getJnlpJenkinsOverrideUrl() {
         return dynamicSlaveTemplate.getJnlpJenkinsOverrideUrl();
     }

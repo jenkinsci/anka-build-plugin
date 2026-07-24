@@ -102,9 +102,14 @@
       min-width: 100%;
     }
 
+    /* Legacy — do not style Node Labels summary handles here (see templates-list rules). */
     div[descriptorid="com.veertu.plugin.anka.AnkaMgmtCloud"] .dd-handle {
       font-size: 1.5em;
       margin-bottom: 10px;
+    }
+    div[descriptorid="com.veertu.plugin.anka.AnkaMgmtCloud"] .anka-build-plugin-templates-list .dd-handle {
+      font-size: inherit;
+      margin-bottom: 0;
     }
 
     div[descriptorid="com.veertu.plugin.anka.AnkaMgmtCloud"] .yui-button {
@@ -309,33 +314,567 @@
     }
 
     .anka-build-plugin-templates-list .repeated-container {
-      display: flex;
-      flex-wrap: wrap-reverse;
-      justify-content: center;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.75rem;
+      align-items: start;
     }
 
-    .anka-build-plugin-templates-list .repeated-chunk {
-      border: 1px solid #60259F;
-      background-color: #FFF;
-      padding: 7px 15px !important;
-      flex: 1;
-      margin: 10px 5px;
-      color: #5e2e9b;
-      flex-basis: 25%;
+    /* Keep Add / insertion point out of the 2-col card track (they confuse Sortable geometry) */
+    .anka-build-plugin-templates-list .repeated-container > .repeatable-add,
+    .anka-build-plugin-templates-list .repeated-container > .repeatable-insertion-point {
+      grid-column: 1 / -1;
     }
-    .anka-build-plugin-templates-list .repeated-chunk button:not(.repeatable-delete) {
+
+    @media (max-width: 900px) {
+      .anka-build-plugin-templates-list .repeated-container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .anka-build-plugin-templates-list-hint {
+      margin-top: 0.35rem;
+      font-weight: 500;
+      color: #5e2e9b !important;
+    }
+
+    /*
+     * High-specificity padding kill: Jenkins reserves left space for absolute .dd-handle.
+     * Also paint the chunk purple so any residual gutter matches the header (no white strip).
+     */
+    div[descriptorid="com.veertu.plugin.anka.AnkaMgmtCloud"] .anka-build-plugin-templates-list .repeated-chunk,
+    .anka-build-plugin-templates-list .repeated-container > .repeated-chunk,
+    .anka-build-plugin-templates-list .repeated-chunk {
+      border: 1px solid #60259F !important;
+      background-color: #f2e8fd !important;
+      padding: 0 !important;
+      padding-left: 0 !important;
+      padding-right: 0 !important;
+      padding-top: 0 !important;
+      padding-bottom: 0 !important;
+      margin: 0 !important;
+      color: #5e2e9b;
+      flex: unset;
+      flex-basis: unset;
+      min-width: 0;
+      border-radius: 8px;
+      overflow: hidden;
+      position: relative;
+      box-sizing: border-box !important;
+    }
+
+    /* Expanded cards stay half-width (one grid cell), same as collapsed */
+    .anka-build-plugin-templates-list .repeated-chunk[data-anka-expanded="true"] {
+      grid-column: auto;
+    }
+
+    /*
+     * Nested env-var (and other) repeatables inherit the label-card padding:0 kill.
+     * Restore inner padding so Name/Value aren't flush against the border.
+     */
+    .anka-build-plugin-templates-list .anka-label-body .repeated-chunk,
+    div[descriptorid="com.veertu.plugin.anka.AnkaMgmtCloud"]
+      .anka-build-plugin-templates-list
+      .anka-label-body
+      .repeated-chunk {
+      padding: 0.85rem 1rem 0.75rem !important;
+      margin: 0.5rem 0 !important;
+      overflow: visible;
+    }
+
+    .anka-build-plugin-templates-list .anka-label-body .repeated-chunk > table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+
+    .anka-build-plugin-templates-list .anka-label-body .repeated-chunk .jenkins-form-item,
+    .anka-build-plugin-templates-list .anka-label-body .repeated-chunk .form-group {
+      margin-top: 0.65rem !important;
+    }
+
+    .anka-build-plugin-templates-list .anka-label-body .repeated-chunk .jenkins-form-item:first-child,
+    .anka-build-plugin-templates-list .anka-label-body .repeated-chunk .form-group:first-child,
+    .anka-build-plugin-templates-list .anka-label-body .repeated-chunk tr:first-child .jenkins-form-item,
+    .anka-build-plugin-templates-list .anka-label-body .repeated-chunk tr:first-child .form-group {
+      margin-top: 0 !important;
+    }
+
+    /*
+     * Sortable class roles (incl. forceFallback):
+     *   ghost  = in-list drop placeholder → dashed slot
+     *   chosen = original item being moved → faded
+     *   drag   = floating preview under the cursor → card width + shadow
+     */
+    .anka-build-plugin-templates-list .repeated-chunk.repeated-chunk--sortable-ghost {
+      border: 2px dashed #60259F !important;
+      background: repeating-linear-gradient(
+          -45deg,
+          rgba(242, 232, 253, 0.9),
+          rgba(242, 232, 253, 0.9) 8px,
+          rgba(255, 255, 255, 0.85) 8px,
+          rgba(255, 255, 255, 0.85) 16px
+        ) !important;
+      min-height: 4.5rem !important;
+      height: auto !important;
+      opacity: 1 !important;
+      box-shadow: inset 0 0 0 1px rgba(94, 46, 155, 0.12);
+      pointer-events: none;
+      overflow: hidden !important;
+    }
+
+    .anka-build-plugin-templates-list .repeated-chunk.repeated-chunk--sortable-ghost > * {
+      visibility: hidden !important;
+    }
+
+    .anka-build-plugin-templates-list .repeated-chunk.repeated-chunk--sortable-chosen {
+      opacity: 0.35 !important;
+    }
+
+    /*
+     * Floating drag preview (forceFallback dragClass).
+     * Keep collapsed summary look; lock width; stay out of the flex/grid track.
+     */
+    .repeated-chunk.sortable-drag,
+    .repeated-chunk.repeated-chunk--sortable-drag {
+      position: fixed !important;
+      width: var(--anka-label-drag-width, 532px) !important;
+      max-width: var(--anka-label-drag-width, 532px) !important;
+      z-index: 10000 !important;
+      box-shadow: 0 10px 28px rgba(94, 46, 155, 0.28) !important;
+      opacity: 0.95 !important;
+      cursor: grabbing !important;
+      pointer-events: none !important;
+      margin: 0 !important;
+      overflow: hidden !important;
+    }
+
+    .repeated-chunk.sortable-drag .anka-label-body,
+    .repeated-chunk.repeated-chunk--sortable-drag .anka-label-body {
+      display: none !important;
+    }
+
+    .repeated-chunk.sortable-drag .anka-label-summary,
+    .repeated-chunk.repeated-chunk--sortable-drag .anka-label-summary {
+      display: flex !important;
+    }
+
+    /*
+     * Half-width card: use a tight 2-column essentials grid so Launch Method
+     * sits beside Tag instead of wasting a full empty row.
+     */
+    .anka-build-plugin-templates-list .anka-label-essentials {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.65rem 0.85rem;
+    }
+
+    .anka-build-plugin-templates-list .anka-label-essentials > .jenkins-form-item:has(.anka-launch-method),
+    .anka-build-plugin-templates-list .anka-label-essentials > .form-group:has(.anka-launch-method) {
+      grid-column: auto;
+    }
+
+    .anka-build-plugin-templates-list .anka-launch-method > table {
+      width: auto !important;
+    }
+
+    .anka-build-plugin-templates-list .anka-label-body {
+      padding: 0.65rem 0.75rem 0.75rem;
+    }
+
+    /* Essentials grid already uses gap — keep those items flush inside cells */
+    .anka-build-plugin-templates-list .anka-label-essentials .jenkins-form-item,
+    .anka-build-plugin-templates-list .anka-label-essentials .form-group {
+      margin-top: 0 !important;
+      margin-bottom: 0 !important;
+      max-width: none !important;
+    }
+
+    /* Show-more / advanced fields: titles need air above the previous control */
+    .anka-build-plugin-templates-list .anka-label-body .jenkins-form-item,
+    .anka-build-plugin-templates-list .anka-label-body .form-group {
+      margin-top: 1.1rem !important;
+      margin-bottom: 0 !important;
+      max-width: none !important;
+    }
+
+    .anka-build-plugin-templates-list .anka-label-show-more__panel > .jenkins-form-item:first-child,
+    .anka-build-plugin-templates-list .anka-label-show-more__panel > .form-group:first-child {
+      margin-top: 0.35rem !important;
+    }
+
+    .anka-build-plugin-templates-list .anka-label-body .jenkins-form-description {
+      margin: 0.25rem 0 0.45rem !important;
+      padding: 0 !important;
+    }
+
+    /* f:block wrappers (e.g. Environment Variables) and save-image section */
+    .anka-build-plugin-templates-list .anka-label-show-more__panel > .form-container,
+    .anka-build-plugin-templates-list .anka-label-show-more__panel > .anka-save-image-section {
+      margin-top: 1.35rem;
+    }
+
+    .anka-build-plugin-templates-list .anka-label-show-more__panel > hr {
+      margin: 1.35rem 0 1rem;
+    }
+
+    .anka-build-plugin-templates-list .anka-label-show-more__panel h4 {
+      margin: 0.35rem 0 0.65rem;
+    }
+
+    .anka-build-plugin-templates-list .repeated-chunk button:not(.repeatable-delete):not(.anka-label-show-more__toggle) {
       background-color: #FFF;
       color: #5e2e9b !important;
     }
-    .anka-build-plugin-templates-list .repeated-chunk:nth-child(odd) {
-      background-color:#f2e8fd;
-    }
-    .anka-build-plugin-templates-list .repeated-chunk .label {
-      background-color: #e21e79;
-      padding: 6px;
+
+    .anka-build-plugin-templates-list .anka-label-template {
       display: block;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    /* Hide Jenkins header chrome entirely */
+    .anka-build-plugin-group .repeated-chunk__header,
+    .anka-build-plugin-templates-list .repeated-chunk__header,
+    .anka-build-plugin-templates-list .repeated-chunk__header[data-anka-header-hidden="1"],
+    .anka-build-plugin-templates-list .repeated-chunk__header[hidden] {
+      display: none !important;
+      height: 0 !important;
+      width: 0 !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      border: 0 !important;
+      overflow: hidden !important;
+      position: absolute !important;
+      left: -9999px !important;
+    }
+
+    /*
+     * Stable two-row header:
+     *   ⋮⋮  ▸  name…………………  [Delete]
+     *           template · launch · cap
+     */
+    .anka-build-plugin-templates-list .anka-label-summary {
+      display: grid;
+      grid-template-columns: auto auto minmax(0, 1fr);
+      column-gap: 0.55rem;
+      row-gap: 0;
+      align-items: center;
+      padding: 0.65rem 0.75rem;
+      background: #f2e8fd;
+      cursor: pointer;
+      user-select: none;
+      border-bottom: 1px solid #e0d4f0;
+      width: 100%;
+      max-width: none;
+      box-sizing: border-box;
+      margin: 0;
+    }
+
+    /* Single visible ⋮⋮ grip — strip Jenkins sprite/svg completely */
+    div[descriptorid="com.veertu.plugin.anka.AnkaMgmtCloud"]
+      .anka-build-plugin-templates-list
+      .anka-label-summary
+      .dd-handle.anka-label-summary__drag,
+    .anka-build-plugin-templates-list .anka-label-summary__drag.dd-handle {
+      grid-column: 1;
+      grid-row: 1;
+      align-self: center;
+      position: static !important;
+      left: auto !important;
+      top: auto !important;
+      right: auto !important;
+      bottom: auto !important;
+      float: none !important;
+      display: inline-block !important;
+      width: auto !important;
+      height: auto !important;
+      min-width: 1rem;
+      margin: 0 !important;
+      padding: 0 0.15rem 0 0 !important;
+      cursor: grab !important;
+      background: none !important;
+      background-image: none !important;
+      background-color: transparent !important;
+      -webkit-mask: none !important;
+      mask: none !important;
+      -webkit-mask-image: none !important;
+      mask-image: none !important;
+      font-size: 1.15rem !important;
+      font-weight: 700 !important;
+      line-height: 1 !important;
+      letter-spacing: -0.14em;
+      color: #5e2e9b !important;
+      opacity: 1 !important;
+      visibility: visible !important;
+      text-indent: 0 !important;
+      overflow: visible !important;
+    }
+
+    .anka-build-plugin-templates-list .anka-label-summary__drag.dd-handle::before,
+    .anka-build-plugin-templates-list .anka-label-summary__drag.dd-handle::after {
+      content: none !important;
+      display: none !important;
+      background: none !important;
+    }
+
+    .anka-build-plugin-templates-list .anka-label-summary__drag.dd-handle svg,
+    .anka-build-plugin-templates-list .anka-label-summary__drag.dd-handle img {
+      display: none !important;
+    }
+
+    .anka-build-plugin-templates-list .anka-label-summary__drag.dd-handle:active {
+      cursor: grabbing !important;
+    }
+
+    /* Tighten collapsed card — no empty purple band under chips */
+    .anka-build-plugin-templates-list .anka-label-summary {
+      padding: 0.55rem 0.7rem;
+    }
+    .anka-build-plugin-templates-list .anka-label-summary__meta {
+      margin: 0;
+    }
+
+    .anka-build-plugin-templates-list .anka-label-summary__chevron {
+      grid-column: 2;
+      grid-row: 1;
+      align-self: center;
+      color: #5e2e9b;
+      font-weight: 700;
+      width: 0.9rem;
       text-align: center;
-      color: #fff;
+    }
+
+    .anka-build-plugin-templates-list .anka-label-summary__main {
+      grid-column: 3;
+      grid-row: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .anka-build-plugin-templates-list .anka-label-summary__title-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+      min-width: 0;
+    }
+
+    .anka-build-plugin-templates-list .anka-label-summary__name {
+      flex: 1 1 auto;
+      min-width: 0;
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: #5e2e9b;
+      overflow: visible;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    .anka-build-plugin-templates-list .anka-label-summary__meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.35rem;
+      min-width: 0;
+      overflow: visible;
+    }
+
+    .anka-build-plugin-templates-list .anka-label-summary .chip {
+      display: inline-block;
+      flex: 0 0 auto;
+      background: #fff;
+      border: 1px solid #d4c5e8;
+      border-radius: 3px;
+      padding: 0.15rem 0.45rem;
+      font-size: 0.75rem;
+      color: #555;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Never truncate template name — wrap to full value */
+    .anka-build-plugin-templates-list .anka-label-summary__template.chip {
+      flex: 1 1 100%;
+      min-width: 0;
+      max-width: 100%;
+      overflow: visible;
+      text-overflow: unset;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    .anka-build-plugin-templates-list .anka-label-summary__tag.chip[hidden],
+    .anka-build-plugin-templates-list .anka-label-summary__tag.chip:empty {
+      display: none !important;
+    }
+
+    .anka-build-plugin-templates-list .anka-label-summary__tag.chip,
+    .anka-build-plugin-templates-list .anka-label-summary__launch.chip,
+    .anka-build-plugin-templates-list .anka-label-summary__cap.chip {
+      flex: 0 0 auto;
+    }
+
+    .anka-build-plugin-templates-list .anka-label-essentials > .anka-summary-source {
+      display: contents;
+    }
+
+    .anka-build-plugin-templates-list .anka-label-summary .chip.chip--ssh {
+      background: #e8f5e9;
+      border-color: #c8e6c9;
+      color: #2e7d32;
+    }
+
+    .anka-build-plugin-templates-list .anka-label-summary .chip.chip--jnlp {
+      background: #e3f2fd;
+      border-color: #bbdefb;
+      color: #1565c0;
+    }
+
+    /*
+     * Jenkins styles .repeatable-delete as a floating X
+     * (position:absolute; top/right on .repeated-chunk). Hide the label-level
+     * delete until it lives in our expanded footer — do not touch nested
+     * env-var repeatable deletes inside .anka-label-body.
+     */
+    div[descriptorid="com.veertu.plugin.anka.AnkaMgmtCloud"]
+      .anka-build-plugin-templates-list
+      .repeated-container
+      > .repeated-chunk
+      > .show-if-only,
+    div[descriptorid="com.veertu.plugin.anka.AnkaMgmtCloud"]
+      .anka-build-plugin-templates-list
+      .repeated-container
+      > .repeated-chunk
+      > .anka-label-delete-source,
+    .anka-build-plugin-templates-list .repeated-container > .repeated-chunk > .show-if-only,
+    .anka-build-plugin-templates-list .repeated-container > .repeated-chunk > .anka-label-delete-source {
+      display: none !important;
+      visibility: hidden !important;
+    }
+
+    div[descriptorid="com.veertu.plugin.anka.AnkaMgmtCloud"]
+      .anka-build-plugin-templates-list
+      .repeated-container
+      > .repeated-chunk
+      > .show-if-only
+      .repeatable-delete,
+    div[descriptorid="com.veertu.plugin.anka.AnkaMgmtCloud"]
+      .anka-build-plugin-templates-list
+      .repeated-container
+      > .repeated-chunk
+      > .anka-label-delete-source
+      .repeatable-delete,
+    .anka-build-plugin-templates-list .repeated-container > .repeated-chunk > .show-if-only .repeatable-delete,
+    .anka-build-plugin-templates-list .repeated-container > .repeated-chunk > .anka-label-delete-source .repeatable-delete,
+    .anka-build-plugin-templates-list .repeated-container > .repeated-chunk > .repeatable-delete {
+      display: none !important;
+      visibility: hidden !important;
+      pointer-events: none !important;
+      position: absolute !important;
+      left: -9999px !important;
+      top: auto !important;
+      right: auto !important;
+    }
+
+    /* Delete lives at the bottom of the expanded body */
+    .anka-build-plugin-templates-list .anka-label-delete-footer {
+      margin-top: 0.85rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid #e0d4f0;
+      display: flex;
+      justify-content: flex-end;
+      position: relative;
+    }
+
+    .anka-build-plugin-templates-list .anka-label-delete-footer .anka-label-delete,
+    .anka-build-plugin-templates-list .anka-label-delete-footer .show-if-only,
+    .anka-build-plugin-templates-list .anka-label-delete-footer .anka-label-delete-source {
+      display: block !important;
+      visibility: visible !important;
+      margin: 0;
+      padding: 0;
+      text-align: right;
+      position: static !important;
+    }
+
+    div[descriptorid="com.veertu.plugin.anka.AnkaMgmtCloud"]
+      .anka-build-plugin-templates-list
+      .anka-label-delete-footer
+      .repeatable-delete,
+    .anka-build-plugin-templates-list .anka-label-delete-footer .repeatable-delete,
+    .anka-build-plugin-templates-list .anka-label-delete-footer button {
+      display: inline-flex !important;
+      visibility: visible !important;
+      pointer-events: auto !important;
+      position: static !important;
+      left: auto !important;
+      right: auto !important;
+      top: auto !important;
+      border: 1px solid #c62828 !important;
+      background: #fff !important;
+      color: #c62828 !important;
+      border-radius: 4px !important;
+      padding: 0.35rem 0.85rem !important;
+      font-size: 0.85rem !important;
+      font-weight: 600 !important;
+      min-width: auto !important;
+      width: auto !important;
+      height: auto !important;
+      line-height: 1.3 !important;
+      margin: 0 !important;
+    }
+
+    .anka-build-plugin-templates-list .anka-label-delete-footer button:hover {
+      background: #ffebee !important;
+    }
+
+    /* Collapsed cards: never show a label-level delete/X */
+    .anka-build-plugin-templates-list
+      .repeated-container
+      > .repeated-chunk:not([data-anka-expanded="true"])
+      .anka-label-delete-footer,
+    .anka-build-plugin-templates-list
+      .repeated-container
+      > .repeated-chunk:not([data-anka-expanded="true"])
+      > .show-if-only,
+    .anka-build-plugin-templates-list
+      .repeated-container
+      > .repeated-chunk:not([data-anka-expanded="true"])
+      > .anka-label-delete-source {
+      display: none !important;
+      visibility: hidden !important;
+    }
+
+    .anka-build-plugin-templates-list .repeated-chunk:not([data-anka-expanded="true"]) .anka-label-body {
+      display: none;
+    }
+
+    .anka-build-plugin-templates-list .anka-label-body {
+      padding: 0.75rem 1rem 1rem;
+      background: #fff;
+      margin: 0;
+    }
+
+    /* When collapsed, no extra footer gap under the summary */
+    .anka-build-plugin-templates-list .repeated-chunk:not([data-anka-expanded="true"]) .anka-label-summary {
+      border-bottom: none;
+    }
+
+    /* Launch nested details stay in essentials markup; hide until Show more is open */
+    .anka-build-plugin-templates-list .repeated-chunk:not([data-anka-show-more="true"]) .anka-launch-method .form-container,
+    .anka-build-plugin-templates-list .repeated-chunk:not([data-anka-show-more="true"]) .anka-launch-method-shared {
+      display: none;
+    }
+
+    /* Legacy pink bar removed from jelly; hide if any leftover */
+    .anka-build-plugin-templates-list .repeated-chunk > .label {
+      display: none;
     }
 
     .hide-me {
@@ -394,7 +933,6 @@
       color: red;
     }
 
-    .repeated-chunk__header {
-      display: none !important;
+    .jenkins-repeated-chunk__content {
+      padding: 0px !important;
     }
-

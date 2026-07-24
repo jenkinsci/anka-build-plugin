@@ -63,7 +63,7 @@ public class AnkaLauncher extends DelegatingComputerLauncher {
             launcher = new JNLPLauncher(template.getJnlpTunnel(), template.getExtraArgs());
         } else if (template.getLaunchMethod().equalsIgnoreCase(LaunchMethod.SSH)) {
             // place holder for ssh, todo: create class
-            launcher = new SSHLauncher("", 0, template.getCredentialsId(), template.getJavaArgs(), null, null, null, launchTimeoutSeconds, maxRetries, retryWaitTime, null);
+            launcher = new SSHLauncher("", 0, template.getCredentialsId(), template.getJavaArgs(), template.getJavaPath(), null, null, launchTimeoutSeconds, maxRetries, retryWaitTime, null);
         } else {
             throw new RuntimeException("Unknown launch method");
         }
@@ -173,7 +173,7 @@ public class AnkaLauncher extends DelegatingComputerLauncher {
 
                         waitForSshPortReady(ip, port, sshLaunchDelaySeconds, defaultSSHPollIntervalSeconds, listener);
 
-                        this.launcher = new SSHLauncher(ip, port, template.getCredentialsId(), template.getJavaArgs(), null, null, null, launchTimeoutSeconds, maxRetries, retryWaitTime, null);
+                        this.launcher = new SSHLauncher(ip, port, template.getCredentialsId(), template.getJavaArgs(), template.getJavaPath(), null, null, launchTimeoutSeconds, maxRetries, retryWaitTime, null);
 
                         listener.getLogger().printf("Launching SSH connection to %s:%d for instance %s%n", ip, port, instanceId);
                         this.launcher.launch(computer, listener);

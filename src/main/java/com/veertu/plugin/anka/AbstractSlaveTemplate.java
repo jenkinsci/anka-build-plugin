@@ -2,19 +2,16 @@ package com.veertu.plugin.anka;
 
 import com.cloudbees.plugins.credentials.domains.SchemeRequirement;
 import com.veertu.ankaMgmtSdk.NodeGroup;
+import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.model.Node;
-import com.veertu.plugin.anka.AnkaMgmtCloud;
 import hudson.slaves.EnvironmentVariablesNodeProperty;
 import hudson.slaves.NodeProperty;
 import hudson.slaves.RetentionStrategy;
-import jenkins.model.Jenkins;
 import org.kohsuke.stapler.DataBoundSetter;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
-import java.util.logging.Logger;
 
 public class AbstractSlaveTemplate {
 
@@ -39,6 +36,7 @@ public class AbstractSlaveTemplate {
     protected RetentionStrategy retentionStrategy;
     protected String nameTemplate;
     protected String javaArgs;
+    protected String javaPath;
     protected String jnlpJenkinsOverrideUrl;
     protected String jnlpTunnel;
     protected int priority;
@@ -177,157 +175,66 @@ public class AbstractSlaveTemplate {
         this.credentialsId = credentialsId;
     }
 
+    /**
+     * Returns the configured node group identity (name or UUID) without side effects.
+     * Does not call the Controller API and never clears or rewrites stored config.
+     */
     public String getGroup() {
-        String groupValue = valOrNull(group);
-        if (groupValue == null || groupValue.trim().isEmpty()) {
-            return groupValue;
-        }
-        
-        // If it's already a UUID, validate it still corresponds to a valid group
-        if (isUUID(groupValue)) {
-            // Check if this UUID still corresponds to a valid group
-            String groupName = convertUUIDToGroupName(groupValue);
-            if (groupName != null) {
-                // UUID is still valid, return it
-                return groupValue;
-            } else {
-                // UUID is no longer valid - check if cloud is available for validation
-                if (cloudName != null && !cloudName.trim().isEmpty()) {
-                    try {
-                        AnkaMgmtCloud cloud = AnkaMgmtCloud.get(cloudName);
-                        if (cloud != null) {
-                            // Cloud is available but UUID is invalid, clear the stored value
-                            this.group = null;
-                            return null;
-                        }
-                    } catch (Exception e) {
-                        // Cloud is not available, return the UUID as-is
-                        return groupValue;
-                    }
-                }
-                // Cloud is not available, return the UUID as-is
-                return groupValue;
-            }
-        }
-        
-        // Try to convert group name to UUID without modifying internal state
-        String groupId = convertGroupNameToUUID(groupValue);
-        if (groupId != null) {
-            return groupId;
-        }
-        
-        // If conversion fails, return the original value
-        return groupValue;
+        return valOrNull(group);
     }
 
+    /**
+     * Stores the configured node group identity as-is (name or UUID).
+     * Does not convert names to UUIDs; resolution happens at VM start.
+     */
     @DataBoundSetter
     public void setGroup(String group) {
-        // If group is null or empty, just set it as-is
-        if (group == null || group.trim().isEmpty()) {
-            this.group = group;
-            return;
-        }
-        
-        // Check if the group is already a UUID format
-        if (isUUID(group)) {
-            this.group = group;
-            return;
-        }
-        
-        // Try to convert group name to UUID
-        String groupId = convertGroupNameToUUID(group);
-        if (groupId != null) {
-            this.group = groupId;
-        } else {
-            // If conversion fails, keep the original value
-            this.group = group;
-        }
+        this.group = group;
     }
 
     /**
-     * Converts a UUID to its corresponding group name by looking up the group in the Anka cloud.
-     * @param groupId The UUID of the group to convert
-     * @return The name of the group, or null if not found
+     * Resolves the configured group to a Controller group UUID for {@code startVM}.
+     *
+     * @return group UUID, or {@code null} when no group is configured (all nodes)
+     * @throws AnkaMgmtException if a group is configured but the API fails or the group is not found
      */
-    protected String convertUUIDToGroupName(String groupId) {
-        try {
-            // Get the cloud instance using the cloudName
-            if (cloudName == null || cloudName.trim().isEmpty()) {
-                return null;
-            }
-            
-            AnkaMgmtCloud cloud = AnkaMgmtCloud.get(cloudName);
-            if (cloud == null) {
-                return null;
-            }
-            
-            // Get all node groups from the cloud
-            List<NodeGroup> nodeGroups = cloud.getNodeGroups();
-
-            // Find the group with the matching UUID
-            for (NodeGroup nodeGroup : nodeGroups) {
-                if (groupId.equals(nodeGroup.getId())) {
-                    return nodeGroup.getName();
-                }
-            }
-            
-            return null;
-        } catch (Exception e) {
-            // Log the error but don't fail the operation
-            Logger.getLogger(AbstractSlaveTemplate.class.getName())
-                .warning("Failed to convert group UUID '" + groupId + "' to name: " + e.getMessage());
+    public String resolveGroupIdForStart() throws AnkaMgmtException {
+        String configured = getGroup();
+        if (configured == null) {
             return null;
         }
+        // Whitespace-only is treated as configured but unusable — fail closed rather than omit group_id
+        if (configured.trim().isEmpty()) {
+            throw new AnkaMgmtException(String.format(
+                    "Node group is configured as blank/whitespace for cloud '%s' label '%s'; clear or set a valid group",
+                    cloudName, getLabel()));
+        }
+
+        List<NodeGroup> nodeGroups = fetchNodeGroupsForResolve();
+        for (NodeGroup nodeGroup : nodeGroups) {
+            if (configured.equals(nodeGroup.getId()) || configured.equals(nodeGroup.getName())) {
+                return nodeGroup.getId();
+            }
+        }
+
+        throw new AnkaMgmtException(String.format(
+                "Configured node group '%s' was not found for cloud '%s' label '%s'. "
+                        + "Not starting VM without group_id. Re-select the group or wait until the Controller group list is available.",
+                configured, cloudName, getLabel()));
     }
 
     /**
-     * Converts a group name to its corresponding UUID by looking up the group in the Anka cloud.
-     * @param groupName The name of the group to convert
-     * @return The UUID of the group, or null if not found
+     * Loads node groups for provisioning resolution. Propagates API failures (never treats them as empty).
      */
-    protected String convertGroupNameToUUID(String groupName) {
-        try {
-            // Get the cloud instance using the cloudName
-            if (cloudName == null || cloudName.trim().isEmpty()) {
-                return null;
-            }
-            
-            AnkaMgmtCloud cloud = AnkaMgmtCloud.get(cloudName);
-            if (cloud == null) {
-                return null;
-            }
-            
-            // Get all node groups from the cloud
-            List<NodeGroup> nodeGroups = cloud.getNodeGroups();
-
-            // Find the group with the matching name
-            for (NodeGroup nodeGroup : nodeGroups) {
-                if (groupName.equals(nodeGroup.getName())) {
-                    return nodeGroup.getId();
-                }
-            }
-            
-            return null;
-        } catch (Exception e) {
-            // Log the error but don't fail the operation
-            Logger.getLogger(AbstractSlaveTemplate.class.getName())
-                .warning("Failed to convert group name '" + groupName + "' to UUID: " + e.getMessage());
-            return null;
+    protected List<NodeGroup> fetchNodeGroupsForResolve() throws AnkaMgmtException {
+        if (cloudName == null || cloudName.trim().isEmpty()) {
+            throw new AnkaMgmtException("Cannot resolve node group: cloud name is not set on the template");
         }
-    }
-    
-    /**
-     * Checks if a string is a valid UUID format.
-     * @param uuid The string to check
-     * @return true if the string is a valid UUID format, false otherwise
-     */
-    protected boolean isUUID(String uuid) {
-        try {
-            UUID.fromString(uuid);
-            return true;
-        } catch (IllegalArgumentException e) {
-            return false;
+        AnkaMgmtCloud cloud = AnkaMgmtCloud.get(cloudName);
+        if (cloud == null) {
+            throw new AnkaMgmtException("Cannot resolve node group: cloud '" + cloudName + "' was not found");
         }
+        return cloud.listNodeGroups();
     }
 
     public String getExtraArgs() {
@@ -415,6 +322,15 @@ public class AbstractSlaveTemplate {
     @DataBoundSetter
     public void setJavaArgs(String javaArgs) {
         this.javaArgs = javaArgs;
+    }
+
+    public String getJavaPath() {
+        return valOrNull(javaPath);
+    }
+
+    @DataBoundSetter
+    public void setJavaPath(String javaPath) {
+        this.javaPath = javaPath;
     }
 
     public String getJnlpJenkinsOverrideUrl() {
@@ -637,6 +553,7 @@ public class AbstractSlaveTemplate {
         setRetentionStrategy(slave.getRetentionStrategy());
         setNameTemplate(slave.getNameTemplate());
         setJavaArgs(slave.getJavaArgs());
+        setJavaPath(slave.getJavaPath());
         setJnlpJenkinsOverrideUrl(slave.getJnlpJenkinsOverrideUrl());
         setJnlpTunnel(slave.getJnlpTunnel());
         setPriority(slave.getPriority());

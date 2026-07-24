@@ -14,6 +14,10 @@ Contributors are welcome! Please submit an Issue or PR.
 
 Each Anka cloud can expose a API endpoint so automation can update **Node Labels** (static `AnkaCloudSlaveTemplate` entries) without using the Jenkins UI or Overall/Administer permission. It is protected by a credential. See **[docs/node-labels-api.md](docs/node-labels-api.md)** for setup, request/response reference, `curl` examples, and troubleshooting.
 
+## Java Path on Node Labels
+
+Node Labels can set an optional **Java Path** (path to the Java binary on the Anka VM) used when launching the remoting agent over SSH or JNLP. Leave it empty to use `java` from the VM default `PATH`. See **[docs/java-path.md](docs/java-path.md)**.
+
 ---
 
 ## Dependency Requirements

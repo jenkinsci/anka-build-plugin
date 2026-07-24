@@ -289,7 +289,8 @@ public class AnkaCloudSlaveTemplate extends AbstractSlaveTemplate implements Des
                 List<NodeGroup> nodeGroups = new ArrayList<>(getNodeGroups(cloud));
                 nodeGroups.sort((a, b) -> a.getName().compareToIgnoreCase(b.getName()));
                 for (NodeGroup nodeGroup : nodeGroups) {
-                    models.add(nodeGroup.getName(), nodeGroup.getId());
+                    // Persist group name as stable identity; UUID is resolved at VM start
+                    models.add(nodeGroup.getName(), nodeGroup.getName());
                 }
             }
             return models;
