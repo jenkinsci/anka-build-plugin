@@ -8,3 +8,4 @@
 6. Check the PR CI and be sure it's all green
 7. If it passes, you're ok to release https://VEERTUJENKINS/view/jenkins/job/plugin-jenkins-release
 8. After release, merge to main
+9. Get the hpi file and create a release in Github manually (tag should already exist)
