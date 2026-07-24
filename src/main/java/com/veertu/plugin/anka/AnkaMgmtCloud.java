@@ -552,6 +552,9 @@ public class AnkaMgmtCloud extends Cloud {
         checkAndWarnLegacyUakCredentials();
         
         createAnkaAPIObject();
+        if (this.templates == null) {
+            this.templates = Collections.emptyList();
+        }
         if (this.dynamicTemplates == null) {
             this.dynamicTemplates = Collections.synchronizedList(new ArrayList<>());
         }
@@ -647,6 +650,9 @@ public class AnkaMgmtCloud extends Cloud {
     }
 
     public List<AnkaCloudSlaveTemplate> getTemplates() {
+        if (templates == null) {
+            templates = Collections.emptyList();
+        }
         return templates;
     }
 
