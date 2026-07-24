@@ -17,5 +17,5 @@ docker/squid/
 release.properties
 pom.xml.releaseBackup
 .superpowers/
-docs
+docs/superpowers/
 .cursor
