@@ -1,5 +1,6 @@
 def jenkins_ci_credentials_id = "accounts.jenkins.com"
 def github_ssh_credentials_id = "github-service-user-veertu"
+def github_ssh_repo_url = "git@github.com:jenkinsci/anka-build-plugin.git"
 
 def getPluginReleaseTagName = {
     def pomWithoutParent = readFile('pom.xml').replaceFirst(/(?s)<parent>.*?<\/parent>/, '')
@@ -17,7 +18,7 @@ def getPluginReleaseTagName = {
     return "anka-build-${snapshotVersion.replaceFirst(/-SNAPSHOT$/, '')}"
 }
 
-def removePluginReleaseTag = { String releaseTagName ->
+def withGithubSsh = { Closure body ->
     withCredentials([
         sshUserPrivateKey(
             credentialsId: github_ssh_credentials_id,
@@ -25,18 +26,58 @@ def removePluginReleaseTag = { String releaseTagName ->
             usernameVariable: 'GITHUB_SSH_USER'
         ),
     ]) {
-        withEnv(["RELEASE_TAG_NAME=${releaseTagName}"]) {
+        sh '''
+            set -euo pipefail
+            mkdir -p "${HOME}/.ssh"
+            chmod 700 "${HOME}/.ssh"
+            cp "${GITHUB_SSH_KEY}" "${HOME}/.ssh/id_rsa"
+            chmod 600 "${HOME}/.ssh/id_rsa"
+            ssh-keyscan -t rsa,ed25519 github.com >> "${HOME}/.ssh/known_hosts" 2>/dev/null
+            export GIT_SSH_COMMAND="ssh -i ${GITHUB_SSH_KEY} -o StrictHostKeyChecking=yes"
+        '''
+        body()
+    }
+}
+
+def remoteReleaseTagExists = { String releaseTagName ->
+    withGithubSsh {
+        withEnv([
+            "RELEASE_TAG_NAME=${releaseTagName}",
+            "GITHUB_SSH_REPO=${github_ssh_repo_url}",
+        ]) {
+            def status = sh(
+                script: '''
+                    set -euo pipefail
+                    export GIT_SSH_COMMAND="ssh -i ${GITHUB_SSH_KEY} -o StrictHostKeyChecking=yes"
+                    git ls-remote --exit-code --tags "${GITHUB_SSH_REPO}" "refs/tags/${RELEASE_TAG_NAME}" >/dev/null
+                ''',
+                returnStatus: true
+            )
+            return status == 0
+        }
+    }
+}
+
+// Only removes tags created by a failed release attempt in this run.
+// Never deletes a tag that already existed on GitHub before prepare started
+// (i.e. a previously published release).
+def removePluginReleaseTagIfCreatedByThisRun = { String releaseTagName, boolean tagExistedBeforeRelease ->
+    if (tagExistedBeforeRelease) {
+        echo "Leaving ${releaseTagName} alone; it already existed on GitHub before this release attempt."
+        return
+    }
+
+    withGithubSsh {
+        withEnv([
+            "RELEASE_TAG_NAME=${releaseTagName}",
+            "GITHUB_SSH_REPO=${github_ssh_repo_url}",
+        ]) {
             sh '''
                 set -euo pipefail
-
-                mkdir -p "${HOME}/.ssh"
-                chmod 700 "${HOME}/.ssh"
-                cp "${GITHUB_SSH_KEY}" "${HOME}/.ssh/id_rsa"
-                chmod 600 "${HOME}/.ssh/id_rsa"
-                ssh-keyscan -t rsa,ed25519 github.com >> "${HOME}/.ssh/known_hosts" 2>/dev/null
                 export GIT_SSH_COMMAND="ssh -i ${GITHUB_SSH_KEY} -o StrictHostKeyChecking=yes"
 
-                git push --delete origin "${RELEASE_TAG_NAME}" || true
+                # Push via SSH URL; Jenkins checkout remotes are often HTTPS and ignore GIT_SSH_COMMAND.
+                git push --delete "${GITHUB_SSH_REPO}" "${RELEASE_TAG_NAME}" || true
                 git tag -d "${RELEASE_TAG_NAME}" || true
             '''
         }
@@ -133,12 +174,17 @@ pipeline {
             steps {
                 script {
                     def releaseTagName = getPluginReleaseTagName()
+                    def tagExistedBeforeRelease = remoteReleaseTagExists(releaseTagName)
+                    if (tagExistedBeforeRelease) {
+                        error("Release tag ${releaseTagName} already exists on GitHub. Bump pom.xml past that version (e.g. 3.2.0-SNAPSHOT) before releasing; refusing to overwrite a published tag.")
+                    }
+
                     try {
                         runPluginMavenRelease('-Dresume=false release:clean release:prepare release:perform')
                     } catch (err) {
-                        echo "Release failed; removing ${releaseTagName} if Maven created it."
+                        echo "Release failed; removing ${releaseTagName} only if this run created it."
                         try {
-                            removePluginReleaseTag(releaseTagName)
+                            removePluginReleaseTagIfCreatedByThisRun(releaseTagName, tagExistedBeforeRelease)
                         } catch (cleanupErr) {
                             echo "Failed to remove ${releaseTagName}: ${cleanupErr}"
                         }
