@@ -136,34 +136,50 @@ public class AnkaCloudComputer extends SlaveComputer {
         this.acceptedRunIdentity = null;
         if (task instanceof ExecutorStepExecution.PlaceholderTask) {
             this.run = ((ExecutorStepExecution.PlaceholderTask) task).run();
-            if (this.run != null ){
-                this.slave.setDescription(this.run.getFullDisplayName());
-                this.slave.setJobNameAndNumber(this.run.getFullDisplayName(), resolveAbsoluteJobUrl(this.run));
-                this.acceptedRunIdentity = RunIdentity.fromRun(this.run);
-            }
+            applyAcceptedRunMetadata(this.run);
         } else {
-            String jobAndNumber;
             hudson.model.queue.WorkUnit workUnit = executor.getCurrentWorkUnit();
             hudson.model.Queue.Executable executable = workUnit == null ? null : workUnit.getExecutable();
+            String jobAndNumber;
             if (executable != null) {
                 jobAndNumber = executable.toString();
             } else {
                 jobAndNumber = executor.getDisplayName();
             }
-            this.slave.setDescription(jobAndNumber);
-            if (executable instanceof Run) {
-                this.run = (Run<?, ?>) executable;
-                this.slave.setJobNameAndNumber(jobAndNumber, resolveAbsoluteJobUrl(this.run));
-            } else {
-                this.slave.setJobNameAndNumber(jobAndNumber);
-            }
-            if (task instanceof Job) {
-                this.acceptedRunIdentity = parseRunIdentity((Job<?, ?>) task, jobAndNumber);
-            } else {
-                this.acceptedRunIdentity = parseRunIdentityFromDisplayName(jobAndNumber);
-            }
+            applyAcceptedExecutableMetadata(jobAndNumber, executable, task);
         }
         this.slave.taskAccepted(executor, task);
+    }
+
+    /**
+     * Pipeline agent path: set description, job id, and absolute job URL from the accepted Run.
+     */
+    void applyAcceptedRunMetadata(Run<?, ?> acceptedRun) {
+        if (acceptedRun == null) {
+            return;
+        }
+        this.run = acceptedRun;
+        this.slave.setDescription(acceptedRun.getFullDisplayName());
+        this.slave.setJobNameAndNumber(acceptedRun.getFullDisplayName(), resolveAbsoluteJobUrl(acceptedRun));
+        this.acceptedRunIdentity = RunIdentity.fromRun(acceptedRun);
+    }
+
+    /**
+     * Freestyle / non-pipeline path: set job metadata from the executable when it is a Run.
+     */
+    void applyAcceptedExecutableMetadata(String jobAndNumber, Queue.Executable executable, Queue.Task task) {
+        this.slave.setDescription(jobAndNumber);
+        if (executable instanceof Run) {
+            this.run = (Run<?, ?>) executable;
+            this.slave.setJobNameAndNumber(jobAndNumber, resolveAbsoluteJobUrl(this.run));
+        } else {
+            this.slave.setJobNameAndNumber(jobAndNumber);
+        }
+        if (task instanceof Job) {
+            this.acceptedRunIdentity = parseRunIdentity((Job<?, ?>) task, jobAndNumber);
+        } else {
+            this.acceptedRunIdentity = parseRunIdentityFromDisplayName(jobAndNumber);
+        }
     }
 
     /**
