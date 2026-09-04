@@ -199,8 +199,9 @@ public class AnkaAPI {
         return cloudCapacity;
     }
 
-    public void updateInstance(String vmId, String name, String jenkinsNodeLink, String jobIdentifier) throws AnkaMgmtException {
-        communicator.updateVM(vmId, name, jenkinsNodeLink, jobIdentifier);
+    public void updateInstance(String vmId, String name, String jenkinsNodeLink, String jobIdentifier, String jobUrl)
+            throws AnkaMgmtException {
+        communicator.updateVM(vmId, name, jenkinsNodeLink, jobIdentifier, jobUrl);
     }
 
     public String saveImage(String instanceId, String targetVMId, String tagToPush,

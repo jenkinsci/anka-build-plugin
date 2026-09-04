@@ -45,12 +45,16 @@ public abstract class AbstractAnkaSlave extends Slave {
     }
 
     public void setJobNameAndNumber(String jobNameAndNumber) {
+        setJobNameAndNumber(jobNameAndNumber, null);
+    }
+
+    public void setJobNameAndNumber(String jobNameAndNumber, String jobUrl) {
         String finalString = jobNameAndNumber.replaceAll("\\P{Print}", "");
         this.jobNameAndNumber = finalString;
 
-        // Update metadata with job identifier
+        // Update metadata with job identifier and optional absolute job URL
         try {
-            cloud.updateInstance(instanceId, null, null, finalString);
+            cloud.updateInstance(instanceId, null, null, finalString, jobUrl);
         } catch (AnkaMgmtException e) {
             AnkaMgmtCloud.Log("Failed to update node with job identifier");
             e.printStackTrace();

@@ -138,7 +138,7 @@ public class AnkaCloudComputer extends SlaveComputer {
             this.run = ((ExecutorStepExecution.PlaceholderTask) task).run();
             if (this.run != null ){
                 this.slave.setDescription(this.run.getFullDisplayName());
-                this.slave.setJobNameAndNumber(this.run.getFullDisplayName());
+                this.slave.setJobNameAndNumber(this.run.getFullDisplayName(), resolveAbsoluteJobUrl(this.run));
                 this.acceptedRunIdentity = RunIdentity.fromRun(this.run);
             }
         } else {
@@ -151,7 +151,12 @@ public class AnkaCloudComputer extends SlaveComputer {
                 jobAndNumber = executor.getDisplayName();
             }
             this.slave.setDescription(jobAndNumber);
-            this.slave.setJobNameAndNumber(jobAndNumber);
+            if (executable instanceof Run) {
+                this.run = (Run<?, ?>) executable;
+                this.slave.setJobNameAndNumber(jobAndNumber, resolveAbsoluteJobUrl(this.run));
+            } else {
+                this.slave.setJobNameAndNumber(jobAndNumber);
+            }
             if (task instanceof Job) {
                 this.acceptedRunIdentity = parseRunIdentity((Job<?, ?>) task, jobAndNumber);
             } else {
@@ -159,6 +164,20 @@ public class AnkaCloudComputer extends SlaveComputer {
             }
         }
         this.slave.taskAccepted(executor, task);
+    }
+
+    /**
+     * Absolute Jenkins build URL for Controller metadata, or null when Jenkins root URL is unset.
+     */
+    static String resolveAbsoluteJobUrl(Run<?, ?> run) {
+        if (run == null) {
+            return null;
+        }
+        String rootUrl = Jenkins.get().getRootUrl();
+        if (rootUrl == null || rootUrl.isEmpty()) {
+            return null;
+        }
+        return run.getAbsoluteUrl();
     }
 
 
