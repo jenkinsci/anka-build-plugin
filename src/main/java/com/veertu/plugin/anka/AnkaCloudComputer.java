@@ -190,7 +190,7 @@ public class AnkaCloudComputer extends SlaveComputer {
             return null;
         }
         String rootUrl = Jenkins.get().getRootUrl();
-        if (rootUrl == null || rootUrl.isEmpty()) {
+        if (rootUrl == null) {
             return null;
         }
         return run.getAbsoluteUrl();

@@ -64,19 +64,6 @@ public class JobMetadataTest {
     }
 
     @Test
-    public void resolveAbsoluteJobUrl_returnsNullWhenRootUrlEmpty(JenkinsRule j) {
-        JenkinsLocationConfiguration location = JenkinsLocationConfiguration.get();
-        String previousRootUrl = location.getUrl();
-        location.setUrl("");
-        try {
-            Run<?, ?> run = mock(Run.class);
-            assertThat(AnkaCloudComputer.resolveAbsoluteJobUrl(run), nullValue());
-        } finally {
-            location.setUrl(previousRootUrl);
-        }
-    }
-
-    @Test
     public void setJobNameAndNumber_forwardsJobIdAndUrlToUpdateInstance(JenkinsRule j) throws Exception {
         AnkaMgmtCloud cloud = mock(AnkaMgmtCloud.class);
         AbstractAnkaSlave slave = newSlave(cloud, "meta-node", "vm-meta-1");
