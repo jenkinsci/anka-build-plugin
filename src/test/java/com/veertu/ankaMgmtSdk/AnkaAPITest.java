@@ -111,4 +111,14 @@ public class AnkaAPITest {
         // the rest, so the controller is never stampeded.
         verify(communicator, times(2)).list();
     }
+
+    @Test
+    public void updateInstance_forwardsJobUrlToCommunicator() throws Exception {
+        AnkaMgmtCommunicator communicator = mock(AnkaMgmtCommunicator.class);
+        AnkaAPI api = new AnkaAPI(communicator);
+
+        api.updateInstance("vm-1", null, null, "job #2", "https://jenkins.example/job/job/2/");
+
+        verify(communicator).updateVM("vm-1", null, null, "job #2", "https://jenkins.example/job/job/2/");
+    }
 }

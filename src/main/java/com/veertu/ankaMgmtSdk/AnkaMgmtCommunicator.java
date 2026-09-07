@@ -477,7 +477,8 @@ public class AnkaMgmtCommunicator {
         return imageRequests;
     }
 
-    public void updateVM(String id, String name, String jenkinsNodeLink, String jobIdentifier) throws AnkaMgmtException {
+    public void updateVM(String id, String name, String jenkinsNodeLink, String jobIdentifier, String jobUrl)
+            throws AnkaMgmtException {
         String url = String.format("/api/v1/vm?id=%s", id);
         JSONObject jsonResponse = null;
         JSONObject jsonObject = new JSONObject();
@@ -487,9 +488,16 @@ public class AnkaMgmtCommunicator {
         if (name != null) {
             jsonObject.put("name", name);
         }
-        if (jobIdentifier != null && !jobIdentifier.equals("")) {
+        boolean hasJobIdentifier = jobIdentifier != null && !jobIdentifier.equals("");
+        boolean hasJobUrl = jobUrl != null && !jobUrl.equals("");
+        if (hasJobIdentifier || hasJobUrl) {
             HashMap<String, String> metaData = new HashMap<>();
-            metaData.put(MetadataKeys.JOB_IDENTIFIER, jobIdentifier);
+            if (hasJobIdentifier) {
+                metaData.put(MetadataKeys.JOB_IDENTIFIER, jobIdentifier);
+            }
+            if (hasJobUrl) {
+                metaData.put(MetadataKeys.JOB_URL, jobUrl);
+            }
             jsonObject.put("metadata", metaData);
         }
         try {

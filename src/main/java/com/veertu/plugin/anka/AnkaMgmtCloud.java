@@ -1119,8 +1119,9 @@ public class AnkaMgmtCloud extends Cloud {
         ImageSaver.saveImage(this, node);
     }
 
-    public void updateInstance(String vmId, String name, String jenkinsNodeLink, String jobIdentifier) throws AnkaMgmtException {
-        ankaAPI.updateInstance(vmId, name, jenkinsNodeLink, jobIdentifier);
+    public void updateInstance(String vmId, String name, String jenkinsNodeLink, String jobIdentifier, String jobUrl)
+            throws AnkaMgmtException {
+        ankaAPI.updateInstance(vmId, name, jenkinsNodeLink, jobIdentifier, jobUrl);
     }
 
     public void terminateVMInstance(String id) throws AnkaMgmtException {
