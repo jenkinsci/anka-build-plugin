@@ -170,20 +170,18 @@
             </f:section>
             </div>
           <hr />
-          <f:advanced>
-              <f:entry title="${%Node Group}" field="group" description="The Anka Build Cloud Node group the Anka VM is started on (enterprise only)">
-                  <f:select />
-              </f:entry>
-              <f:entry title="${%Priority}" field="priority" description="The Anka Build Cloud VM start priority. Lower numbers get a higher priority (enterprise only)">
-                  <f:textbox clazz="number" default="0" />
-              </f:entry>
-              <f:entry title="${%Scheduling Timeout}" field="schedulingTimeout" description="Seconds the Scheduling Anka VM is allowed to wait in the Anka Build Cloud Controller queue">
-                  <f:textbox clazz="number" default="${descriptor.schedulingTimeout}"/>
-              </f:entry>
-              <f:entry title="${%Idle Check Timeout}" field="idleMinutes" description="Number of minutes between idle Anka VM checks">
-                  <f:textbox clazz="number" default="1"/>
-              </f:entry>
-          </f:advanced>
+          <f:entry title="${%Node Group}" field="group" description="The Anka Build Cloud Node group the Anka VM is started on (enterprise only)">
+              <f:select />
+          </f:entry>
+          <f:entry title="${%Priority}" field="priority" description="The Anka Build Cloud VM start priority. Lower numbers get a higher priority (enterprise only)">
+              <f:textbox clazz="number" default="0" />
+          </f:entry>
+          <f:entry title="${%Scheduling Timeout}" field="schedulingTimeout" description="Seconds the Scheduling Anka VM is allowed to wait in the Anka Build Cloud Controller queue">
+              <f:textbox clazz="number" default="${descriptor.schedulingTimeout}"/>
+          </f:entry>
+          <f:entry title="${%Idle Check Timeout}" field="idleMinutes" description="Number of minutes between idle Anka VM checks">
+              <f:textbox clazz="number" default="1"/>
+          </f:entry>
       </div>
 
       <div class="anka-label-delete-footer"></div>
