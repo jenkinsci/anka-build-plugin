@@ -85,14 +85,6 @@
               </div>
           </f:entry>
 
-        <f:entry title="${%Anka VCPU}" field="vcpu" description="The # of cpu cores in the Anka VM (0 for no change). Requires template to be in stopped state">
-            <f:textbox clazz="required number" default="0" />
-        </f:entry>
-
-        <f:entry title="${%Anka VRAM}" field="vram" description="The amount of RAM (in MB) in the Anka VM (0 for no change). Requires template to be in stopped state">
-            <f:textbox clazz="required number" default="0" />
-        </f:entry>
-
         <div class="anka-summary-source" data-anka-summary="instanceCapacity">
           <f:entry title="${%Maximum Allowed Nodes/Agents}" description="The number of Jenkins Nodes/Agents this template and label is allowed to start (0 is unlimited)" field="instanceCapacity">
               <f:textbox clazz="required number" default="0" />
@@ -105,6 +97,18 @@
       </div>
 
       <div class="anka-label-show-more__panel" hidden="hidden">
+          <f:entry title="${%Node Group}" field="group" description="The Anka Build Cloud Node group the Anka VM is started on (enterprise only)">
+              <f:select />
+          </f:entry>
+
+          <f:entry title="${%Anka VCPU}" field="vcpu" description="The # of cpu cores in the Anka VM (0 for no change). Requires template to be in stopped state">
+              <f:textbox clazz="required number" default="0" />
+          </f:entry>
+
+          <f:entry title="${%Anka VRAM}" field="vram" description="The amount of RAM (in MB) in the Anka VM (0 for no change). Requires template to be in stopped state">
+              <f:textbox clazz="required number" default="0" />
+          </f:entry>
+
           <f:entry title="${%Jenkins Node Name Template}" field="nameTemplate" description="A string to include in the name of the started Jenkins Node/Agent">
               <f:textbox default="" />
           </f:entry>
@@ -170,9 +174,6 @@
             </f:section>
             </div>
           <hr />
-          <f:entry title="${%Node Group}" field="group" description="The Anka Build Cloud Node group the Anka VM is started on (enterprise only)">
-              <f:select />
-          </f:entry>
           <f:entry title="${%Priority}" field="priority" description="The Anka Build Cloud VM start priority. Lower numbers get a higher priority (enterprise only)">
               <f:textbox clazz="number" default="0" />
           </f:entry>
