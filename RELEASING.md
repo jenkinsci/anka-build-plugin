@@ -3,7 +3,7 @@
 1. Make changes in release/vX.X.X branch
 2. PR into main branch (so Jenkins' CI runs)
 3. Check the PR changes page and look for missing test coverage, warnings, etc, and fix them
-3. Update the version in the pom.xml file to X.X.X-SNAPSHOT
+3. Update the version in the pom.xml file to X.X.X-SNAPSHOT (X.X.X is the version you're releasing)
 4. Run https://VEERTUJENKINS/view/jenkins/job/plugin-jenkins-build/ (auto runs usually)
 5. Run https://VEERTUJENKINS/view/jenkins/job/cloud-integration-jenkins/ against the new build you just did
 6. Check the PR CI and be sure it's all green
