@@ -37,8 +37,8 @@ import static org.mockito.Mockito.when;
 /**
  * During Jenkins init, {@code isAlive}/{@code isSchedulingOrPulling}/{@code isConnecting} and
  * run-once {@code start()} must not call the Anka controller on the caller thread. Jenkins core's
- * {@link hudson.model.Computer} {@code isAlive()} and {@link AnkaMgmtCloud#canProvision} must never
- * call the controller.
+ * {@link hudson.model.Computer} {@code isAlive()}, {@link AnkaMgmtCloud#canProvision} and
+ * {@link AnkaCloudComputer#onRemoved} must never call the controller on the caller thread.
  */
 @WithJenkins
 public class AnkaStartupControllerGuardTest {
@@ -191,6 +191,29 @@ public class AnkaStartupControllerGuardTest {
         AnkaMgmtCloud cloud = registerBlackholeCloud(Collections.emptyList(), configuredCloudCapacity);
 
         assertEquals(configuredCloudCapacity, cloud.getCloudCapacityWithoutController());
+    }
+
+    @Test
+    public void onRemovedDoesNotCallControllerOnCallerThread() throws Exception {
+        // Jenkins core calls onRemoved under the Queue lock (AbstractCIBase.removeComputer).
+        AnkaMgmtCloud cloud = registerBlackholeCloud();
+        AnkaCloudComputer computer = new AnkaCloudComputer(newSlave(cloud, "removed-node", "vm-removed"), "vm-removed");
+
+        assertTimeoutPreemptively(Duration.ofSeconds(10), computer::onRemoved);
+    }
+
+    @Test
+    public void terminateVMInstanceInBackgroundTerminatesOnExecutor() throws Exception {
+        AnkaMgmtCloud cloud = mock(AnkaMgmtCloud.class);
+        AnkaCloudComputer computer = new AnkaCloudComputer(newSlave(cloud, "removed-bg", "vm-removed-bg"), "vm-removed-bg");
+        List<Runnable> submittedTasks = new ArrayList<>();
+
+        computer.terminateVMInstanceInBackground(cloud, submittedTasks::add);
+        verifyNoInteractions(cloud);
+        assertEquals(1, submittedTasks.size());
+
+        submittedTasks.get(0).run();
+        verify(cloud).terminateVMInstance("vm-removed-bg");
     }
 
     private static AnkaCloudSlaveTemplate labeledTemplate(String labelName) {

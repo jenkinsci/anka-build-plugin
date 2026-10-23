@@ -128,13 +128,21 @@ public class AnkaCloudComputer extends SlaveComputer {
             String cloudName = template.getCloudName();
             AnkaMgmtCloud cloud = (AnkaMgmtCloud) Jenkins.get().getCloud(cloudName);
             if (cloud != null) {
-                try {
-                    cloud.terminateVMInstance(vmId);
-                } catch (AnkaMgmtException e) {
-                    e.printStackTrace();
-                }
+                terminateVMInstanceInBackground(cloud, Computer.threadPoolForRemoting);
             }
         }
+    }
+
+    // Jenkins core calls onRemoved under the Queue lock (AbstractCIBase.removeComputer), so an
+    // unreachable controller must not be called on this thread.
+    void terminateVMInstanceInBackground(AnkaMgmtCloud cloud, java.util.concurrent.Executor executor) {
+        executor.execute(() -> {
+            try {
+                cloud.terminateVMInstance(vmId);
+            } catch (AnkaMgmtException e) {
+                e.printStackTrace();
+            }
+        });
     }
 
     /**
