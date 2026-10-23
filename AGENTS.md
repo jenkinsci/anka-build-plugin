@@ -1,5 +1,2 @@
-# Agent instructions
-
-## Git commits
-
-Never add `Co-authored-by: Cursor` to commit messages. Do not add any Cursor co-author trailer under any circumstances.
+- Always perform a self-review of any code changes before reporting completion. Review the final diff for correctness, regressions, unintended changes, and appropriate validation; address any issues found.
+- Before changing existing logic, inspect `git blame` and relevant commit diffs for the logic being changed to understand its intent. Keep history inspection scoped to the affected behavior; avoid exhaustive history review. Preserve behavior outside the requested change.

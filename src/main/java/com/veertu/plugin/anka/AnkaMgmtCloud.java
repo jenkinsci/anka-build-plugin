@@ -606,6 +606,14 @@ public class AnkaMgmtCloud extends Cloud {
         return 0;
     }
 
+    // Jenkins core calls canProvision under the Queue lock (Nodes.load -> trimLabels during
+    // startup, QueueListener.onEnterBuildable). An unreachable controller there blocks Jenkins
+    // for the connect timeout per label, so automatic capacity is checked only in provision().
+    int getCloudCapacityWithoutController() {
+        boolean automaticCapacity = cloudInstanceCap == 0 && ankaAPI != null;
+        return automaticCapacity ? Integer.MAX_VALUE : getCloudCapacity();
+    }
+
     public NodeCountResponse getNumOfRunningNodesPerLabel(Label label) {
         AnkaCloudSlaveTemplate templateFromLabel = getTemplate(label);
         int numRunningNodes = 0;
@@ -1065,7 +1073,7 @@ public class AnkaMgmtCloud extends Cloud {
         if (template == null) {
             return false;
         }
-        int cloudCapacity = getCloudCapacity();
+        int cloudCapacity = getCloudCapacityWithoutController();
         if (template.getInstanceCapacity() > 0 || cloudCapacity >= 0) {
             NodeCountResponse countResponse = getNumOfRunningNodesPerLabel(label);
             if (cloudCapacity >= 0 && countResponse.numNodes >= cloudCapacity) {
