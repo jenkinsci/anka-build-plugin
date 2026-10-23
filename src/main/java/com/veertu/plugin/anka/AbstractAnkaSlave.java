@@ -63,6 +63,10 @@ public abstract class AbstractAnkaSlave extends Slave {
 
     protected String jobNameAndNumber;
 
+    @SuppressFBWarnings(value = "SE_TRANSIENT_FIELD_NOT_RESTORED",
+            justification = "Set only by the constructor; nodes read from disk must keep false.")
+    private transient boolean createdInThisJenkinsSession;
+
 
 
     @SuppressFBWarnings(value = "MC_OVERRIDABLE_METHOD_CALL_IN_CONSTRUCTOR",
@@ -84,9 +88,14 @@ public abstract class AbstractAnkaSlave extends Slave {
         this.template = template;
         this.taskExecuted = false;
         this.saveImageSent = false;
+        this.createdInThisJenkinsSession = true;
 
         readResolve();
 
+    }
+
+    boolean wasLoadedFromDisk() {
+        return !createdInThisJenkinsSession;
     }
 
 
@@ -262,6 +271,9 @@ public abstract class AbstractAnkaSlave extends Slave {
     }
 
     public boolean isAlive() {
+        if (!AnkaJenkinsInit.isStartupComplete()) {
+            return true;
+        }
         if (cloud != null) {
             try {
                 AnkaVmInstance instance = getAndLogInstance();
@@ -288,6 +300,9 @@ public abstract class AbstractAnkaSlave extends Slave {
     }
 
     public boolean isSchedulingOrPulling() {
+        if (!AnkaJenkinsInit.isStartupComplete()) {
+            return false;
+        }
         if (cloud != null) {
             try {
                 AnkaVmInstance instance = getAndLogInstance();
