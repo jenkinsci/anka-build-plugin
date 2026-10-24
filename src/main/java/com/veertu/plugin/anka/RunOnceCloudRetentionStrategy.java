@@ -3,7 +3,7 @@ package com.veertu.plugin.anka;
 import com.veertu.ankaMgmtSdk.AnkaVmInstance;
 import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
 import hudson.Extension;
-import hudson.init.InitMilestone;
+import hudson.model.Computer;
 import hudson.model.Descriptor;
 import hudson.model.Executor;
 import hudson.model.ExecutorListener;
@@ -47,10 +47,16 @@ public class RunOnceCloudRetentionStrategy extends RetentionStrategy<AnkaCloudCo
                 return idleMinutes;
             }
 
+            AbstractAnkaSlave node = computer.getNode();
+            if (computer.awaitingBackgroundRestartCheck()) {
+                // SlaveComputer.setNode() calls check() under the Queue lock on the startup thread.
+                // reconnectAfterRestart() checks this node with the controller in the background.
+                return idleMinutes;
+            }
+
             if (computer.isSchedulingOrPulling()) { // it's scheduling or pulling - wait
                 return idleMinutes * 3;
             }
-            AbstractAnkaSlave node = computer.getNode();
             if (node != null && !node.isAlive()) {
                 done(computer);
             }
@@ -148,35 +154,16 @@ public class RunOnceCloudRetentionStrategy extends RetentionStrategy<AnkaCloudCo
 
     @Override
     public void start(final @Nonnull AnkaCloudComputer computer) {
-        //Jenkins is in the process of starting up
-        if (Jenkins.get().getInitLevel() != InitMilestone.COMPLETED) {
-            String vmId = computer.getVMId();
-            String cloudName = computer.getCloudName();
-            AnkaMgmtCloud cloud = (AnkaMgmtCloud) Jenkins.get().getCloud(cloudName);
+        AbstractAnkaSlave node = computer.getNode();
+        if (node != null && node.wasLoadedFromDisk()) {
+            AnkaMgmtCloud cloud = (AnkaMgmtCloud) Jenkins.get().getCloud(computer.getCloudName());
             if (cloud != null) {
-                try {
-                    AnkaVmInstance instance = cloud.showInstance(vmId);
-                    if (instance == null || instance.isTerminatingOrTerminated() || instance.isInError()) {
-                        AbstractAnkaSlave node = computer.getNode();
-                        if (node != null) {
-                            node.terminate();
-                        } else {
-                            cloud.terminateVMInstance(vmId); // if there is no node terminate the instance
-                        }
-                        return;
-                    }
-                    // means we have an instance
-                    computer.connect(true); // try to force reconnection
-                    computer.firstConnectionAttempted(); // in case jenkins restarted before we could set this property
-                    return;
-                } catch (AnkaMgmtException | IOException e) {
-                    LOGGER.info(AnkaLog.prefix("Got exception while handling node in jenkins startup"));
-                    e.printStackTrace();
-                    return;
-                }
+                // Jenkins.updateComputerList() calls start() for nodes read from disk on the startup
+                // thread, after InitMilestone.COMPLETED is set but before READY.
+                reconnectAfterRestartInBackground(computer, cloud, Computer.threadPoolForRemoting);
+                return;
             }
         }
-
 
         LOGGER.info(AnkaLog.prefix("Start requested for " + computer.getName()));
         computer.connect(false);
@@ -187,6 +174,37 @@ public class RunOnceCloudRetentionStrategy extends RetentionStrategy<AnkaCloudCo
         // registered when waitAndConnect runs, so slave.toComputer() is null there and the flag would
         // otherwise never be set on the normal (non-restart) path.
         computer.firstConnectionAttempted();
+    }
+
+    void reconnectAfterRestartInBackground(AnkaCloudComputer computer, AnkaMgmtCloud cloud, java.util.concurrent.Executor executor) {
+        LOGGER.log(Level.INFO, AnkaLog.prefix("Checking computer {0}, instance {1} with the controller in the background"),
+                new Object[]{computer.getName(), computer.getVMId()});
+        executor.execute(() -> reconnectAfterRestart(computer, cloud));
+    }
+
+    private void reconnectAfterRestart(AnkaCloudComputer computer, AnkaMgmtCloud cloud) {
+        String vmId = computer.getVMId();
+        try {
+            AnkaVmInstance instance = cloud.showInstance(vmId);
+            if (instance == null || instance.isTerminatingOrTerminated() || instance.isInError()) {
+                AbstractAnkaSlave node = computer.getNode();
+                if (node != null) {
+                    node.terminate();
+                } else {
+                    cloud.terminateVMInstance(vmId); // if there is no node terminate the instance
+                }
+                return;
+            }
+            // means we have an instance
+            computer.connect(true); // try to force reconnection
+        } catch (AnkaMgmtException | IOException | RuntimeException e) {
+            LOGGER.log(Level.WARNING, AnkaLog.prefix("Computer " + computer.getName() + ", instance " + vmId
+                    + ": failed to check instance with the controller after Jenkins restart"), e);
+        } finally {
+            // check() skips computers that have no first connection attempt. Without this, a failed
+            // check leaves the node offline and its VM running until someone deletes the node.
+            computer.firstConnectionAttempted();
+        }
     }
 
     public RunOnceCloudRetentionStrategy clone() throws CloneNotSupportedException {

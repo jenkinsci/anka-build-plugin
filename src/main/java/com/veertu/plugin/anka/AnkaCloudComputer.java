@@ -41,17 +41,22 @@ public class AnkaCloudComputer extends SlaveComputer {
 
     @Override
     public boolean isConnecting() {
+        // Until the background post-restart check finishes, do not ask the controller from UI /
+        // LoadStatistics threads. Those calls share AnkaAPI's lock with reconnectAfterRestart and
+        // can block Jetty for the full connect timeout after Jenkins is already READY.
+        if (!AnkaJenkinsInit.isStartupComplete() || awaitingBackgroundRestartCheck()) {
+            return super.isConnecting();
+        }
         boolean parentConnecting = super.isConnecting();
         if (parentConnecting) {
             return true;
         }
+        // A scheduling/pulling VM must count as connecting: connect(false) then skips the launch,
+        // and AnkaPlannedNodeCreator connects once the VM is started.
         if (isSchedulingOrPulling()) {
             return true;
         }
-        if (isAlive() && launching) {
-            return true;
-        }
-        return false;
+        return isVmAlive() && launching;
     }
 
     public boolean afterFirstConnection() {
@@ -60,6 +65,19 @@ public class AnkaCloudComputer extends SlaveComputer {
 
     public void firstConnectionAttempted() {
         afterFirstConnection = true;
+    }
+
+    /**
+     * True for a node read from disk until {@link #firstConnectionAttempted()} runs (normally from
+     * the background post-restart controller check). Callers that would contact the controller must
+     * skip while this is true so startup and early HTTP stay off the blackhole path.
+     */
+    boolean awaitingBackgroundRestartCheck() {
+        if (afterFirstConnection) {
+            return false;
+        }
+        AbstractAnkaSlave node = getNode();
+        return node != null && node.wasLoadedFromDisk();
     }
 
     @Override
@@ -78,7 +96,14 @@ public class AnkaCloudComputer extends SlaveComputer {
         return null;
     }
     
-    public boolean isAlive() {
+    /**
+     * Asks the Anka controller if the VM is alive. Do not name this {@code isAlive()}: that overrides
+     * {@link hudson.model.Computer}'s method, which Jenkins core calls while it holds the Queue lock.
+     */
+    public boolean isVmAlive() {
+        if (awaitingBackgroundRestartCheck()) {
+            return true;
+        }
         AbstractAnkaSlave node = getNode();
         if (node != null) {
             return node.isAlive();
@@ -93,7 +118,8 @@ public class AnkaCloudComputer extends SlaveComputer {
         }
     }
 
-    public void onRemoved() {
+    @Override
+    protected void onRemoved() {
         AnkaMgmtCloud.Log("Computer %s removed", this.getName());
         // The node is gone; clear any in-progress reservation so it does not suppress future
         // provisioning. Covers nodes that never accepted a task (idle-timeout, launch failure).
@@ -102,13 +128,21 @@ public class AnkaCloudComputer extends SlaveComputer {
             String cloudName = template.getCloudName();
             AnkaMgmtCloud cloud = (AnkaMgmtCloud) Jenkins.get().getCloud(cloudName);
             if (cloud != null) {
-                try {
-                    cloud.terminateVMInstance(vmId);
-                } catch (AnkaMgmtException e) {
-                    e.printStackTrace();
-                }
+                terminateVMInstanceInBackground(cloud, Computer.threadPoolForRemoting);
             }
         }
+    }
+
+    // Jenkins core calls onRemoved under the Queue lock (AbstractCIBase.removeComputer), so an
+    // unreachable controller must not be called on this thread.
+    void terminateVMInstanceInBackground(AnkaMgmtCloud cloud, java.util.concurrent.Executor executor) {
+        executor.execute(() -> {
+            try {
+                cloud.terminateVMInstance(vmId);
+            } catch (AnkaMgmtException e) {
+                e.printStackTrace();
+            }
+        });
     }
 
     /**
@@ -431,6 +465,9 @@ public class AnkaCloudComputer extends SlaveComputer {
     }
 
     public boolean isSchedulingOrPulling() {
+        if (awaitingBackgroundRestartCheck()) {
+            return false;
+        }
         AbstractAnkaSlave node = getNode();
         if (node != null) {
             return node.isSchedulingOrPulling();

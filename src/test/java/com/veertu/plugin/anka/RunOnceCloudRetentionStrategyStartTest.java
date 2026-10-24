@@ -1,13 +1,22 @@
 package com.veertu.plugin.anka;
 
+import com.veertu.ankaMgmtSdk.AnkaVmInstance;
+import com.veertu.ankaMgmtSdk.exceptions.AnkaMgmtException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 /**
@@ -49,5 +58,43 @@ public class RunOnceCloudRetentionStrategyStartTest {
         InOrder order = inOrder(computer);
         order.verify(computer).connect(false);
         order.verify(computer).firstConnectionAttempted();
+    }
+
+    @Test
+    public void startupReconnectMustNotCallControllerOnCallerThread() throws AnkaMgmtException {
+        AnkaCloudComputer computer = mock(AnkaCloudComputer.class);
+        when(computer.getName()).thenReturn("restart-node");
+        when(computer.getVMId()).thenReturn("vm-1");
+        AnkaMgmtCloud cloud = mock(AnkaMgmtCloud.class);
+        AnkaVmInstance runningInstance = mock(AnkaVmInstance.class);
+        when(cloud.showInstance("vm-1")).thenReturn(runningInstance);
+        List<Runnable> submittedTasks = new ArrayList<>();
+
+        new RunOnceCloudRetentionStrategy(1).reconnectAfterRestartInBackground(computer, cloud, submittedTasks::add);
+
+        verifyNoInteractions(cloud);
+        verify(computer, never()).connect(true);
+        assertEquals(1, submittedTasks.size());
+
+        submittedTasks.get(0).run();
+
+        verify(cloud).showInstance("vm-1");
+        InOrder order = inOrder(computer);
+        order.verify(computer).connect(true);
+        order.verify(computer).firstConnectionAttempted();
+    }
+
+    @Test
+    public void startupReconnectSurvivesUnreachableController() throws AnkaMgmtException {
+        AnkaCloudComputer computer = mock(AnkaCloudComputer.class);
+        when(computer.getName()).thenReturn("restart-node");
+        when(computer.getVMId()).thenReturn("vm-1");
+        AnkaMgmtCloud cloud = mock(AnkaMgmtCloud.class);
+        when(cloud.showInstance("vm-1")).thenThrow(new AnkaMgmtException("connect timed out"));
+
+        new RunOnceCloudRetentionStrategy(1).reconnectAfterRestartInBackground(computer, cloud, Runnable::run);
+
+        verify(computer, never()).connect(true);
+        verify(computer).firstConnectionAttempted();
     }
 }
